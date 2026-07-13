@@ -1,11 +1,13 @@
 #!/usr/bin/env Rscript
 
+source(file.path("analysis", "_helpers.R"))
+
 suppressPackageStartupMessages({
   library(ggplot2)
   library(grid)
 })
 
-root <- "/Users/cmueller/Documents/GitHub/campylobacter_stressregnet/workflow/data"
+root <- analysis_data_root()
 import_root <- file.path(root, "00-import", "Campylobacter")
 out_dir <- file.path(getwd(), "analysis", "outputs", "growth_exponent", "educational_examples")
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)

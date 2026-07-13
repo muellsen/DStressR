@@ -1,5 +1,7 @@
 #!/usr/bin/env Rscript
 
+source(file.path("analysis", "_helpers.R"))
+
 suppressPackageStartupMessages({
   library(ggplot2)
 })
@@ -7,7 +9,7 @@ suppressPackageStartupMessages({
 if (requireNamespace("DStressR", quietly = TRUE)) {
   suppressPackageStartupMessages(library(DStressR))
 } else {
-  suppressPackageStartupMessages(devtools::load_all(".", quiet = TRUE))
+  load_destress_package()
 }
 
 out_dir <- file.path(getwd(), "analysis", "outputs", "empirical_replicate_pvalues")
@@ -27,7 +29,7 @@ compound_file <- file.path(
   "growth_exponent",
   "workflow_vs_destress_eb_estimated_growth_alpha_promoter_compound_pvalues.tsv"
 )
-libmap_file <- "/Users/cmueller/Documents/GitHub/campylobacter_stressregnet/workflow/data/00-import/Campylobacter/LibMap.txt"
+libmap_file <- libmap_path()
 
 replicate <- read.delim(replicate_file, sep = "\t", check.names = FALSE, stringsAsFactors = FALSE)
 compound_level <- read.delim(compound_file, sep = "\t", check.names = FALSE, stringsAsFactors = FALSE)

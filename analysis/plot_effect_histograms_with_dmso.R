@@ -1,5 +1,7 @@
 #!/usr/bin/env Rscript
 
+source(file.path("analysis", "_helpers.R"))
+
 suppressPackageStartupMessages({
   library(ggplot2)
 })
@@ -21,7 +23,7 @@ replicate_file <- file.path(
   "growth_exponent",
   "workflow_vs_destress_eb_estimated_growth_alpha_replicate_pvalues.tsv"
 )
-libmap_file <- "/Users/cmueller/Documents/GitHub/campylobacter_stressregnet/workflow/data/00-import/Campylobacter/LibMap.txt"
+libmap_file <- libmap_path()
 
 compound <- read.delim(compound_file, sep = "\t", check.names = FALSE, stringsAsFactors = FALSE)
 replicate <- read.delim(replicate_file, sep = "\t", check.names = FALSE, stringsAsFactors = FALSE)

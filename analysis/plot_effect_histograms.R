@@ -1,5 +1,7 @@
 #!/usr/bin/env Rscript
 
+source(file.path("analysis", "_helpers.R"))
+
 suppressPackageStartupMessages({
   library(ggplot2)
 })
@@ -7,7 +9,7 @@ suppressPackageStartupMessages({
 if (requireNamespace("DStressR", quietly = TRUE)) {
   suppressPackageStartupMessages(library(DStressR))
 } else {
-  suppressPackageStartupMessages(devtools::load_all(".", quiet = TRUE))
+  load_destress_package()
 }
 
 out_dir <- file.path(getwd(), "analysis", "outputs", "normalized_matrix", "effect_histograms")

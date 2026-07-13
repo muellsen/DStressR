@@ -1,5 +1,7 @@
 #!/usr/bin/env Rscript
 
+source(file.path("analysis", "_helpers.R"))
+
 suppressPackageStartupMessages({
   library(ggplot2)
 })
@@ -7,7 +9,7 @@ suppressPackageStartupMessages({
 if (requireNamespace("DStressR", quietly = TRUE)) {
   library(DStressR)
 } else {
-  devtools::load_all(".", quiet = TRUE)
+  load_destress_package()
 }
 
 out_dir <- file.path(getwd(), "analysis", "outputs", "volcano")
@@ -27,7 +29,7 @@ if (!file.exists(estimated_alpha_file)) {
 
 tab <- read.delim(estimated_alpha_file, sep = "\t", check.names = FALSE)
 
-libmap_file <- "/Users/cmueller/Documents/GitHub/campylobacter_stressregnet/workflow/data/00-import/Campylobacter/LibMap.txt"
+libmap_file <- libmap_path()
 if (file.exists(libmap_file)) {
   libmap <- read.delim(libmap_file, sep = "\t", check.names = FALSE, stringsAsFactors = FALSE)
   libmap$libplate <- paste0("lp", libmap[["Library plate"]])

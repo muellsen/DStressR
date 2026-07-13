@@ -1,6 +1,8 @@
 #!/usr/bin/env Rscript
 
-root <- "/Users/cmueller/Documents/GitHub/campylobacter_stressregnet/workflow/data"
+source(file.path("analysis", "_helpers.R"))
+
+root <- analysis_data_root()
 out_dir <- file.path(getwd(), "analysis", "outputs", "venn")
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 
