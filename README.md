@@ -310,9 +310,9 @@ libmap$srn_code <- paste0("lp", libmap[["Library plate"]], "_", libmap[["Well"]]
 dmso_srn_codes <- libmap$srn_code[libmap$ProductName == "DMSO"]
 dmso_noisy_srn_codes <- libmap$srn_code[libmap$ProductName == "DMSO noisy"]
 
-legacy <- fit_workflow(
+legacy <- fit_destress(
   expression_df,
-  workflow = "median_polish",
+  preset = "median_polish",
   response = "log2.auc.16hmeasured.normed",
   control = dmso_srn_codes,
   exclude = dmso_noisy_srn_codes,
@@ -359,9 +359,9 @@ libmap$srn_code <- paste(libmap$libplate, libmap[["New well"]], sep = "_")
 dmso_srn_codes <- libmap$srn_code[libmap[["Catalog Number"]] == "DMSO"]
 dmso_noisy_srn_codes <- libmap$srn_code[libmap[["Catalog Number"]] == "DMSO noisy"]
 
-evc <- fit_workflow(
+evc <- fit_destress(
   expression_df,
-  workflow = "empty_vector_control",
+  preset = "empty_vector_control",
   response = "log2.lux.normed.centered",
   empty_vector_promoter = "PEVC3",
   control = dmso_srn_codes,
