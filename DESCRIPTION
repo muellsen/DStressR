@@ -1,0 +1,39 @@
+Package: DStressR
+Title: Differential Stress-Response Modeling for Chemical Genomics Screens
+Version: 0.0.1
+Authors@R: c(
+    person(given = "Christian L.", family = "Müller", role = c("aut", "cre"),
+           email = "ch.mueller@lmu.de")
+  )
+Author: Christian L. Müller
+Maintainer: Christian L. Müller <ch.mueller@lmu.de>
+Description: Companion workflow to DGrowthR for model-based differential
+    promoter activity analysis in high-throughput chemical genomics screens.
+    DStressR models growth-adjusted luminescence, compound-wide effects,
+    promoter-specific stress responses, empirical-Bayes promoter variance
+    moderation, and technical covariates.
+URL: https://bio-datascience.github.io/DStressR/, https://github.com/bio-datascience/DStressR/
+BugReports: https://github.com/bio-datascience/DStressR/issues
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.2.3
+Depends:
+    R (>= 4.2)
+Imports:
+    methods,
+    stats,
+    utils
+Suggests:
+    ggrepel,
+    ggplot2,
+    knitr,
+    permApprox,
+    rmarkdown,
+    testthat (>= 3.0.0)
+Enhances:
+    DGrowthR
+Remotes:
+    stefpeschel/permApprox
+Config/testthat/edition: 3
+VignetteBuilder: knitr

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="260" viewBox="0 0 900 260" role="img" aria-label="DStressR logo">
+  <rect width="900" height="260" fill="#fbfcfd"/>
+  <g transform="translate(58 42)">
+    <rect x="0" y="0" width="176" height="176" rx="28" fill="#0f172a"/>
+    <circle cx="52" cy="124" r="16" fill="#38bdf8"/>
+    <circle cx="88" cy="86" r="16" fill="#f97316"/>
+    <circle cx="124" cy="50" r="16" fill="#22c55e"/>
+    <path d="M52 124 C74 108, 72 99, 88 86 S108 63, 124 50" fill="none" stroke="#e2e8f0" stroke-width="10" stroke-linecap="round"/>
+    <path d="M38 144 H138" stroke="#64748b" stroke-width="8" stroke-linecap="round"/>
+  </g>
+  <text x="270" y="112" font-family="Helvetica, Arial, sans-serif" font-size="68" font-weight="700" fill="#0f172a">DStressR</text>
+  <text x="274" y="158" font-family="Helvetica, Arial, sans-serif" font-size="27" fill="#475569">Differential stress-response modeling</text>
+  <text x="274" y="197" font-family="Helvetica, Arial, sans-serif" font-size="23" fill="#64748b">for chemical genomics screens</text>
+</svg>

@@ -1,0 +1,13 @@
+*.tar.gz
+*.Rcheck/
+.*.Rcheck/
+..Rcheck/
+.DS_Store
+.Rhistory
+.RData
+.Ruserdata
+
+# Generated analysis outputs and local render/cache artifacts
+analysis/outputs/
+tmp/
+tmp_report_text.txt
