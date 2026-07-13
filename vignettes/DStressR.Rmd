@@ -1,0 +1,269 @@
+---
+title: "Get started with DStressR"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Get started with DStressR}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 4.8
+)
+```
+
+`DStressR` models promoter-activity responses in high-throughput chemical
+genomics screens. The package is designed as the stress-response counterpart to
+[`DGrowthR`](https://bio-datascience.github.io/DGrowthR/): DGrowthR handles
+growth-curve modeling, while DStressR handles promoter-compound effects after
+accounting for growth and technical structure.
+
+This vignette uses a small simulated screen so that the full workflow can be run
+without private data files.
+
+## Input files and table shape
+
+DStressR expects a long measurement table with one row per measured
+promoter-compound-replicate observation. In a complete rectangular screen, the
+row count is approximately:
+
+```text
+n_promoters x (n_compound_wells + n_control_wells) x n_replicates
+```
+
+The table may contain additional rows when the same screen is repeated across
+batches, library plates, measurement plates, or experimental days. The important
+point is that these technical covariates remain in the table so they can be
+modeled rather than accidentally averaged away.
+
+The required biological and technical information is:
+
+- promoter or reporter construct
+- compound or library-well identifier
+- negative-control compound, usually `DMSO`
+- luminescence summary
+- growth summary
+- replicate and optional technical covariates such as batch or plate
+
+Column names are not fixed. They are mapped explicitly in `prepare_assay()`.
+
+For the original Campylobacter promoter-library workflow, the convenience helper
+`read_campylobacter_expression()` joins two exported files:
+
+- `expression_values.tsv.gz`: one row per promoter-library-well-replicate
+  observation. It must contain either `srn_code` or both `libplate` and `well`,
+  plus the promoter, luminescence, growth, and technical columns used
+  downstream.
+- `LibMap.txt`: one row per compound/library well with columns `Library plate`,
+  `Well`, `ProductName`, and `Catalog Number`.
+
+The helper reconstructs the library-well key as
+`paste0("lp", Library plate, "_", Well)` for `LibMap.txt`, joins the compound
+annotations onto the expression table, and returns a long table with the same
+number of rows as `expression_values.tsv.gz`.
+
+```{r campylobacter-import, eval = FALSE}
+expression_df <- read_campylobacter_expression(
+  expression_file = "expression_values.tsv.gz",
+  libmap_file = "LibMap.txt"
+)
+
+assay <- prepare_assay(
+  expression_df,
+  promoter = "promoter",
+  compound = "srn_code",
+  control = "DMSO",
+  lux = "LUX.AUC_16",
+  growth = "od_16h.measured",
+  batch = "batch",
+  plate = "libplate",
+  replicate = "replicate"
+)
+```
+
+## Simulate a chemical-genomics screen
+
+```{r setup}
+library(DStressR)
+
+screen <- simulate_screen(
+  n_promoters = 12,
+  n_compounds = 40,
+  n_replicates = 3,
+  seed = 1
+)
+
+head(screen)
+```
+
+The simulated table contains one row per promoter-compound-replicate well. It
+includes luminescence, growth, batch, replicate, and hidden truth columns used
+only to check the example.
+
+```{r columns}
+names(screen)
+```
+
+## Prepare the assay
+
+`prepare_assay()` converts luminescence and growth summaries into a
+growth-adjusted log2 response. By default, DStressR estimates promoter-specific
+growth exponents from DMSO control wells and shrinks them toward a global
+control-well slope.
+
+```{r prepare}
+assay <- prepare_assay(
+  screen,
+  promoter = "promoter",
+  compound = "compound",
+  control = "DMSO",
+  lux = "LUX.AUC_16",
+  growth = "od_16h.measured",
+  batch = "batch",
+  replicate = "replicate"
+)
+
+attr(assay, "destress")$growth_exponent_fit
+```
+
+To reproduce the older fixed-ratio style response,
+`growth_exponent = 1` gives the familiar `log2(luminescence / growth)` scale.
+
+```{r fixed-alpha}
+assay_fixed <- prepare_assay(
+  screen,
+  promoter = "promoter",
+  compound = "compound",
+  control = "DMSO",
+  lux = "LUX.AUC_16",
+  growth = "od_16h.measured",
+  growth_exponent = 1,
+  batch = "batch",
+  replicate = "replicate"
+)
+```
+
+## Fit the DStressR model
+
+`fit_destress()` fits promoter and compound effects while accounting for
+technical covariates. The result table reports both the DMSO-relative total
+effect and the promoter-specific effect after subtracting the compound-wide
+effect.
+
+```{r fit}
+fit <- fit_destress(
+  assay,
+  technical = c("batch", "replicate"),
+  empirical_bayes = TRUE
+)
+
+tab <- results(fit)
+tab <- adjust_pvalues(tab)
+
+head(tab)
+```
+
+The key columns are:
+
+- `total_effect`: DMSO-relative response for the promoter-compound pair.
+- `global_effect`: average compound-wide response across promoters.
+- `specific_effect`: promoter-specific deviation from the compound-wide effect.
+- `specific_pvalue` and `specific_padj`: test and BH-adjusted p-value.
+
+## Call hits
+
+```{r hits}
+hits <- call_hits(
+  tab,
+  fdr = 0.05,
+  lfc = 0.5,
+  effect = "specific_effect",
+  padj = "specific_padj"
+)
+
+table(hits$hit)
+
+head(
+  hits[order(hits$specific_padj, -abs(hits$specific_effect)), ],
+  10
+)
+```
+
+In real screens, the FDR cutoff should be paired with domain knowledge and
+diagnostics. For DMSO-rich designs, empirical replicate/permutation p-values can
+be used as an additional calibration check.
+
+## Visualize the screen
+
+The standard volcano plot labels the strongest promoter-compound pairs.
+
+```{r volcano, eval = requireNamespace("ggplot2", quietly = TRUE)}
+plot_volcano(
+  hits,
+  effect = "specific_effect",
+  padj = "specific_padj",
+  fdr = 0.05,
+  lfc = 0.5,
+  top_n = 8,
+  top_promoters = 6
+)
+```
+
+A response heatmap gives a matrix-level view of the promoter-compound response
+surface.
+
+```{r heatmap, eval = requireNamespace("ggplot2", quietly = TRUE)}
+plot_response_heatmap(
+  hits,
+  value = "specific_effect",
+  top_n_compounds = 30
+)
+```
+
+For broader screens, clustered heatmaps help reveal compound and promoter
+groups with similar response profiles.
+
+```{r clustered, eval = requireNamespace("ggplot2", quietly = TRUE)}
+plot_response_clustered_heatmap(
+  hits,
+  value = "specific_effect",
+  top_n_compounds = 30,
+  title = "Clustered DStressR response map"
+)
+```
+
+## Optional DGrowthR handoff
+
+The current default hit model uses the exported growth summary column supplied
+to `prepare_assay()`. If growth curves have already been modeled with DGrowthR,
+the DGrowthR-derived growth parameter can be joined explicitly before assay
+preparation.
+
+```{r dgrowthr-handoff, eval = FALSE}
+screen2 <- add_dgrowthr_growth(
+  screen,
+  object = dgrowthr_fit,
+  by = "curve_id",
+  model_covariate = "curve_id",
+  growth_metric = "OD_16",
+  output = "dgrowthr_od16"
+)
+
+assay2 <- prepare_assay(
+  screen2,
+  promoter = "promoter",
+  compound = "compound",
+  control = "DMSO",
+  lux = "LUX.AUC_16",
+  growth = "dgrowthr_od16",
+  batch = "batch",
+  replicate = "replicate"
+)
+```
+
+This explicit handoff keeps the original DStressR hit workflow reproducible,
+while making DGrowthR-based sensitivity analyses straightforward.

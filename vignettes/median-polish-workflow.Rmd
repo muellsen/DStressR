@@ -1,0 +1,201 @@
+---
+title: "Original median-polish workflow"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Original median-polish workflow}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 4.8
+)
+library(DStressR)
+```
+
+`DStressR` includes a legacy-compatible median-polish path so that the original
+workflow can be reproduced before moving to the model-based DStressR analyses.
+This is useful for regression testing, method comparison, and explaining which
+parts of the new framework are replacements rather than silent changes.
+
+The function that implements this baseline is `fit_median_polish()`.
+
+## Required input files
+
+For the original Campylobacter promoter-library workflow, the median-polish
+baseline starts from two exported files.
+
+### `expression_values.tsv.gz`
+
+This is a long table with one row per measured
+promoter-library-well-replicate observation. Its shape is approximately:
+
+```text
+n_promoters x (n_compound_wells + n_dmso_wells + n_noisy_dmso_wells) x n_replicates
+```
+
+The required columns are:
+
+- promoter identifier, for example `promoter`
+- compound/library-well identifier, for example `srn_code`
+- library plate, for example `libplate`
+- replicate, for example `replicate`
+- growth-normalized log2 luminescence response, originally
+  `log2.auc.16hmeasured.normed`
+
+If `srn_code` is not already present, `read_campylobacter_expression()` can
+reconstruct it from `libplate` and `well`.
+
+### `LibMap.txt`
+
+This is a library annotation table with one row per compound/library well. The
+required columns are:
+
+- `Library plate`
+- `Well`
+- `ProductName`
+- `Catalog Number`
+
+The original workflow identifies ordinary DMSO controls and noisy DMSO wells
+from this table. DStressR uses the same compound key:
+
+```r
+srn_code = paste0("lp", `Library plate`, "_", Well)
+```
+
+## Reproduce the original workflow
+
+```{r original-files, eval = FALSE}
+library(DStressR)
+
+expression_df <- read_campylobacter_expression(
+  expression_file = "expression_values.tsv.gz",
+  libmap_file = "LibMap.txt"
+)
+
+libmap <- read.delim("LibMap.txt", check.names = FALSE)
+libmap$srn_code <- paste0("lp", libmap[["Library plate"]], "_", libmap[["Well"]])
+
+dmso_srn_codes <- libmap$srn_code[libmap$ProductName == "DMSO"]
+dmso_noisy_srn_codes <- libmap$srn_code[libmap$ProductName == "DMSO noisy"]
+
+legacy <- fit_median_polish(
+  expression_df,
+  promoter = "promoter",
+  compound = "srn_code",
+  libplate = "libplate",
+  replicate = "replicate",
+  response = "log2.auc.16hmeasured.normed",
+  control = dmso_srn_codes,
+  exclude = dmso_noisy_srn_codes,
+  maxiter = 1000,
+  eps = 1e-8
+)
+```
+
+The replicate-level table corresponds to the original
+`expression_df.pvalues.tsv.gz` output:
+
+```{r replicate-output, eval = FALSE}
+replicate_pvalues <- legacy$replicate_results
+
+head(replicate_pvalues)
+```
+
+The pair-level table corresponds to the original hit-calling table: DMSO and
+excluded controls are removed, the largest replicate-level p-value is retained
+for each promoter-compound pair, and BH correction is applied within promoter.
+
+```{r pair-output, eval = FALSE}
+hit_table <- legacy$pair_results
+
+head(hit_table)
+table(hit_table$hit)
+```
+
+## What the function does
+
+`fit_median_polish()` follows the original hit-determination steps:
+
+1. Build `promoter_libplate_replicate = paste(promoter, libplate, replicate, sep = "_")`.
+2. Compute the DMSO mean normalized response within each
+   promoter-libplate-replicate group.
+3. Compute `log2FC = normalized.lux - avg.dmso.expression`.
+4. Form a matrix with promoter-libplate-replicate groups in rows and
+   `srn_code` compound/library wells in columns.
+5. Apply `stats::medpolish(..., na.rm = TRUE, maxiter = 1000, eps = 1e-8)`.
+6. Use the median-polish residuals as `log2FC.polished`.
+7. Estimate the DMSO residual mean and standard deviation within each
+   promoter-libplate-replicate group.
+8. Compute
+   `zscore = (log2FC.polished - dmso.avg_dmsoFC) / dmso.stdv_dmsoFC`.
+9. Compute two-sided Gaussian p-values.
+10. For hit calling, remove DMSO/noisy-DMSO wells, keep the largest p-value
+    across replicates for each promoter-compound pair, and apply BH correction
+    within promoter.
+
+## Minimal executable example
+
+This toy example is deliberately tiny; it only shows the mechanics of the
+legacy path. Real screens need multiple DMSO wells per
+promoter-libplate-replicate group to estimate the DMSO null distribution.
+
+```{r toy}
+toy <- expand.grid(
+  promoter = c("P1", "P2"),
+  libplate = "lp1",
+  replicate = c("r1", "r2"),
+  srn_code = c("DMSO1", "DMSO2", "C1", "C2"),
+  stringsAsFactors = FALSE
+)
+
+toy$log2.auc.16hmeasured.normed <- c(
+  10.0, 10.2, 11.4, 9.4,
+  10.1, 10.3, 11.5, 9.5,
+  12.0, 12.2, 13.6, 11.6,
+  12.1, 12.3, 13.7, 11.7
+)
+
+legacy <- fit_median_polish(
+  toy,
+  control = c("DMSO1", "DMSO2")
+)
+
+legacy$replicate_results
+legacy$pair_results
+```
+
+## Compare against DStressR model-based inference
+
+The median-polish path is intended as a reproducible baseline. The model-based
+DStressR analysis starts from the same long table but uses `prepare_assay()`
+and `fit_destress()`:
+
+```{r model-path, eval = FALSE}
+assay <- prepare_assay(
+  expression_df,
+  promoter = "promoter",
+  compound = "srn_code",
+  control = "DMSO",
+  lux = "LUX.AUC_16",
+  growth = "od_16h.measured",
+  batch = "batch",
+  plate = "libplate",
+  replicate = "replicate"
+)
+
+fit <- fit_destress(
+  assay,
+  technical = c("batch", "libplate", "replicate"),
+  empirical_bayes = TRUE
+)
+
+model_results <- results(fit)
+```
+
+This gives a direct apples-to-apples setup: `fit_median_polish()` recovers the
+legacy workflow, while `fit_destress()` provides the model-based replacement.
