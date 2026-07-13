@@ -25,6 +25,66 @@ accounting for growth and technical structure.
 This vignette uses a small simulated screen so that the full workflow can be run
 without private data files.
 
+## Input files and table shape
+
+DStressR expects a long measurement table with one row per measured
+promoter-compound-replicate observation. In a complete rectangular screen, the
+row count is approximately:
+
+```text
+n_promoters x (n_compound_wells + n_control_wells) x n_replicates
+```
+
+The table may contain additional rows when the same screen is repeated across
+batches, library plates, measurement plates, or experimental days. The important
+point is that these technical covariates remain in the table so they can be
+modeled rather than accidentally averaged away.
+
+The required biological and technical information is:
+
+- promoter or reporter construct
+- compound or library-well identifier
+- negative-control compound, usually `DMSO`
+- luminescence summary
+- growth summary
+- replicate and optional technical covariates such as batch or plate
+
+Column names are not fixed. They are mapped explicitly in `prepare_assay()`.
+
+For the original Campylobacter promoter-library workflow, the convenience helper
+`read_campylobacter_expression()` joins two exported files:
+
+- `expression_values.tsv.gz`: one row per promoter-library-well-replicate
+  observation. It must contain either `srn_code` or both `libplate` and `well`,
+  plus the promoter, luminescence, growth, and technical columns used
+  downstream.
+- `LibMap.txt`: one row per compound/library well with columns `Library plate`,
+  `Well`, `ProductName`, and `Catalog Number`.
+
+The helper reconstructs the library-well key as
+`paste0("lp", Library plate, "_", Well)` for `LibMap.txt`, joins the compound
+annotations onto the expression table, and returns a long table with the same
+number of rows as `expression_values.tsv.gz`.
+
+```{r campylobacter-import, eval = FALSE}
+expression_df <- read_campylobacter_expression(
+  expression_file = "expression_values.tsv.gz",
+  libmap_file = "LibMap.txt"
+)
+
+assay <- prepare_assay(
+  expression_df,
+  promoter = "promoter",
+  compound = "srn_code",
+  control = "DMSO",
+  lux = "LUX.AUC_16",
+  growth = "od_16h.measured",
+  batch = "batch",
+  plate = "libplate",
+  replicate = "replicate"
+)
+```
+
 ## Simulate a chemical-genomics screen
 
 ```{r setup}

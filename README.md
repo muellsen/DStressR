@@ -112,10 +112,92 @@ plot_volcano(
 
 plot_response_heatmap(
   tab,
-  value = "specific_effect",
-  padj = "specific_padj"
+  value = "specific_effect"
 )
 ```
+
+## Required input shape
+
+DStressR expects a long promoter-compound table with one row per measured
+promoter-compound-replicate observation. In a complete rectangular screen, the
+number of rows is approximately:
+
+```text
+n_promoters x (n_compound_wells + n_control_wells) x n_replicates
+```
+
+Additional rows can occur when the same design is repeated across batches,
+library plates, measurement plates, or experimental days.
+
+At minimum, the expression table must contain columns that identify:
+
+- promoter or reporter construct, for example `promoter`
+- compound or library well, for example `compound`, `srn_code`, or
+  `libplate` plus `well`
+- negative-control compound, usually `DMSO`
+- luminescence summary, for example `LUX.AUC_16`
+- growth summary, for example `od_16h.measured`
+- replicate and technical covariates, for example `replicate`, `batch`,
+  `plate`, or `libplate`
+
+These columns are mapped explicitly in `prepare_assay()`, so projects can use
+their own column names:
+
+```r
+assay <- prepare_assay(
+  expression_df,
+  promoter = "promoter",
+  compound = "srn_code",
+  control = "DMSO",
+  lux = "LUX.AUC_16",
+  growth = "od_16h.measured",
+  batch = "batch",
+  plate = "libplate",
+  replicate = "replicate"
+)
+```
+
+## Campylobacter workflow input files
+
+For the original Campylobacter promoter-library workflow, DStressR includes the
+helper `read_campylobacter_expression()`. It joins two exported files:
+
+1. `expression_values.tsv.gz`
+
+   A long measurement table with one row per promoter-library-well-replicate
+   observation. It should contain either:
+
+   - `srn_code`, a unique library-well identifier, or
+   - both `libplate` and `well`, from which `srn_code` is reconstructed as
+     `paste(libplate, well, sep = "_")`.
+
+   It should also contain the promoter identifier, luminescence summary, growth
+   summary, and technical covariates used downstream in `prepare_assay()`.
+
+2. `LibMap.txt`
+
+   A library annotation table with one row per compound/library well. Required
+   columns are:
+
+   - `Library plate`
+   - `Well`
+   - `ProductName`
+   - `Catalog Number`
+
+   The helper converts these to a compound key
+   `srn_code = paste0("lp", Library plate, "_", Well)` and joins
+   `ProductName` and `Catalog Number` onto the expression table.
+
+```r
+expression_df <- read_campylobacter_expression(
+  expression_file = "expression_values.tsv.gz",
+  libmap_file = "LibMap.txt"
+)
+```
+
+The returned object has the same number of rows as `expression_values.tsv.gz`,
+with compound annotations added. This joined table can then be passed directly
+to `prepare_assay()`.
 
 ## Optional DGrowthR handoff
 
@@ -142,9 +224,6 @@ assay <- prepare_assay(
   growth = "dgrowthr_od16"
 )
 ```
-
-For bacterial promoter-library workflows, import helpers can read exported
-expression summaries and library maps into the expected DStressR shape.
 
 ## Analysis workflow
 
