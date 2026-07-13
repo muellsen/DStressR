@@ -22,7 +22,9 @@ workflow can be reproduced before moving to the model-based DStressR analyses.
 This is useful for regression testing, method comparison, and explaining which
 parts of the new framework are replacements rather than silent changes.
 
-The function that implements this baseline is `fit_median_polish()`.
+The named workflow entry point is `fit_workflow(..., workflow = "median_polish")`.
+The lower-level `fit_median_polish()` function remains available for existing
+scripts.
 
 ## Required input files
 
@@ -83,8 +85,9 @@ libmap$srn_code <- paste0("lp", libmap[["Library plate"]], "_", libmap[["Well"]]
 dmso_srn_codes <- libmap$srn_code[libmap$ProductName == "DMSO"]
 dmso_noisy_srn_codes <- libmap$srn_code[libmap$ProductName == "DMSO noisy"]
 
-legacy <- fit_median_polish(
+legacy <- fit_workflow(
   expression_df,
+  workflow = "median_polish",
   promoter = "promoter",
   compound = "srn_code",
   libplate = "libplate",
@@ -92,10 +95,16 @@ legacy <- fit_median_polish(
   response = "log2.auc.16hmeasured.normed",
   control = dmso_srn_codes,
   exclude = dmso_noisy_srn_codes,
+  normality = TRUE,
   maxiter = 1000,
   eps = 1e-8
 )
 ```
+
+The optional `normality_results` table corresponds to the original DMSO
+normality check: Shapiro-Wilk and Lilliefors p-values are computed from
+pre-polish DMSO-centered fold changes within each
+promoter-libplate-replicate group, then BH-adjusted across groups.
 
 The replicate-level table corresponds to the original
 `expression_df.pvalues.tsv.gz` output:
@@ -119,7 +128,8 @@ table(hit_table$hit)
 
 ## What the function does
 
-`fit_median_polish()` follows the original hit-determination steps:
+`fit_workflow(..., workflow = "median_polish")` follows the original
+hit-determination steps:
 
 1. Build `promoter_libplate_replicate = paste(promoter, libplate, replicate, sep = "_")`.
 2. Compute the DMSO mean normalized response within each
@@ -137,6 +147,11 @@ table(hit_table$hit)
 10. For hit calling, remove DMSO/noisy-DMSO wells, keep the largest p-value
     across replicates for each promoter-compound pair, and apply BH correction
     within promoter.
+
+If `normality = TRUE`, the function also runs the workflow's DMSO normality
+screen before median polishing. The Lilliefors test uses `nortest::lillie.test()`;
+install `nortest` or set `normality_methods = "shapiro"` when only the
+Shapiro-Wilk check is needed.
 
 ## Minimal executable example
 

@@ -24,9 +24,15 @@
 #'   median polishing and hit calling, for example noisy DMSO wells.
 #' @param fdr FDR threshold used to assign the `hit` class in the pair-level
 #'   table.
+#' @param normality If `TRUE`, test pre-polish DMSO-centered fold changes
+#'   within each promoter-library-plate-replicate group.
+#' @param normality_methods Character vector containing `"shapiro"` and/or
+#'   `"lilliefors"`. The Lilliefors test requires the suggested `nortest`
+#'   package.
 #' @param maxiter,eps Passed to [stats::medpolish()].
 #' @return A list of class `destress_median_polish` with `replicate_results`,
-#'   `pair_results`, `polished_matrix`, and `medpolish` components.
+#'   `pair_results`, `polished_matrix`, `medpolish`, and optional
+#'   `normality_results` components.
 #' @export
 fit_median_polish <- function(data,
                               promoter = "promoter",
@@ -37,6 +43,8 @@ fit_median_polish <- function(data,
                               control,
                               exclude = character(),
                               fdr = 0.05,
+                              normality = FALSE,
+                              normality_methods = c("shapiro", "lilliefors"),
                               maxiter = 1000,
                               eps = 1e-8) {
   stopifnot(is.data.frame(data))
@@ -78,6 +86,14 @@ fit_median_polish <- function(data,
   d <- d[is.finite(d$.log2FC), , drop = FALSE]
   if (nrow(d) == 0) {
     stop("No rows have a finite DMSO-centered log2FC.", call. = FALSE)
+  }
+  normality_results <- NULL
+  if (isTRUE(normality)) {
+    normality_results <- dmso_normality_tests(
+      d,
+      control = control,
+      methods = normality_methods
+    )
   }
 
   key <- paste(d$.group, d$.compound, sep = "\r")
@@ -169,12 +185,14 @@ fit_median_polish <- function(data,
     -pair_results$pvalue
   ), , drop = FALSE]
   pair_results <- pair_results[!duplicated(paste(pair_results$promoter, pair_results$srn_code)), , drop = FALSE]
-  pair_results$pvalue.adj <- NA_real_
-  split_idx <- split(seq_len(nrow(pair_results)), pair_results$promoter)
-  for (idx in split_idx) {
-    pair_results$pvalue.adj[idx] <- stats::p.adjust(pair_results$pvalue[idx], method = "BH")
+  pair_results$pvalue.adj <- rep(NA_real_, nrow(pair_results))
+  if (nrow(pair_results) > 0) {
+    split_idx <- split(seq_len(nrow(pair_results)), pair_results$promoter)
+    for (idx in split_idx) {
+      pair_results$pvalue.adj[idx] <- stats::p.adjust(pair_results$pvalue[idx], method = "BH")
+    }
   }
-  pair_results$hit <- "Not DE"
+  pair_results$hit <- rep("Not DE", nrow(pair_results))
   up <- is.finite(pair_results$pvalue.adj) &
     pair_results$pvalue.adj < fdr &
     pair_results$log2FC.polished > 0
@@ -191,8 +209,59 @@ fit_median_polish <- function(data,
       polished_matrix = polished,
       medpolish = polish,
       control = control,
-      exclude = exclude
+      exclude = exclude,
+      normality_results = normality_results
     ),
     class = "destress_median_polish"
   )
+}
+
+dmso_normality_tests <- function(data, control, methods = c("shapiro", "lilliefors")) {
+  methods <- gsub("-", "_", tolower(methods), fixed = TRUE)
+  methods[methods == "lillie"] <- "lilliefors"
+  unknown <- setdiff(methods, c("shapiro", "lilliefors"))
+  if (length(unknown) > 0) {
+    stop("Unknown normality methods: ", paste(unknown, collapse = ", "), call. = FALSE)
+  }
+  if ("lilliefors" %in% methods && !requireNamespace("nortest", quietly = TRUE)) {
+    stop(
+      "The Lilliefors normality test requires the `nortest` package. ",
+      "Install it or use `normality_methods = \"shapiro\"`.",
+      call. = FALSE
+    )
+  }
+
+  dmso <- data[data$.compound %in% control, , drop = FALSE]
+  groups <- split(dmso, dmso$.group)
+  out <- do.call(rbind, lapply(groups, function(group_data) {
+    x <- group_data$.log2FC[is.finite(group_data$.log2FC)]
+    shapiro_p <- NA_real_
+    lillie_p <- NA_real_
+    if (length(x) >= 3 && length(x) <= 5000 && stats::sd(x) > 0) {
+      if ("shapiro" %in% methods) {
+        shapiro_p <- stats::shapiro.test(x)$p.value
+      }
+      if ("lilliefors" %in% methods) {
+        lillie_p <- nortest::lillie.test(x)$p.value
+      }
+    }
+    data.frame(
+      promoter_libplate_replicate = group_data$.group[1],
+      promoter = group_data$.promoter[1],
+      libplate = group_data$.libplate[1],
+      replicate = group_data$.replicate[1],
+      n = length(x),
+      shapiro.pval = shapiro_p,
+      lillie.pval = lillie_p,
+      stringsAsFactors = FALSE
+    )
+  }))
+  rownames(out) <- NULL
+  if ("shapiro" %in% methods) {
+    out$shapiro.pval.adj <- stats::p.adjust(out$shapiro.pval, method = "BH")
+  }
+  if ("lilliefors" %in% methods) {
+    out$lillie.pval.adj <- stats::p.adjust(out$lillie.pval, method = "BH")
+  }
+  out
 }

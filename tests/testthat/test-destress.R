@@ -77,6 +77,20 @@ test_that("fit_destress detects simulated specific effects", {
   expect_gt(stats::cor(joined$specific_effect[active], joined$truth_specific[active]), 0.7)
 })
 
+test_that("fit_workflow dispatches to the model workflow", {
+  dat <- simulate_screen(seed = 3, n_promoters = 5, n_compounds = 6, n_replicates = 2)
+  assay <- prepare_assay(dat, promoter = "promoter", compound = "compound",
+                         lux = "LUX.AUC_16", growth = "od_16h.measured",
+                         batch = "batch", replicate = "replicate")
+
+  direct <- fit_destress(assay, technical = c("batch", "replicate"))
+  via_workflow <- fit_workflow(assay, workflow = "model", technical = c("batch", "replicate"))
+
+  expect_s3_class(via_workflow, "destress_fit")
+  expect_equal(attr(via_workflow, "destress_workflow"), "model")
+  expect_equal(results(via_workflow), results(direct), tolerance = 1e-10)
+})
+
 test_that("call_hits adds interpretable classes", {
   tab <- data.frame(
     specific_effect = c(1, -1, 0.1),
@@ -163,6 +177,60 @@ test_that("fit_median_polish reproduces legacy median-polish residuals", {
   expect_false(any(out$pair_results$srn_code %in% c("DMSO1", "DMSO2")))
 })
 
+test_that("fit_median_polish can return DMSO normality tests", {
+  dat <- expand.grid(
+    promoter = "P1",
+    libplate = "lp1",
+    replicate = "r1",
+    srn_code = c(paste0("DMSO", seq_len(5)), "C1"),
+    stringsAsFactors = FALSE
+  )
+  dat$log2.auc.16hmeasured.normed <- c(10, 10.1, 9.9, 10.2, 9.8, 11.5)
+
+  out <- fit_median_polish(
+    dat,
+    control = paste0("DMSO", seq_len(5)),
+    normality = TRUE,
+    normality_methods = "shapiro"
+  )
+
+  expect_true(all(c(
+    "promoter_libplate_replicate",
+    "promoter",
+    "libplate",
+    "replicate",
+    "n",
+    "shapiro.pval",
+    "lillie.pval",
+    "shapiro.pval.adj"
+  ) %in% names(out$normality_results)))
+  expect_equal(out$normality_results$n, 5)
+  expect_true(is.finite(out$normality_results$shapiro.pval))
+})
+
+test_that("fit_workflow dispatches to the median-polish workflow", {
+  dat <- expand.grid(
+    promoter = c("P1", "P2"),
+    libplate = "lp1",
+    replicate = c("r1", "r2"),
+    srn_code = c("DMSO1", "DMSO2", "C1", "C2"),
+    stringsAsFactors = FALSE
+  )
+  dat$log2.auc.16hmeasured.normed <- c(
+    10.0, 10.2, 11.4, 9.4,
+    10.1, 10.3, 11.5, 9.5,
+    12.0, 12.2, 13.6, 11.6,
+    12.1, 12.3, 13.7, 11.7
+  )
+
+  direct <- fit_median_polish(dat, control = c("DMSO1", "DMSO2"))
+  via_workflow <- fit_workflow(dat, workflow = "median-polish", control = c("DMSO1", "DMSO2"))
+
+  expect_s3_class(via_workflow, "destress_median_polish")
+  expect_equal(attr(via_workflow, "destress_workflow"), "median_polish")
+  expect_equal(via_workflow$pair_results, direct$pair_results, tolerance = 1e-10)
+})
+
 test_that("fit_median_polish keeps the conservative replicate p-value", {
   dat <- expand.grid(
     promoter = "P1",
@@ -215,6 +283,32 @@ test_that("fit_empty_vector_control subtracts compound-specific EVC averages", {
   expect_equal(p1_c1$log.evcfc, c(2.4, 2.6), tolerance = 1e-12)
   expect_false(any(out$replicate_results$promoter == "PEVC3"))
   expect_true(all(c("pvalue.adj", "hit") %in% names(out$pair_results)))
+})
+
+test_that("fit_workflow dispatches to the empty-vector workflow", {
+  dat <- expand.grid(
+    promoter = c("PEVC3", "P1", "P2"),
+    replicate = c("r1", "r2"),
+    srn_code = c("DMSO1", "DMSO2", "C1"),
+    stringsAsFactors = FALSE
+  )
+  dat$value <- NA_real_
+  dat$value[dat$promoter == "PEVC3" & dat$srn_code == "DMSO1"] <- c(1.0, 1.2)
+  dat$value[dat$promoter == "PEVC3" & dat$srn_code == "DMSO2"] <- c(1.1, 1.3)
+  dat$value[dat$promoter == "PEVC3" & dat$srn_code == "C1"] <- c(2.0, 2.2)
+  dat$value[dat$promoter == "P1" & dat$srn_code == "DMSO1"] <- c(1.5, 1.7)
+  dat$value[dat$promoter == "P1" & dat$srn_code == "DMSO2"] <- c(1.6, 1.8)
+  dat$value[dat$promoter == "P1" & dat$srn_code == "C1"] <- c(4.5, 4.7)
+  dat$value[dat$promoter == "P2" & dat$srn_code == "DMSO1"] <- c(0.8, 1.0)
+  dat$value[dat$promoter == "P2" & dat$srn_code == "DMSO2"] <- c(0.9, 1.1)
+  dat$value[dat$promoter == "P2" & dat$srn_code == "C1"] <- c(1.5, 1.7)
+
+  direct <- fit_empty_vector_control(dat, response = "value", control = c("DMSO1", "DMSO2"))
+  via_workflow <- fit_workflow(dat, workflow = "evc", response = "value", control = c("DMSO1", "DMSO2"))
+
+  expect_s3_class(via_workflow, "destress_empty_vector")
+  expect_equal(attr(via_workflow, "destress_workflow"), "empty_vector_control")
+  expect_equal(via_workflow$pair_results, direct$pair_results, tolerance = 1e-10)
 })
 
 test_that("fit_empty_vector_control keeps the conservative replicate p-value", {

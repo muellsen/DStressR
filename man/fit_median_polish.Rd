@@ -12,6 +12,8 @@ fit_median_polish(
   control,
   exclude = character(),
   fdr = 0.05,
+  normality = FALSE,
+  normality_methods = c("shapiro", "lilliefors"),
   maxiter = 1000,
   eps = 1e-08
 )
@@ -35,11 +37,19 @@ median polishing and hit calling, for example noisy DMSO wells.}
 \item{fdr}{FDR threshold used to assign the \code{hit} class in the pair-level
 table.}
 
+\item{normality}{If \code{TRUE}, test pre-polish DMSO-centered fold changes
+within each promoter-library-plate-replicate group.}
+
+\item{normality_methods}{Character vector containing \code{"shapiro"} and/or
+\code{"lilliefors"}. The Lilliefors test requires the suggested \code{nortest}
+package.}
+
 \item{maxiter, eps}{Passed to \code{\link[stats:medpolish]{stats::medpolish()}}.}
 }
 \value{
 A list of class \code{destress_median_polish} with \code{replicate_results},
-\code{pair_results}, \code{polished_matrix}, and \code{medpolish} components.
+\code{pair_results}, \code{polished_matrix}, \code{medpolish}, and optional
+\code{normality_results} components.
 }
 \description{
 This function implements the original median-polish hit-determination

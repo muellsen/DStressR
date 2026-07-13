@@ -28,6 +28,7 @@ Suggests:
     ggrepel,
     ggplot2,
     knitr,
+    nortest,
     permApprox,
     rmarkdown,
     testthat (>= 3.0.0)
