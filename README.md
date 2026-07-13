@@ -56,6 +56,12 @@ A worked example is available in the
 article. It walks through a complete simulated screen, from assay preparation to
 model fitting, hit calling, volcano plots, and response heatmaps.
 
+For compatibility with the original analysis, see the
+[`Original median-polish workflow`](https://bio-datascience.github.io/DStressR/articles/median-polish-workflow.html)
+article. Running `fit_median_polish()` on the original exported expression
+table, DMSO well IDs, and noisy-DMSO exclusions reproduces the median-polish
+normalization and p-value workflow used as the baseline analysis.
+
 ## How to use `DStressR`
 
 The typical DStressR analysis starts from promoter-level luminescence and growth
@@ -198,6 +204,27 @@ expression_df <- read_campylobacter_expression(
 The returned object has the same number of rows as `expression_values.tsv.gz`,
 with compound annotations added. This joined table can then be passed directly
 to `prepare_assay()`.
+
+To reproduce the original median-polish workflow, provide the DMSO library-well
+IDs and optional noisy-DMSO well IDs from `LibMap.txt`:
+
+```r
+libmap <- read.delim("LibMap.txt", check.names = FALSE)
+libmap$srn_code <- paste0("lp", libmap[["Library plate"]], "_", libmap[["Well"]])
+
+dmso_srn_codes <- libmap$srn_code[libmap$ProductName == "DMSO"]
+dmso_noisy_srn_codes <- libmap$srn_code[libmap$ProductName == "DMSO noisy"]
+
+legacy <- fit_median_polish(
+  expression_df,
+  response = "log2.auc.16hmeasured.normed",
+  control = dmso_srn_codes,
+  exclude = dmso_noisy_srn_codes
+)
+
+replicate_pvalues <- legacy$replicate_results
+hit_table <- legacy$pair_results
+```
 
 ## Optional DGrowthR handoff
 

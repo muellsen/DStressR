@@ -119,6 +119,67 @@ test_that("fit_effect_mixture separates three effect classes", {
   expect_true(all(out$local_fdr_qvalue_by_promoter >= 0 & out$local_fdr_qvalue_by_promoter <= 1))
 })
 
+test_that("fit_median_polish reproduces legacy median-polish residuals", {
+  dat <- expand.grid(
+    promoter = c("P1", "P2"),
+    libplate = "lp1",
+    replicate = c("r1", "r2"),
+    srn_code = c("DMSO1", "DMSO2", "C1", "C2"),
+    stringsAsFactors = FALSE
+  )
+  dat$log2.auc.16hmeasured.normed <- c(
+    10.0, 10.2, 11.4, 9.4,
+    10.1, 10.3, 11.5, 9.5,
+    12.0, 12.2, 13.6, 11.6,
+    12.1, 12.3, 13.7, 11.7
+  )
+
+  out <- fit_median_polish(
+    dat,
+    control = c("DMSO1", "DMSO2"),
+    maxiter = 1000,
+    eps = 1e-8
+  )
+
+  group <- paste(dat$promoter, dat$libplate, dat$replicate, sep = "_")
+  dmso_lookup <- tapply(
+    dat$log2.auc.16hmeasured.normed[dat$srn_code %in% c("DMSO1", "DMSO2")],
+    group[dat$srn_code %in% c("DMSO1", "DMSO2")],
+    mean
+  )
+  expected_log2fc <- dat$log2.auc.16hmeasured.normed - dmso_lookup[group]
+  expected_mat <- matrix(
+    expected_log2fc,
+    nrow = length(unique(group)),
+    ncol = length(unique(dat$srn_code)),
+    dimnames = list(sort(unique(group)), sort(unique(dat$srn_code)))
+  )
+  expected_mat[cbind(match(group, rownames(expected_mat)), match(dat$srn_code, colnames(expected_mat)))] <- expected_log2fc
+  expected <- stats::medpolish(expected_mat, na.rm = TRUE, maxiter = 1000, eps = 1e-8, trace.iter = FALSE)
+
+  expect_equal(out$polished_matrix, expected$residuals, tolerance = 1e-8)
+  expect_true(all(c("log2FC.polished", "zscore", "pvalue") %in% names(out$replicate_results)))
+  expect_true(all(c("pvalue.adj", "hit") %in% names(out$pair_results)))
+  expect_false(any(out$pair_results$srn_code %in% c("DMSO1", "DMSO2")))
+})
+
+test_that("fit_median_polish keeps the conservative replicate p-value", {
+  dat <- expand.grid(
+    promoter = "P1",
+    libplate = "lp1",
+    replicate = c("r1", "r2"),
+    srn_code = c("DMSO1", "DMSO2", "C1"),
+    stringsAsFactors = FALSE
+  )
+  dat$log2.auc.16hmeasured.normed <- c(10, 10.2, 13, 10.1, 10.3, 13.1)
+
+  out <- fit_median_polish(dat, control = c("DMSO1", "DMSO2"))
+  c1_replicates <- out$replicate_results[out$replicate_results$srn_code == "C1", ]
+  c1_pair <- out$pair_results[out$pair_results$srn_code == "C1", ]
+
+  expect_equal(c1_pair$pvalue, max(c1_replicates$pvalue), tolerance = 1e-12)
+})
+
 test_that("empirical_replicate_pvalues compares replicate averages to matched controls", {
   dat <- expand.grid(
     promoter = "P1",

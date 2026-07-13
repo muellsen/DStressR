@@ -20,3 +20,4 @@ articles:
     navbar: "Get started"
     contents:
       - DStressR
+      - median-polish-workflow
