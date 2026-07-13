@@ -12,8 +12,8 @@ Description: Companion workflow to DGrowthR for model-based differential
     DStressR models growth-adjusted luminescence, compound-wide effects,
     promoter-specific stress responses, empirical-Bayes promoter variance
     moderation, and technical covariates.
-URL: https://bio-datascience.github.io/DStressR/, https://github.com/bio-datascience/DStressR/
-BugReports: https://github.com/bio-datascience/DStressR/issues
+URL: https://muellsen.github.io/DStressR/, https://github.com/muellsen/DStressR/
+BugReports: https://github.com/muellsen/DStressR/issues
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)

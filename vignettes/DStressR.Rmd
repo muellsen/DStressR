@@ -22,8 +22,11 @@ genomics screens. The package is designed as the stress-response counterpart to
 growth-curve modeling, while DStressR handles promoter-compound effects after
 accounting for growth and technical structure.
 
-This vignette uses a small simulated screen so that the full workflow can be run
-without private data files.
+This vignette uses a small simulated screen so that the model-based named
+workflow can be run without private data files. DStressR also exposes
+compatibility workflows through the same entry point:
+`workflow = "median_polish"` for the original median-polish p-value workflow
+and `workflow = "empty_vector_control"` for the empty-vector-control workflow.
 
 ## Input files and table shape
 
@@ -147,16 +150,17 @@ assay_fixed <- prepare_assay(
 )
 ```
 
-## Fit the DStressR model
+## Fit the model workflow
 
-`fit_destress()` fits promoter and compound effects while accounting for
-technical covariates. The result table reports both the DMSO-relative total
-effect and the promoter-specific effect after subtracting the compound-wide
-effect.
+`fit_workflow(..., workflow = "model")` fits promoter and compound effects
+while accounting for technical covariates. The result table reports both the
+DMSO-relative total effect and the promoter-specific effect after subtracting
+the compound-wide effect.
 
 ```{r fit}
-fit <- fit_destress(
+fit <- fit_workflow(
   assay,
+  workflow = "model",
   technical = c("batch", "replicate"),
   empirical_bayes = TRUE
 )
@@ -173,6 +177,10 @@ The key columns are:
 - `global_effect`: average compound-wide response across promoters.
 - `specific_effect`: promoter-specific deviation from the compound-wide effect.
 - `specific_pvalue` and `specific_padj`: test and BH-adjusted p-value.
+
+The direct fitting functions remain available for existing scripts, but
+`fit_workflow()` makes the selected statistical path explicit and is the
+recommended entry point for new analyses.
 
 ## Call hits
 
@@ -265,5 +273,5 @@ assay2 <- prepare_assay(
 )
 ```
 
-This explicit handoff keeps the original DStressR hit workflow reproducible,
-while making DGrowthR-based sensitivity analyses straightforward.
+This explicit handoff keeps the selected DStressR workflow reproducible, while
+making DGrowthR-based sensitivity analyses straightforward.

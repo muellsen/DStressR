@@ -36,7 +36,9 @@ growth-normalized Lux
   -> BH adjustment within promoter
 ```
 
-DStressR implements this compatibility path with `fit_empty_vector_control()`.
+DStressR implements this compatibility path with
+`fit_workflow(..., workflow = "empty_vector_control")`. The lower-level
+`fit_empty_vector_control()` function remains available for existing scripts.
 
 ## Input files
 
@@ -94,8 +96,9 @@ libmap$srn_code <- paste(libmap$libplate, libmap[["New well"]], sep = "_")
 dmso_srn_codes <- libmap$srn_code[libmap[["Catalog Number"]] == "DMSO"]
 dmso_noisy_srn_codes <- libmap$srn_code[libmap[["Catalog Number"]] == "DMSO noisy"]
 
-evc <- fit_empty_vector_control(
+evc <- fit_workflow(
   expression_df,
+  workflow = "empty_vector_control",
   promoter = "promoter",
   compound = "srn_code",
   replicate = "replicate",
@@ -129,8 +132,8 @@ table(hit_table$hit)
 
 ## What the function does
 
-`fit_empty_vector_control()` follows the original Salmonella hit-determination
-logic:
+`fit_workflow(..., workflow = "empty_vector_control")` follows the original
+Salmonella hit-determination logic:
 
 1. Remove noisy DMSO wells and failed reporters, for example `PmgrR`.
 2. Keep the already centered response column, usually
@@ -171,8 +174,9 @@ toy$value[toy$promoter == "P2" & toy$srn_code == "DMSO1"] <- c(0.8, 1.0)
 toy$value[toy$promoter == "P2" & toy$srn_code == "DMSO2"] <- c(0.9, 1.1)
 toy$value[toy$promoter == "P2" & toy$srn_code == "C1"] <- c(1.5, 1.7)
 
-evc <- fit_empty_vector_control(
+evc <- fit_workflow(
   toy,
+  workflow = "empty_vector_control",
   response = "value",
   control = c("DMSO1", "DMSO2")
 )
@@ -183,8 +187,9 @@ evc$pair_results
 
 ## Local workflow equivalence check
 
-Using the local Salmonella workflow files, `fit_empty_vector_control()` recovers
-the original `04-hit_determination/hit_table.tsv.gz` output numerically:
+Using the local Salmonella workflow files,
+`fit_workflow(..., workflow = "empty_vector_control")` recovers the original
+`04-hit_determination/hit_table.tsv.gz` output numerically:
 
 ```text
 pair rows: 68238

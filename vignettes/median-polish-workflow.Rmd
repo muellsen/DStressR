@@ -175,8 +175,9 @@ toy$log2.auc.16hmeasured.normed <- c(
   12.1, 12.3, 13.7, 11.7
 )
 
-legacy <- fit_median_polish(
+legacy <- fit_workflow(
   toy,
+  workflow = "median_polish",
   control = c("DMSO1", "DMSO2")
 )
 
@@ -188,7 +189,7 @@ legacy$pair_results
 
 The median-polish path is intended as a reproducible baseline. The model-based
 DStressR analysis starts from the same long table but uses `prepare_assay()`
-and `fit_destress()`:
+and `fit_workflow(..., workflow = "model")`:
 
 ```{r model-path, eval = FALSE}
 assay <- prepare_assay(
@@ -203,8 +204,9 @@ assay <- prepare_assay(
   replicate = "replicate"
 )
 
-fit <- fit_destress(
+fit <- fit_workflow(
   assay,
+  workflow = "model",
   technical = c("batch", "libplate", "replicate"),
   empirical_bayes = TRUE
 )
@@ -212,5 +214,6 @@ fit <- fit_destress(
 model_results <- results(fit)
 ```
 
-This gives a direct apples-to-apples setup: `fit_median_polish()` recovers the
-legacy workflow, while `fit_destress()` provides the model-based replacement.
+This gives a direct apples-to-apples setup: `workflow = "median_polish"`
+recovers the legacy workflow, while `workflow = "model"` provides the
+model-based replacement.

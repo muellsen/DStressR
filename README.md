@@ -51,23 +51,74 @@ remotes::install_github("stefpeschel/permApprox")
 
 ## Get started
 
-A worked example is available in the
-[`Get started with DStressR`](https://bio-datascience.github.io/DStressR/articles/DStressR.html)
-article. It walks through a complete simulated screen, from assay preparation to
-model fitting, hit calling, volcano plots, and response heatmaps.
+DStressR now exposes statistical analyses through named workflows. The main
+entry point is `fit_workflow()`, with the workflow selected explicitly:
 
-For compatibility with the original analysis, see the
-[`Original median-polish workflow`](https://bio-datascience.github.io/DStressR/articles/median-polish-workflow.html)
-article. Running `fit_median_polish()` on the original exported expression
-table, DMSO well IDs, and noisy-DMSO exclusions reproduces the median-polish
-normalization and p-value workflow used as the baseline analysis.
+- `workflow = "model"` for the model-based DStressR analysis
+- `workflow = "median_polish"` for the original median-polish p-value workflow
+- `workflow = "empty_vector_control"` for the Empty Vector Control workflow
 
-For the Salmonella workflow, see the
-[`Salmonella Empty Vector workflow`](https://bio-datascience.github.io/DStressR/articles/salmonella-empty-vector-workflow.html)
-article. Running `fit_empty_vector_control()` reproduces the Empty Vector
-Control normalization used there: each promoter-compound value is centered
-against the matching PEVC3 compound average before DMSO-based z-tests and
-conservative replicate aggregation.
+The model workflow starts from an assay prepared with `prepare_assay()`:
+
+```r
+library(DStressR)
+
+screen <- simulate_screen(seed = 1)
+
+assay <- prepare_assay(
+  screen,
+  promoter = "promoter",
+  compound = "compound",
+  control = "DMSO",
+  lux = "LUX.AUC_16",
+  growth = "od_16h.measured",
+  batch = "batch",
+  replicate = "replicate"
+)
+
+fit <- fit_workflow(
+  assay,
+  workflow = "model",
+  technical = c("batch", "replicate"),
+  empirical_bayes = TRUE
+)
+
+tab <- results(fit)
+hits <- call_hits(tab, fdr = 0.05, effect = "specific_effect")
+```
+
+The median-polish compatibility workflow starts from the original exported
+expression table and DMSO library-well IDs:
+
+```r
+legacy <- fit_workflow(
+  expression_df,
+  workflow = "median_polish",
+  response = "log2.auc.16hmeasured.normed",
+  control = dmso_srn_codes,
+  exclude = dmso_noisy_srn_codes,
+  normality = TRUE
+)
+
+dmso_normality <- legacy$normality_results
+replicate_pvalues <- legacy$replicate_results
+hit_table <- legacy$pair_results
+```
+
+The Empty Vector Control workflow uses the same named interface:
+
+```r
+evc <- fit_workflow(
+  expression_df,
+  workflow = "empty_vector_control",
+  response = "log2.lux.normed.centered",
+  empty_vector_promoter = "PEVC3",
+  control = dmso_srn_codes,
+  exclude = dmso_noisy_srn_codes
+)
+
+hit_table <- evc$pair_results
+```
 
 ## How to use `DStressR`
 
@@ -89,8 +140,9 @@ assay <- prepare_assay(
   replicate = "replicate"
 )
 
-fit <- fit_destress(
+fit <- fit_workflow(
   assay,
+  workflow = "model",
   technical = c("batch", "replicate"),
   empirical_bayes = TRUE
 )
@@ -107,6 +159,11 @@ The fitted model separates two related quantities:
 
 This distinction is important for compounds that globally perturb growth,
 luminescence, metabolism, or assay chemistry.
+
+The lower-level functions `fit_destress()`, `fit_median_polish()`, and
+`fit_empty_vector_control()` remain available for existing scripts. New
+analyses should prefer `fit_workflow()` so that the selected statistical path is
+explicit in the code.
 
 ## Standard plots
 
