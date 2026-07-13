@@ -91,6 +91,76 @@ test_that("fit_workflow dispatches to the model workflow", {
   expect_equal(results(via_workflow), results(direct), tolerance = 1e-10)
 })
 
+test_that("fit_destress exposes staged model options", {
+  dat <- simulate_screen(seed = 4, n_promoters = 5, n_compounds = 6, n_replicates = 2)
+  assay <- prepare_assay(dat, promoter = "promoter", compound = "compound",
+                         lux = "LUX.AUC_16", growth = "od_16h.measured",
+                         batch = "batch", replicate = "replicate")
+
+  fit <- fit_destress(
+    assay,
+    technical = c("batch", "replicate"),
+    normalization = "model",
+    testing = "student_t",
+    aggregation = "none",
+    adjustment = "by_promoter"
+  )
+  res <- results(fit)
+  expected <- adjust_pvalues(res, pvalue = "specific_pvalue", output = "expected_specific_padj")
+
+  expect_s3_class(fit, "destress_fit")
+  expect_false(fit$empirical_bayes)
+  expect_equal(fit$stages$normalization, "linear_model")
+  expect_equal(fit$stages$testing, "student_t")
+  expect_equal(fit$stages$adjustment, "by_promoter")
+  expect_equal(res$specific_padj, expected$expected_specific_padj, tolerance = 1e-12)
+})
+
+test_that("fit_destress can prepare raw model data with growth-exponent options", {
+  dat <- simulate_screen(seed = 6, n_promoters = 5, n_compounds = 6, n_replicates = 2)
+
+  direct <- fit_destress(
+    dat,
+    preset = "model",
+    promoter = "promoter",
+    compound = "compound",
+    control = "DMSO",
+    lux = "LUX.AUC_16",
+    growth = "od_16h.measured",
+    growth_exponent = 1,
+    batch = "batch",
+    replicate = "replicate",
+    technical = c("batch", "replicate")
+  )
+  assay <- prepare_assay(
+    dat,
+    promoter = "promoter",
+    compound = "compound",
+    control = "DMSO",
+    lux = "LUX.AUC_16",
+    growth = "od_16h.measured",
+    growth_exponent = 1,
+    batch = "batch",
+    replicate = "replicate"
+  )
+  prepared <- fit_destress(assay, technical = c("batch", "replicate"))
+
+  expect_s3_class(direct, "destress_fit")
+  expect_equal(results(direct), results(prepared), tolerance = 1e-10)
+  expect_equal(unique(direct$assay_info$growth_exponent), 1)
+})
+
+test_that("fit_destress rejects unimplemented stage combinations", {
+  dat <- simulate_screen(seed = 5, n_promoters = 4, n_compounds = 5, n_replicates = 2)
+  assay <- prepare_assay(dat, promoter = "promoter", compound = "compound",
+                         lux = "LUX.AUC_16", growth = "od_16h.measured")
+
+  expect_error(
+    fit_destress(assay, normalization = "model", testing = "gaussian_z"),
+    "currently supports"
+  )
+})
+
 test_that("call_hits adds interpretable classes", {
   tab <- data.frame(
     specific_effect = c(1, -1, 0.1),
@@ -231,6 +301,29 @@ test_that("fit_workflow dispatches to the median-polish workflow", {
   expect_equal(via_workflow$pair_results, direct$pair_results, tolerance = 1e-10)
 })
 
+test_that("fit_destress can run the median-polish preset", {
+  dat <- expand.grid(
+    promoter = c("P1", "P2"),
+    libplate = "lp1",
+    replicate = c("r1", "r2"),
+    srn_code = c("DMSO1", "DMSO2", "C1", "C2"),
+    stringsAsFactors = FALSE
+  )
+  dat$log2.auc.16hmeasured.normed <- c(
+    10.0, 10.2, 11.4, 9.4,
+    10.1, 10.3, 11.5, 9.5,
+    12.0, 12.2, 13.6, 11.6,
+    12.1, 12.3, 13.7, 11.7
+  )
+
+  out <- fit_destress(dat, preset = "median_polish", control = c("DMSO1", "DMSO2"))
+
+  expect_s3_class(out, "destress_median_polish")
+  expect_equal(attr(out, "destress_preset"), "median_polish_legacy")
+  expect_equal(attr(out, "destress_stages")$normalization, "median_polish")
+  expect_equal(attr(out, "destress_stages")$aggregation, "max_p")
+})
+
 test_that("fit_median_polish keeps the conservative replicate p-value", {
   dat <- expand.grid(
     promoter = "P1",
@@ -309,6 +402,32 @@ test_that("fit_workflow dispatches to the empty-vector workflow", {
   expect_s3_class(via_workflow, "destress_empty_vector")
   expect_equal(attr(via_workflow, "destress_workflow"), "empty_vector_control")
   expect_equal(via_workflow$pair_results, direct$pair_results, tolerance = 1e-10)
+})
+
+test_that("fit_destress can run the empty-vector preset", {
+  dat <- expand.grid(
+    promoter = c("PEVC3", "P1", "P2"),
+    replicate = c("r1", "r2"),
+    srn_code = c("DMSO1", "DMSO2", "C1"),
+    stringsAsFactors = FALSE
+  )
+  dat$value <- NA_real_
+  dat$value[dat$promoter == "PEVC3" & dat$srn_code == "DMSO1"] <- c(1.0, 1.2)
+  dat$value[dat$promoter == "PEVC3" & dat$srn_code == "DMSO2"] <- c(1.1, 1.3)
+  dat$value[dat$promoter == "PEVC3" & dat$srn_code == "C1"] <- c(2.0, 2.2)
+  dat$value[dat$promoter == "P1" & dat$srn_code == "DMSO1"] <- c(1.5, 1.7)
+  dat$value[dat$promoter == "P1" & dat$srn_code == "DMSO2"] <- c(1.6, 1.8)
+  dat$value[dat$promoter == "P1" & dat$srn_code == "C1"] <- c(4.5, 4.7)
+  dat$value[dat$promoter == "P2" & dat$srn_code == "DMSO1"] <- c(0.8, 1.0)
+  dat$value[dat$promoter == "P2" & dat$srn_code == "DMSO2"] <- c(0.9, 1.1)
+  dat$value[dat$promoter == "P2" & dat$srn_code == "C1"] <- c(1.5, 1.7)
+
+  out <- fit_destress(dat, preset = "evc", response = "value", control = c("DMSO1", "DMSO2"))
+
+  expect_s3_class(out, "destress_empty_vector")
+  expect_equal(attr(out, "destress_preset"), "empty_vector_control")
+  expect_equal(attr(out, "destress_stages")$normalization, "empty_vector")
+  expect_equal(attr(out, "destress_stages")$testing, "gaussian_z")
 })
 
 test_that("fit_empty_vector_control keeps the conservative replicate p-value", {

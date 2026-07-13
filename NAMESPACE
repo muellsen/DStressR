@@ -1,6 +1,7 @@
 export(adjust_pvalues)
 export(add_dgrowthr_growth)
 export(call_hits)
+export(destress_presets)
 export(destress_workflows)
 export(estimate_growth_exponents)
 export(empirical_replicate_pvalues)

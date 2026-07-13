@@ -25,14 +25,13 @@ The fitted workflow object returned by the selected engine, with a
 \code{destress_workflow} attribute naming the workflow used.
 }
 \description{
-\code{fit_workflow()} is the common entry point for DStressR statistical
-workflows. The \code{workflow} argument selects which analysis engine to run:
-\code{model} fits the model-based DStressR workflow with \code{\link[=fit_destress]{fit_destress()}},
-\code{median_polish} reproduces the legacy median-polish workflow with
-\code{\link[=fit_median_polish]{fit_median_polish()}}, and \code{empty_vector_control} reproduces the
-empty-vector-control workflow with \code{\link[=fit_empty_vector_control]{fit_empty_vector_control()}}.
+\code{fit_workflow()} is a compatibility entry point for named DStressR
+workflows. The \code{workflow} argument selects a \code{\link[=fit_destress]{fit_destress()}} preset:
+\code{model} fits the model-based DStressR workflow, \code{median_polish} reproduces
+the legacy median-polish workflow, and \code{empty_vector_control} reproduces the
+empty-vector-control workflow.
 }
 \details{
-Existing functions remain available for backwards compatibility, but new
-analyses should prefer this named workflow interface.
+New analyses should prefer \code{\link[=fit_destress]{fit_destress()}} directly so the staged
+statistical choices can be made explicit.
 }

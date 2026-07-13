@@ -2,24 +2,63 @@
 % Please edit documentation in R/model.R
 \name{fit_destress}
 \alias{fit_destress}
-\title{Fit the DStressR model}
+\title{Fit DStressR with staged statistical options}
 \usage{
-fit_destress(assay, technical = NULL, empirical_bayes = TRUE)
+fit_destress(
+  assay,
+  technical = NULL,
+  empirical_bayes = TRUE,
+  normalization = NULL,
+  testing = NULL,
+  aggregation = NULL,
+  adjustment = NULL,
+  preset = NULL,
+  ...
+)
 }
 \arguments{
-\item{assay}{A \code{destress_assay} produced by \code{\link[=prepare_assay]{prepare_assay()}}.}
+\item{assay}{A \code{destress_assay} produced by \code{\link[=prepare_assay]{prepare_assay()}} or a raw assay
+data frame for \code{normalization = "linear_model"}, or a long expression
+table for the compatibility presets.}
 
 \item{technical}{Character vector of batch, plate, replicate, or other
 technical-factor columns to include.}
 
 \item{empirical_bayes}{If \code{TRUE}, lightly shrinks standard errors toward a
-common prior variance.}
+common prior variance. This maps to \code{testing = "moderated_t"} for the
+model path; \code{FALSE} maps to \code{testing = "student_t"}.}
+
+\item{normalization}{One of \code{"linear_model"}, \code{"median_polish"}, or
+\code{"empty_vector"}. \code{"model"} and \code{"evc"} are accepted aliases.}
+
+\item{testing}{One of \code{"student_t"}, \code{"moderated_t"}, or \code{"gaussian_z"}.}
+
+\item{aggregation}{One of \code{"none"} or \code{"max_p"}.}
+
+\item{adjustment}{One of \code{"global"}, \code{"by_promoter"}, or \code{"none"}.}
+
+\item{preset}{Optional named preset: \code{"model"}, \code{"median_polish_legacy"}, or
+\code{"empty_vector_control"}. Common aliases such as \code{"median_polish"} and
+\code{"evc"} are accepted.}
+
+\item{...}{For \code{normalization = "linear_model"} with a raw data frame,
+arguments passed to \code{\link[=prepare_assay]{prepare_assay()}}, including \code{growth_exponent}. For
+compatibility presets, arguments passed to the selected engine.}
 }
 \value{
-A \code{destress_fit} object.
+A fitted DStressR object. The model path returns a \code{destress_fit};
+compatibility presets return their corresponding legacy result objects.
 }
 \description{
-Fits two linear models. The additive model estimates DMSO-relative total
-compound effects after promoter and technical adjustment. The interaction
-model estimates promoter-specific deviations from the compound-wide effect.
+\code{fit_destress()} is the main DStressR entry point. By default it fits the
+model-based analysis, but it can also run named compatibility presets for the
+legacy median-polish and Empty Vector Control analyses.
+}
+\details{
+The staged options make the major statistical choices explicit:
+normalization, test statistic and p-value calculation, replicate aggregation,
+and p-value adjustment. Only implemented combinations are accepted. For the
+model-based path, growth-response normalization is performed upstream by
+\code{\link[=prepare_assay]{prepare_assay()}}, where \code{growth_exponent} can be fixed, estimated, or
+supplied as promoter-specific values.
 }

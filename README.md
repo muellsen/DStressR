@@ -51,12 +51,14 @@ remotes::install_github("stefpeschel/permApprox")
 
 ## Get started
 
-DStressR now exposes statistical analyses through named workflows. The main
-entry point is `fit_workflow()`, with the workflow selected explicitly:
+DStressR exposes statistical analyses through a staged `fit_destress()`
+interface. The major choices are explicit: normalization, test statistic and
+p-value calculation, replicate aggregation, and p-value adjustment. Named
+presets reproduce the established workflows:
 
-- `workflow = "model"` for the model-based DStressR analysis
-- `workflow = "median_polish"` for the original median-polish p-value workflow
-- `workflow = "empty_vector_control"` for the Empty Vector Control workflow
+- `preset = "model"` for the model-based DStressR analysis
+- `preset = "median_polish"` for the original median-polish p-value workflow
+- `preset = "empty_vector_control"` for the Empty Vector Control workflow
 
 The model workflow starts from an assay prepared with `prepare_assay()`:
 
@@ -76,9 +78,9 @@ assay <- prepare_assay(
   replicate = "replicate"
 )
 
-fit <- fit_workflow(
+fit <- fit_destress(
   assay,
-  workflow = "model",
+  preset = "model",
   technical = c("batch", "replicate"),
   empirical_bayes = TRUE
 )
@@ -87,13 +89,40 @@ tab <- results(fit)
 hits <- call_hits(tab, fdr = 0.05, effect = "specific_effect")
 ```
 
+Equivalently, using staged options directly:
+
+```r
+fit <- fit_destress(
+  screen,
+  normalization = "model",
+  testing = "moderated_t",
+  aggregation = "none",
+  adjustment = "global",
+  promoter = "promoter",
+  compound = "compound",
+  control = "DMSO",
+  lux = "LUX.AUC_16",
+  growth = "od_16h.measured",
+  growth_exponent = "estimate",
+  batch = "batch",
+  replicate = "replicate",
+  technical = c("batch", "replicate")
+)
+```
+
+Growth-response normalization for the model path is controlled in
+`prepare_assay()` or by passing the same arguments through `fit_destress()`.
+Use `growth_exponent = 1` for the fixed log2(LUX / OD) normalization,
+`growth_exponent = "estimate"` to estimate promoter-specific `alpha_g` values
+from controls, or pass a named promoter vector.
+
 The median-polish compatibility workflow starts from the original exported
 expression table and DMSO library-well IDs:
 
 ```r
-legacy <- fit_workflow(
+legacy <- fit_destress(
   expression_df,
-  workflow = "median_polish",
+  preset = "median_polish",
   response = "log2.auc.16hmeasured.normed",
   control = dmso_srn_codes,
   exclude = dmso_noisy_srn_codes,
@@ -108,9 +137,9 @@ hit_table <- legacy$pair_results
 The Empty Vector Control workflow uses the same named interface:
 
 ```r
-evc <- fit_workflow(
+evc <- fit_destress(
   expression_df,
-  workflow = "empty_vector_control",
+  preset = "empty_vector_control",
   response = "log2.lux.normed.centered",
   empty_vector_promoter = "PEVC3",
   control = dmso_srn_codes,
@@ -140,11 +169,13 @@ assay <- prepare_assay(
   replicate = "replicate"
 )
 
-fit <- fit_workflow(
+fit <- fit_destress(
   assay,
-  workflow = "model",
+  normalization = "model",
+  testing = "moderated_t",
+  aggregation = "none",
+  adjustment = "global",
   technical = c("batch", "replicate"),
-  empirical_bayes = TRUE
 )
 
 tab <- results(fit)
@@ -160,10 +191,10 @@ The fitted model separates two related quantities:
 This distinction is important for compounds that globally perturb growth,
 luminescence, metabolism, or assay chemistry.
 
-The lower-level functions `fit_destress()`, `fit_median_polish()`, and
-`fit_empty_vector_control()` remain available for existing scripts. New
-analyses should prefer `fit_workflow()` so that the selected statistical path is
-explicit in the code.
+The compatibility wrapper `fit_workflow()` and the lower-level functions
+`fit_median_polish()` and `fit_empty_vector_control()` remain available for
+existing scripts. New analyses should prefer `fit_destress()` so that the
+selected statistical path is explicit in the code.
 
 ## Standard plots
 

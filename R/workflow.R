@@ -35,15 +35,14 @@ normalize_workflow <- function(workflow) {
 
 #' Fit a named DStressR workflow
 #'
-#' `fit_workflow()` is the common entry point for DStressR statistical
-#' workflows. The `workflow` argument selects which analysis engine to run:
-#' `model` fits the model-based DStressR workflow with [fit_destress()],
-#' `median_polish` reproduces the legacy median-polish workflow with
-#' [fit_median_polish()], and `empty_vector_control` reproduces the
-#' empty-vector-control workflow with [fit_empty_vector_control()].
+#' `fit_workflow()` is a compatibility entry point for named DStressR
+#' workflows. The `workflow` argument selects a [fit_destress()] preset:
+#' `model` fits the model-based DStressR workflow, `median_polish` reproduces
+#' the legacy median-polish workflow, and `empty_vector_control` reproduces the
+#' empty-vector-control workflow.
 #'
-#' Existing functions remain available for backwards compatibility, but new
-#' analyses should prefer this named workflow interface.
+#' New analyses should prefer [fit_destress()] directly so the staged
+#' statistical choices can be made explicit.
 #'
 #' @param data For `workflow = "model"`, a `destress_assay` produced by
 #'   [prepare_assay()]. For the compatibility workflows, a long expression
@@ -58,12 +57,7 @@ fit_workflow <- function(data,
                          workflow = c("model", "median_polish", "empty_vector_control"),
                          ...) {
   workflow <- normalize_workflow(workflow[1])
-  fit <- switch(
-    workflow,
-    model = fit_destress(data, ...),
-    median_polish = fit_median_polish(data, ...),
-    empty_vector_control = fit_empty_vector_control(data, ...)
-  )
+  fit <- fit_destress(data, preset = workflow, ...)
   attr(fit, "destress_workflow") <- workflow
   fit
 }
