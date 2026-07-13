@@ -143,9 +143,8 @@ assay <- prepare_assay(
 )
 ```
 
-For the current Campylobacter workflow, `read_campylobacter_expression()` reads
-the exported `expression_values.tsv.gz` and `LibMap.txt` files into the expected
-shape.
+For bacterial promoter-library workflows, import helpers can read exported
+expression summaries and library maps into the expected DStressR shape.
 
 ## Analysis workflow
 
