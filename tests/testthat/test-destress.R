@@ -180,6 +180,62 @@ test_that("fit_median_polish keeps the conservative replicate p-value", {
   expect_equal(c1_pair$pvalue, max(c1_replicates$pvalue), tolerance = 1e-12)
 })
 
+test_that("fit_empty_vector_control subtracts compound-specific EVC averages", {
+  dat <- expand.grid(
+    promoter = c("PEVC3", "P1", "P2"),
+    replicate = c("r1", "r2"),
+    srn_code = c("DMSO1", "DMSO2", "C1"),
+    stringsAsFactors = FALSE
+  )
+  dat$value <- NA_real_
+  dat$value[dat$promoter == "PEVC3" & dat$srn_code == "DMSO1"] <- c(1.0, 1.2)
+  dat$value[dat$promoter == "PEVC3" & dat$srn_code == "DMSO2"] <- c(1.1, 1.3)
+  dat$value[dat$promoter == "PEVC3" & dat$srn_code == "C1"] <- c(2.0, 2.2)
+  dat$value[dat$promoter == "P1" & dat$srn_code == "DMSO1"] <- c(1.5, 1.7)
+  dat$value[dat$promoter == "P1" & dat$srn_code == "DMSO2"] <- c(1.6, 1.8)
+  dat$value[dat$promoter == "P1" & dat$srn_code == "C1"] <- c(4.5, 4.7)
+  dat$value[dat$promoter == "P2" & dat$srn_code == "DMSO1"] <- c(0.8, 1.0)
+  dat$value[dat$promoter == "P2" & dat$srn_code == "DMSO2"] <- c(0.9, 1.1)
+  dat$value[dat$promoter == "P2" & dat$srn_code == "C1"] <- c(1.5, 1.7)
+
+  out <- fit_empty_vector_control(
+    dat,
+    response = "value",
+    control = c("DMSO1", "DMSO2")
+  )
+
+  p1_c1 <- out$replicate_results[
+    out$replicate_results$promoter == "P1" &
+      out$replicate_results$srn_code == "C1",
+    ,
+    drop = FALSE
+  ]
+
+  expect_equal(p1_c1$empty_vector_mean, c(2.1, 2.1), tolerance = 1e-12)
+  expect_equal(p1_c1$log.evcfc, c(2.4, 2.6), tolerance = 1e-12)
+  expect_false(any(out$replicate_results$promoter == "PEVC3"))
+  expect_true(all(c("pvalue.adj", "hit") %in% names(out$pair_results)))
+})
+
+test_that("fit_empty_vector_control keeps the conservative replicate p-value", {
+  dat <- expand.grid(
+    promoter = c("PEVC3", "P1"),
+    replicate = c("r1", "r2"),
+    srn_code = c("DMSO1", "DMSO2", "C1"),
+    stringsAsFactors = FALSE
+  )
+  dat$value <- c(
+    1.0, 1.2, 1.1, 1.3, 2.0, 2.2,
+    1.4, 1.6, 1.5, 1.7, 3.0, 3.4
+  )
+
+  out <- fit_empty_vector_control(dat, response = "value", control = c("DMSO1", "DMSO2"))
+  c1_replicates <- out$replicate_results[out$replicate_results$srn_code == "C1", ]
+  c1_pair <- out$pair_results[out$pair_results$srn_code == "C1", ]
+
+  expect_equal(c1_pair$pvalue, max(c1_replicates$pvalue), tolerance = 1e-12)
+})
+
 test_that("empirical_replicate_pvalues compares replicate averages to matched controls", {
   dat <- expand.grid(
     promoter = "P1",

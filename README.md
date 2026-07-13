@@ -62,6 +62,13 @@ article. Running `fit_median_polish()` on the original exported expression
 table, DMSO well IDs, and noisy-DMSO exclusions reproduces the median-polish
 normalization and p-value workflow used as the baseline analysis.
 
+For the Salmonella workflow, see the
+[`Salmonella Empty Vector workflow`](https://bio-datascience.github.io/DStressR/articles/salmonella-empty-vector-workflow.html)
+article. Running `fit_empty_vector_control()` reproduces the Empty Vector
+Control normalization used there: each promoter-compound value is centered
+against the matching PEVC3 compound average before DMSO-based z-tests and
+conservative replicate aggregation.
+
 ## How to use `DStressR`
 
 The typical DStressR analysis starts from promoter-level luminescence and growth
@@ -225,6 +232,57 @@ legacy <- fit_median_polish(
 replicate_pvalues <- legacy$replicate_results
 hit_table <- legacy$pair_results
 ```
+
+## Salmonella Empty Vector workflow
+
+The Salmonella workflow uses a stronger control design than DMSO-only
+normalization. In addition to DMSO wells, it includes Empty Vector Control
+reporters, especially `PEVC3`, which measure compound-specific background Lux
+signal without a promoter insert. DStressR exposes this baseline through
+`fit_empty_vector_control()`.
+
+The required processed expression table is the output of the Salmonella
+Lux-estimation step, usually `lux_auc_filtered_median.tsv.gz`. It is a long
+table with one row per promoter-library-well-replicate observation and contains:
+
+- `promoter`
+- `srn_code`
+- `replicate`
+- `log2.lux.normed.centered`
+
+The library map is `LibMap.tsv.gz`, with columns:
+
+- `Library plate`
+- `New well`
+- `Catalog Number`
+- `ProductName`
+
+```r
+expression_df <- read.delim(gzfile("lux_auc_filtered_median.tsv.gz"),
+                            check.names = FALSE)
+libmap <- read.delim(gzfile("LibMap.tsv.gz"), check.names = FALSE)
+
+libmap$libplate <- sub("LibPlate", "lp", libmap[["Library plate"]])
+libmap$srn_code <- paste(libmap$libplate, libmap[["New well"]], sep = "_")
+
+dmso_srn_codes <- libmap$srn_code[libmap[["Catalog Number"]] == "DMSO"]
+dmso_noisy_srn_codes <- libmap$srn_code[libmap[["Catalog Number"]] == "DMSO noisy"]
+
+evc <- fit_empty_vector_control(
+  expression_df,
+  response = "log2.lux.normed.centered",
+  empty_vector_promoter = "PEVC3",
+  control = dmso_srn_codes,
+  exclude = dmso_noisy_srn_codes,
+  remove_promoters = "PmgrR"
+)
+
+replicate_pvalues <- evc$replicate_results
+hit_table <- evc$pair_results
+```
+
+On the local Salmonella workflow output, this DStressR implementation recovers
+the original `hit_table.tsv.gz` numerically, including the final hit labels.
 
 ## Optional DGrowthR handoff
 
