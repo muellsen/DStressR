@@ -35,6 +35,7 @@ Suggests:
 Enhances:
     DGrowthR
 Remotes:
+    bio-datascience/DGrowthR,
     stefpeschel/permApprox
 Config/testthat/edition: 3
 VignetteBuilder: knitr
