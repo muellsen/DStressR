@@ -2,113 +2,60 @@
 
 source(file.path("analysis", "_helpers.R"))
 
-root <- analysis_data_root()
-out_dir <- file.path(getwd(), "analysis", "outputs", "venn")
-dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
+methods <- c("median_polish", "destress_standard", "destress_moderated")
+out_dir <- comparison_results_dir("hit_overlap")
+comparison_file <- comparison_results_dir("pair_level", "pair_level_pvalue_comparison.tsv")
+membership_file <- comparison_results_dir("pair_level", "pair_level_hit_membership.tsv")
 
-rejected_file <- file.path(out_dir, "bh_rejected_pair_membership_rejected_only.tsv")
-libmap_file <- file.path(root, "00-import", "Campylobacter", "LibMap.txt")
-effects_file <- file.path(
-  getwd(),
-  "analysis",
-  "outputs",
-  "eb_moderated_variance",
-  "workflow_vs_destress_eb_promoter_compound_pvalues.tsv"
-)
-
-read_tsv_base <- function(path) {
-  read.delim(path, sep = "\t", check.names = FALSE, stringsAsFactors = FALSE)
+if (!file.exists(comparison_file) || !file.exists(membership_file)) {
+  stop(
+    "Missing pair-level comparison outputs.",
+    "\nRun analysis/compare_pair_level_pvalues.R first.",
+    call. = FALSE
+  )
 }
 
-if (!file.exists(rejected_file)) {
-  stop("Missing rejected-only table. Run analysis/plot_bh_hit_venn.R first.", call. = FALSE)
-}
-if (!file.exists(effects_file)) {
-  stop("Missing EB promoter-compound table. Run analysis/apply_eb_moderated_variances.R first.", call. = FALSE)
-}
-
-rejected <- read_tsv_base(rejected_file)
-effects <- read_tsv_base(effects_file)
-libmap <- read_tsv_base(libmap_file)
-
-libmap$libplate <- paste0("lp", libmap[["Library plate"]])
-libmap$srn_code <- paste(libmap$libplate, libmap[["Well"]], sep = "_")
-libmap$ProductName <- ifelse(
-  is.na(libmap$ProductName) | libmap$ProductName == "NA" | libmap$ProductName == "",
-  libmap[["Catalog Number"]],
-  libmap$ProductName
-)
-
-effects_key <- effects[, c(
-  "promoter",
-  "srn_code",
-  "log2FC.polished",
-  "destress_global_effect",
-  "destress_specific_effect",
-  "destress_eb_effect_centered",
-  "workflow_padj_by_promoter",
-  "destress_gaussian_padj_by_promoter",
-  "destress_eb_padj_by_promoter"
-)]
+comparison <- read_tsv_base(comparison_file)
+membership <- read_tsv_base(membership_file)
+membership <- membership[membership$hit_region != "not_hit", , drop = FALSE]
 
 out <- merge(
-  rejected[, c(
-    "promoter",
-    "srn_code",
-    "median_polish",
-    "destress_gaussian",
-    "destress_eb",
-    "venn_region"
-  )],
-  effects_key,
-  by = c("promoter", "srn_code"),
-  all.x = TRUE,
-  sort = FALSE
-)
-out <- merge(
-  out,
-  libmap[, c("srn_code", "ProductName", "Catalog Number", "Target")],
-  by = "srn_code",
+  membership,
+  comparison,
+  by = c("promoter", "compound", "pair_id"),
   all.x = TRUE,
   sort = FALSE
 )
 
-out$methods_rejected <- gsub(";", " + ", out$venn_region, fixed = TRUE)
-out <- out[, c(
-  "promoter",
-  "srn_code",
-  "ProductName",
-  "Catalog Number",
-  "Target",
-  "methods_rejected",
-  "median_polish",
-  "destress_gaussian",
-  "destress_eb",
-  "workflow_padj_by_promoter",
-  "destress_gaussian_padj_by_promoter",
-  "destress_eb_padj_by_promoter",
-  "log2FC.polished",
-  "destress_global_effect",
-  "destress_specific_effect",
-  "destress_eb_effect_centered"
-)]
+libmap_file <- libmap_path()
+if (file.exists(libmap_file)) {
+  libmap <- read_tsv_base(libmap_file)
+  libmap$libplate <- paste0("lp", libmap[["Library plate"]])
+  libmap$compound <- paste(libmap$libplate, libmap[["Well"]], sep = "_")
+  libmap$ProductName <- ifelse(
+    is.na(libmap$ProductName) | libmap$ProductName == "NA" | libmap$ProductName == "",
+    libmap[["Catalog Number"]],
+    libmap$ProductName
+  )
+  keep <- intersect(c("compound", "ProductName", "Catalog Number", "Target"), names(libmap))
+  out <- merge(out, libmap[, keep, drop = FALSE], by = "compound", all.x = TRUE, sort = FALSE)
+}
 
-out <- out[order(out$promoter, out$ProductName, out$srn_code), ]
-
-write.table(
-  out,
-  file.path(out_dir, "bh_rejected_compound_promoter_pairs_explicit.tsv"),
-  sep = "\t",
-  row.names = FALSE,
-  quote = FALSE
+out$methods_rejected <- gsub(";", " + ", out$hit_region, fixed = TRUE)
+method_cols <- unlist(lapply(methods, function(method) {
+  c(method, paste0(method, "_effect"), paste0(method, "_pvalue"), paste0(method, "_padj"))
+}))
+front_cols <- intersect(
+  c("promoter", "compound", "ProductName", "Catalog Number", "Target", "methods_rejected"),
+  names(out)
 )
+out <- out[, c(front_cols, intersect(method_cols, names(out))), drop = FALSE]
+out <- out[order(out$promoter, out$compound), , drop = FALSE]
 
-write.csv(
-  out,
-  file.path(out_dir, "bh_rejected_compound_promoter_pairs_explicit.csv"),
-  row.names = FALSE,
-  quote = TRUE
-)
+write.table(out, file.path(out_dir, "differential_pair_list.tsv"),
+            sep = "\t", row.names = FALSE, quote = FALSE)
+utils::write.csv(out, file.path(out_dir, "differential_pair_list.csv"),
+                 row.names = FALSE, quote = TRUE)
 
-message("Wrote explicit rejected pair list to: ", out_dir)
+message("Wrote explicit differential pair list to: ", out_dir)
 message("Rows: ", nrow(out))
