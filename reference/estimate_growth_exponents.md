@@ -74,7 +74,7 @@ e_i\$\$
 Raw promoter-specific slopes are then shrunk toward a global
 control-well slope using an empirical-Bayes normal prior. The shrunken
 \\\alpha_g\\ values can be used in
-[`prepare_assay()`](https://bio-datascience.github.io/DStressR/reference/prepare_assay.md)
+[`prepare_assay()`](https://muellsen.github.io/DStressR/reference/prepare_assay.md)
 to compute:
 
 \$\$y_i = \log_2(LUX_i) - \alpha_g \log_2(growth_i)\$\$

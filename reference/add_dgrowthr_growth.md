@@ -3,7 +3,7 @@
 DStressR is designed to work hand in hand with DGrowthR: DGrowthR models
 the optical-density growth curves, and DStressR can use one chosen
 DGrowthR growth metric as the growth covariate in
-[`prepare_assay()`](https://bio-datascience.github.io/DStressR/reference/prepare_assay.md).
+[`prepare_assay()`](https://muellsen.github.io/DStressR/reference/prepare_assay.md).
 
 ## Usage
 
@@ -64,7 +64,7 @@ add_dgrowthr_growth(
 This function is deliberately opt-in. The current hit-determination
 scripts use the original exported growth summaries unless the analyst
 explicitly calls this helper and passes the resulting column to
-[`prepare_assay()`](https://bio-datascience.github.io/DStressR/reference/prepare_assay.md).
+[`prepare_assay()`](https://muellsen.github.io/DStressR/reference/prepare_assay.md).
 This keeps the present analysis reproducible while making the DGrowthR
 bridge available for future comparisons.
 

@@ -39,11 +39,11 @@ The required biological and technical information is:
 - replicate and optional technical covariates such as batch or plate
 
 Column names are not fixed. They are mapped explicitly in
-[`prepare_assay()`](https://bio-datascience.github.io/DStressR/reference/prepare_assay.md).
+[`prepare_assay()`](https://muellsen.github.io/DStressR/reference/prepare_assay.md).
 
 For the original Campylobacter promoter-library workflow, the
 convenience helper
-[`read_campylobacter_expression()`](https://bio-datascience.github.io/DStressR/reference/read_campylobacter_expression.md)
+[`read_campylobacter_expression()`](https://muellsen.github.io/DStressR/reference/read_campylobacter_expression.md)
 joins two exported files:
 
 - `expression_values.tsv.gz`: one row per
@@ -121,7 +121,7 @@ names(screen)
 
 ## Prepare the assay
 
-[`prepare_assay()`](https://bio-datascience.github.io/DStressR/reference/prepare_assay.md)
+[`prepare_assay()`](https://muellsen.github.io/DStressR/reference/prepare_assay.md)
 converts luminescence and growth summaries into a growth-adjusted log2
 response. By default, DStressR estimates promoter-specific growth
 exponents from DMSO control wells and shrinks them toward a global
@@ -286,7 +286,7 @@ The key columns are:
 - `specific_pvalue` and `specific_padj`: test and BH-adjusted p-value.
 
 The direct fitting functions remain available for existing scripts, but
-[`fit_workflow()`](https://bio-datascience.github.io/DStressR/reference/fit_workflow.md)
+[`fit_workflow()`](https://muellsen.github.io/DStressR/reference/fit_workflow.md)
 makes the selected statistical path explicit and is the recommended
 entry point for new analyses.
 
@@ -446,7 +446,7 @@ plot_response_clustered_heatmap(
 
 The current default hit model uses the exported growth summary column
 supplied to
-[`prepare_assay()`](https://bio-datascience.github.io/DStressR/reference/prepare_assay.md).
+[`prepare_assay()`](https://muellsen.github.io/DStressR/reference/prepare_assay.md).
 If growth curves have already been modeled with DGrowthR, the
 DGrowthR-derived growth parameter can be joined explicitly before assay
 preparation.

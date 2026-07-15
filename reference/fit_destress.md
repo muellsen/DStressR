@@ -27,7 +27,7 @@ fit_destress(
 - assay:
 
   A `destress_assay` produced by
-  [`prepare_assay()`](https://bio-datascience.github.io/DStressR/reference/prepare_assay.md)
+  [`prepare_assay()`](https://muellsen.github.io/DStressR/reference/prepare_assay.md)
   or a raw assay data frame for `normalization = "linear_model"`, or a
   long expression table for the compatibility presets.
 
@@ -84,7 +84,7 @@ fit_destress(
 
   For `normalization = "linear_model"` with a raw data frame, arguments
   passed to
-  [`prepare_assay()`](https://bio-datascience.github.io/DStressR/reference/prepare_assay.md),
+  [`prepare_assay()`](https://muellsen.github.io/DStressR/reference/prepare_assay.md),
   including `growth_exponent`. For compatibility presets, arguments
   passed to the selected engine.
 
@@ -100,6 +100,6 @@ normalization, test statistic and p-value calculation, replicate
 aggregation, and p-value adjustment. Only implemented combinations are
 accepted. For the model-based path, growth-response normalization is
 performed upstream by
-[`prepare_assay()`](https://bio-datascience.github.io/DStressR/reference/prepare_assay.md),
+[`prepare_assay()`](https://muellsen.github.io/DStressR/reference/prepare_assay.md),
 where `growth_exponent` can be fixed, estimated, or supplied as
 promoter-specific values.

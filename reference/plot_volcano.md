@@ -111,11 +111,11 @@ A `ggplot` object.
 ## Details
 
 The defaults work with
-[`results()`](https://bio-datascience.github.io/DStressR/reference/results.md)
+[`results()`](https://muellsen.github.io/DStressR/reference/results.md)
 followed by
-[`adjust_pvalues()`](https://bio-datascience.github.io/DStressR/reference/adjust_pvalues.md)
+[`adjust_pvalues()`](https://muellsen.github.io/DStressR/reference/adjust_pvalues.md)
 or
-[`call_hits()`](https://bio-datascience.github.io/DStressR/reference/call_hits.md).
+[`call_hits()`](https://muellsen.github.io/DStressR/reference/call_hits.md).
 For workflow comparison tables, pass the corresponding column names, for
 example `effect = "destress_eb_effect_centered"`,
 `padj = "estimated_alpha_eb_padj_by_promoter"`, `compound = "srn_code"`,

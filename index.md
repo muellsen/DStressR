@@ -54,7 +54,7 @@ remotes::install_github("stefpeschel/permApprox")
 ## Get started
 
 DStressR exposes statistical analyses through a staged
-[`fit_destress()`](https://bio-datascience.github.io/DStressR/reference/fit_destress.md)
+[`fit_destress()`](https://muellsen.github.io/DStressR/reference/fit_destress.md)
 interface. The major choices are explicit: normalization, test statistic
 and p-value calculation, replicate aggregation, and p-value adjustment.
 Named presets reproduce the established workflows:
@@ -66,7 +66,7 @@ Named presets reproduce the established workflows:
   workflow
 
 The model workflow starts from an assay prepared with
-[`prepare_assay()`](https://bio-datascience.github.io/DStressR/reference/prepare_assay.md):
+[`prepare_assay()`](https://muellsen.github.io/DStressR/reference/prepare_assay.md):
 
 ``` r
 
@@ -119,18 +119,24 @@ fit <- fit_destress(
 ```
 
 Growth-response normalization for the model path is controlled in
-[`prepare_assay()`](https://bio-datascience.github.io/DStressR/reference/prepare_assay.md)
+[`prepare_assay()`](https://muellsen.github.io/DStressR/reference/prepare_assay.md)
 or by passing the same arguments through
-[`fit_destress()`](https://bio-datascience.github.io/DStressR/reference/fit_destress.md).
+[`fit_destress()`](https://muellsen.github.io/DStressR/reference/fit_destress.md).
 Use `growth_exponent = 1` for the fixed log2(LUX / OD) normalization,
 `growth_exponent = "estimate"` to estimate promoter-specific `alpha_g`
 values from controls, or pass a named promoter vector.
+
+In model-based analyses, `empirical_bayes = FALSE` is the standard
+Student-$`t`$ model and `empirical_bayes = TRUE` is the moderated model.
+The Campylobacter manuscript comparison currently uses the standard
+model (`empirical_bayes = FALSE`) against the median-polish max-p
+workflow.
 
 ## Model-based Empty Vector Control
 
 If the screen contains an Empty Vector Control (EVC) reporter, it can be
 used inside the model-based
-[`fit_destress()`](https://bio-datascience.github.io/DStressR/reference/fit_destress.md)
+[`fit_destress()`](https://muellsen.github.io/DStressR/reference/fit_destress.md)
 workflow. This is different from the project-level
 `preset = "empty_vector_control"` workflow below: the model-based path
 still fits promoter-specific linear models, but additionally estimates
@@ -248,7 +254,7 @@ fit <- fit_destress(
   testing = "moderated_t",
   aggregation = "none",
   adjustment = "global",
-  technical = c("batch", "replicate"),
+  technical = c("batch", "replicate")
 )
 
 tab <- results(fit)
@@ -264,14 +270,21 @@ The fitted model separates two related quantities:
 This distinction is important for compounds that globally perturb
 growth, luminescence, metabolism, or assay chemistry.
 
+For downstream comparisons and publication figures, use the
+promoter-specific columns from `results(fit)`: `specific_effect`,
+`specific_pvalue`, `specific_padj_global`, and
+`specific_padj_by_promoter`. The `total_*` columns remain useful
+diagnostics, but they are not the centered promoter-specific estimand
+used for DStressR hit calls in the current analysis scripts.
+
 The compatibility wrapper
-[`fit_workflow()`](https://bio-datascience.github.io/DStressR/reference/fit_workflow.md)
+[`fit_workflow()`](https://muellsen.github.io/DStressR/reference/fit_workflow.md)
 and the lower-level functions
-[`fit_median_polish()`](https://bio-datascience.github.io/DStressR/reference/fit_median_polish.md)
+[`fit_median_polish()`](https://muellsen.github.io/DStressR/reference/fit_median_polish.md)
 and
-[`fit_empty_vector_control()`](https://bio-datascience.github.io/DStressR/reference/fit_empty_vector_control.md)
+[`fit_empty_vector_control()`](https://muellsen.github.io/DStressR/reference/fit_empty_vector_control.md)
 remain available for existing scripts. New analyses should prefer
-[`fit_destress()`](https://bio-datascience.github.io/DStressR/reference/fit_destress.md)
+[`fit_destress()`](https://muellsen.github.io/DStressR/reference/fit_destress.md)
 so that the selected statistical path is explicit in the code.
 
 ## Standard plots
@@ -322,7 +335,7 @@ At minimum, the expression table must contain columns that identify:
   `plate`, or `libplate`
 
 These columns are mapped explicitly in
-[`prepare_assay()`](https://bio-datascience.github.io/DStressR/reference/prepare_assay.md),
+[`prepare_assay()`](https://muellsen.github.io/DStressR/reference/prepare_assay.md),
 so projects can use their own column names:
 
 ``` r
@@ -344,7 +357,7 @@ assay <- prepare_assay(
 
 For the original Campylobacter promoter-library workflow, DStressR
 includes the helper
-[`read_campylobacter_expression()`](https://bio-datascience.github.io/DStressR/reference/read_campylobacter_expression.md).
+[`read_campylobacter_expression()`](https://muellsen.github.io/DStressR/reference/read_campylobacter_expression.md).
 It joins two exported files:
 
 1.  `expression_values.tsv.gz`
@@ -359,7 +372,7 @@ It joins two exported files:
 
     It should also contain the promoter identifier, luminescence
     summary, growth summary, and technical covariates used downstream in
-    [`prepare_assay()`](https://bio-datascience.github.io/DStressR/reference/prepare_assay.md).
+    [`prepare_assay()`](https://muellsen.github.io/DStressR/reference/prepare_assay.md).
 
 2.  `LibMap.txt`
 
@@ -386,7 +399,17 @@ expression_df <- read_campylobacter_expression(
 The returned object has the same number of rows as
 `expression_values.tsv.gz`, with compound annotations added. This joined
 table can then be passed directly to
-[`prepare_assay()`](https://bio-datascience.github.io/DStressR/reference/prepare_assay.md).
+[`prepare_assay()`](https://muellsen.github.io/DStressR/reference/prepare_assay.md).
+
+The public template script
+`scripts/export_campy_standard_model_template.R` records the exact
+Campylobacter standard-model call used to regenerate the local package
+output
+`analysis/outputs/package_results/destress_standard_pair_results.tsv`
+from the proprietary expression table. It sets
+`empirical_bayes = FALSE`, `interaction = FALSE`, uses promoter-specific
+estimated growth exponents, and exports the `specific_*` result columns
+expected by the downstream analysis scripts.
 
 To reproduce the original median-polish workflow, provide the DMSO
 library-well IDs and optional noisy-DMSO well IDs from `LibMap.txt`:
@@ -420,7 +443,7 @@ normalization. In addition to DMSO wells, it includes Empty Vector
 Control reporters, especially `PEVC3`, which measure compound-specific
 background Lux signal without a promoter insert. DStressR exposes this
 baseline through
-[`fit_empty_vector_control()`](https://bio-datascience.github.io/DStressR/reference/fit_empty_vector_control.md).
+[`fit_empty_vector_control()`](https://muellsen.github.io/DStressR/reference/fit_empty_vector_control.md).
 
 The required processed expression table is the output of the Salmonella
 Lux-estimation step, usually `lux_auc_filtered_median.tsv.gz`. It is a
@@ -498,8 +521,10 @@ assay <- prepare_assay(
 
 ## Analysis workflow
 
-The `analysis/` folder contains scripts used during model development
-and benchmarking against the original median-polish workflow, including
-p-value comparisons, empirical-Bayes diagnostics, response matrices,
-clustered heatmaps, network summaries, and empirical
-replicate/permutation tests.
+The `analysis/` folder is a downstream comparison and figure-generation
+layer. It reads package-generated TSV outputs from
+`analysis/outputs/package_results/` and must not reimplement estimators,
+p-value calculations, empirical-Bayes moderation, replicate aggregation,
+or multiple-testing correction. Generated outputs under
+`analysis/outputs/` are intentionally ignored by Git so proprietary
+result tables and manuscript figures stay local.

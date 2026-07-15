@@ -2,7 +2,7 @@
 
 `fit_workflow()` is a compatibility entry point for named DStressR
 workflows. The `workflow` argument selects a
-[`fit_destress()`](https://bio-datascience.github.io/DStressR/reference/fit_destress.md)
+[`fit_destress()`](https://muellsen.github.io/DStressR/reference/fit_destress.md)
 preset: `model` fits the model-based DStressR workflow, `median_polish`
 reproduces the legacy median-polish workflow, and `empty_vector_control`
 reproduces the empty-vector-control workflow.
@@ -22,13 +22,13 @@ fit_workflow(
 - data:
 
   For `workflow = "model"`, a `destress_assay` produced by
-  [`prepare_assay()`](https://bio-datascience.github.io/DStressR/reference/prepare_assay.md).
+  [`prepare_assay()`](https://muellsen.github.io/DStressR/reference/prepare_assay.md).
   For the compatibility workflows, a long expression table.
 
 - workflow:
 
   One of
-  [`destress_workflows()`](https://bio-datascience.github.io/DStressR/reference/destress_workflows.md).
+  [`destress_workflows()`](https://muellsen.github.io/DStressR/reference/destress_workflows.md).
   Hyphenated names and common aliases such as `"destress"`,
   `"median-polish"`, and `"evc"` are accepted.
 
@@ -44,5 +44,5 @@ The fitted workflow object returned by the selected engine, with a
 ## Details
 
 New analyses should prefer
-[`fit_destress()`](https://bio-datascience.github.io/DStressR/reference/fit_destress.md)
+[`fit_destress()`](https://muellsen.github.io/DStressR/reference/fit_destress.md)
 directly so the staged statistical choices can be made explicit.

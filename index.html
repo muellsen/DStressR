@@ -109,7 +109,7 @@
 </ul>
 <p>The model workflow starts from an assay prepared with <code><a href="reference/prepare_assay.html">prepare_assay()</a></code>:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://muellsen.github.io/DStressR/" class="external-link">DStressR</a></span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://muellsen.github.io/DStressR/">DStressR</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">screen</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/simulate_screen.html">simulate_screen</a></span><span class="op">(</span>seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
 <span></span>
@@ -152,6 +152,7 @@
 <span>  technical <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"batch"</span>, <span class="st">"replicate"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>Growth-response normalization for the model path is controlled in <code><a href="reference/prepare_assay.html">prepare_assay()</a></code> or by passing the same arguments through <code><a href="reference/fit_destress.html">fit_destress()</a></code>. Use <code>growth_exponent = 1</code> for the fixed log2(LUX / OD) normalization, <code>growth_exponent = "estimate"</code> to estimate promoter-specific <code>alpha_g</code> values from controls, or pass a named promoter vector.</p>
+<p>In model-based analyses, <code>empirical_bayes = FALSE</code> is the standard Student-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>t</mi><annotation encoding="application/x-tex">t</annotation></semantics></math> model and <code>empirical_bayes = TRUE</code> is the moderated model. The Campylobacter manuscript comparison currently uses the standard model (<code>empirical_bayes = FALSE</code>) against the median-polish max-p workflow.</p>
 </div>
 <div class="section level2">
 <h2 id="model-based-empty-vector-control">Model-based Empty Vector Control<a class="anchor" aria-label="anchor" href="#model-based-empty-vector-control"></a>
@@ -227,7 +228,7 @@
 </h2>
 <p>The typical DStressR analysis starts from promoter-level luminescence and growth summaries, together with compound, promoter, replicate, plate, and batch metadata.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://muellsen.github.io/DStressR/" class="external-link">DStressR</a></span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://muellsen.github.io/DStressR/">DStressR</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">assay</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/prepare_assay.html">prepare_assay</a></span><span class="op">(</span></span>
 <span>  <span class="va">expression_df</span>,</span>
@@ -246,7 +247,7 @@
 <span>  testing <span class="op">=</span> <span class="st">"moderated_t"</span>,</span>
 <span>  aggregation <span class="op">=</span> <span class="st">"none"</span>,</span>
 <span>  adjustment <span class="op">=</span> <span class="st">"global"</span>,</span>
-<span>  technical <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"batch"</span>, <span class="st">"replicate"</span><span class="op">)</span>,</span>
+<span>  technical <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"batch"</span>, <span class="st">"replicate"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">tab</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/results.html">results</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span>
@@ -259,6 +260,7 @@
 <code>specific_effect</code>: promoter-specific response after subtracting the compound-wide effect shared across promoters.</li>
 </ul>
 <p>This distinction is important for compounds that globally perturb growth, luminescence, metabolism, or assay chemistry.</p>
+<p>For downstream comparisons and publication figures, use the promoter-specific columns from <code>results(fit)</code>: <code>specific_effect</code>, <code>specific_pvalue</code>, <code>specific_padj_global</code>, and <code>specific_padj_by_promoter</code>. The <code>total_*</code> columns remain useful diagnostics, but they are not the centered promoter-specific estimand used for DStressR hit calls in the current analysis scripts.</p>
 <p>The compatibility wrapper <code><a href="reference/fit_workflow.html">fit_workflow()</a></code> and the lower-level functions <code><a href="reference/fit_median_polish.html">fit_median_polish()</a></code> and <code><a href="reference/fit_empty_vector_control.html">fit_empty_vector_control()</a></code> remain available for existing scripts. New analyses should prefer <code><a href="reference/fit_destress.html">fit_destress()</a></code> so that the selected statistical path is explicit in the code.</p>
 </div>
 <div class="section level2">
@@ -347,6 +349,7 @@
 <span>  libmap_file <span class="op">=</span> <span class="st">"LibMap.txt"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>The returned object has the same number of rows as <code>expression_values.tsv.gz</code>, with compound annotations added. This joined table can then be passed directly to <code><a href="reference/prepare_assay.html">prepare_assay()</a></code>.</p>
+<p>The public template script <code>scripts/export_campy_standard_model_template.R</code> records the exact Campylobacter standard-model call used to regenerate the local package output <code>analysis/outputs/package_results/destress_standard_pair_results.tsv</code> from the proprietary expression table. It sets <code>empirical_bayes = FALSE</code>, <code>interaction = FALSE</code>, uses promoter-specific estimated growth exponents, and exports the <code>specific_*</code> result columns expected by the downstream analysis scripts.</p>
 <p>To reproduce the original median-polish workflow, provide the DMSO library-well IDs and optional noisy-DMSO well IDs from <code>LibMap.txt</code>:</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">libmap</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.delim</a></span><span class="op">(</span><span class="st">"LibMap.txt"</span>, check.names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
@@ -437,7 +440,7 @@
 <div class="section level2">
 <h2 id="analysis-workflow">Analysis workflow<a class="anchor" aria-label="anchor" href="#analysis-workflow"></a>
 </h2>
-<p>The <code>analysis/</code> folder contains scripts used during model development and benchmarking against the original median-polish workflow, including p-value comparisons, empirical-Bayes diagnostics, response matrices, clustered heatmaps, network summaries, and empirical replicate/permutation tests.</p>
+<p>The <code>analysis/</code> folder is a downstream comparison and figure-generation layer. It reads package-generated TSV outputs from <code>analysis/outputs/package_results/</code> and must not reimplement estimators, p-value calculations, empirical-Bayes moderation, replicate aggregation, or multiple-testing correction. Generated outputs under <code>analysis/outputs/</code> are intentionally ignored by Git so proprietary result tables and manuscript figures stay local.</p>
 </div>
 </div>
 

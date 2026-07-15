@@ -2,7 +2,7 @@
 
 Creates a standard heatmap for normalized promoter-compound responses.
 The default `value` is `specific_effect`, matching
-[`results()`](https://bio-datascience.github.io/DStressR/reference/results.md),
+[`results()`](https://muellsen.github.io/DStressR/reference/results.md),
 but workflow tables can use columns such as
 `destress_eb_effect_centered`.
 

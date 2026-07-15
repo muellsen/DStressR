@@ -21,7 +21,7 @@ growth-normalized Lux
 
 DStressR implements this compatibility path with
 `fit_workflow(..., workflow = "empty_vector_control")`. The lower-level
-[`fit_empty_vector_control()`](https://bio-datascience.github.io/DStressR/reference/fit_empty_vector_control.md)
+[`fit_empty_vector_control()`](https://muellsen.github.io/DStressR/reference/fit_empty_vector_control.md)
 function remains available for existing scripts.
 
 ## Input files

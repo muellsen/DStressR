@@ -19,7 +19,7 @@ call_hits(
 - table:
 
   Result table from
-  [`results()`](https://bio-datascience.github.io/DStressR/reference/results.md).
+  [`results()`](https://muellsen.github.io/DStressR/reference/results.md).
 
 - fdr:
 

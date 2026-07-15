@@ -2,7 +2,7 @@
 
 Draws a clustered promoter-by-compound response heatmap with
 hierarchical trees on both axes. Unlike
-[`plot_response_cluster_blocks`](https://bio-datascience.github.io/DStressR/reference/plot_response_cluster_blocks.md),
+[`plot_response_cluster_blocks`](https://muellsen.github.io/DStressR/reference/plot_response_cluster_blocks.md),
 this keeps the individual matrix cells visible and uses the dendrograms
 to reveal structure without collapsing the data into coarse blocks.
 

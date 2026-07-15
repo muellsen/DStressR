@@ -35,4 +35,4 @@ simulate_screen(
 ## Value
 
 A data frame suitable for
-[`prepare_assay()`](https://bio-datascience.github.io/DStressR/reference/prepare_assay.md).
+[`prepare_assay()`](https://muellsen.github.io/DStressR/reference/prepare_assay.md).

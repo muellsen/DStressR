@@ -8,7 +8,7 @@ replacements rather than silent changes.
 
 The named workflow entry point is
 `fit_workflow(..., workflow = "median_polish")`. The lower-level
-[`fit_median_polish()`](https://bio-datascience.github.io/DStressR/reference/fit_median_polish.md)
+[`fit_median_polish()`](https://muellsen.github.io/DStressR/reference/fit_median_polish.md)
 function remains available for existing scripts.
 
 ## Required input files
@@ -35,7 +35,7 @@ The required columns are:
   `log2.auc.16hmeasured.normed`
 
 If `srn_code` is not already present,
-[`read_campylobacter_expression()`](https://bio-datascience.github.io/DStressR/reference/read_campylobacter_expression.md)
+[`read_campylobacter_expression()`](https://muellsen.github.io/DStressR/reference/read_campylobacter_expression.md)
 can reconstruct it from `libplate` and `well`.
 
 ### `LibMap.txt`
@@ -234,7 +234,7 @@ legacy$pair_results
 
 The median-polish path is intended as a reproducible baseline. The
 model-based DStressR analysis starts from the same long table but uses
-[`prepare_assay()`](https://bio-datascience.github.io/DStressR/reference/prepare_assay.md)
+[`prepare_assay()`](https://muellsen.github.io/DStressR/reference/prepare_assay.md)
 and `fit_workflow(..., workflow = "model")`:
 
 ``` r
