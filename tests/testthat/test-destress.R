@@ -22,6 +22,7 @@ test_that("estimate_growth_exponents recovers promoter-specific scaling", {
   est <- estimate_growth_exponents(dat, promoter = "promoter", compound = "compound",
                                    lux = "lux", growth = "growth", min_control_n = 5,
                                    shrink = FALSE)
+  expect_true(all(c("a_raw", "a_raw_se", "a_raw_df") %in% names(est)))
   expect_equal(est$alpha_raw[match("P1", est$promoter)], 1, tolerance = 1e-6)
   expect_equal(est$alpha_raw[match("P2", est$promoter)], 0.5, tolerance = 1e-6)
 })
@@ -116,6 +117,128 @@ test_that("fit_destress exposes staged model options", {
   expect_equal(res$specific_padj, expected$expected_specific_padj, tolerance = 1e-12)
 })
 
+test_that("fit_destress can fit scalable promoter-specific models", {
+  dat <- simulate_screen(seed = 7, n_promoters = 5, n_compounds = 6, n_replicates = 3)
+  assay <- prepare_assay(dat, promoter = "promoter", compound = "compound",
+                         lux = "LUX.AUC_16", growth = "od_16h.measured",
+                         batch = "batch", replicate = "replicate")
+
+  fit <- fit_destress(
+    assay,
+    technical = c("batch", "replicate"),
+    interaction = FALSE,
+    empirical_bayes = FALSE,
+    adjustment = "by_promoter"
+  )
+  res <- results(fit)
+
+  expect_s3_class(fit, "destress_fit")
+  expect_false(fit$interaction)
+  expect_null(fit$full_fit)
+  expect_equal(length(unique(fit$promoter_effects$promoter)), length(unique(dat$promoter)))
+  expect_equal(nrow(res), length(unique(dat$promoter)) * length(setdiff(unique(dat$compound), "DMSO")))
+  expect_true(all(c("specific_effect", "specific_pvalue", "specific_padj") %in% names(res)))
+  expect_true(all(c("total_effect", "total_pvalue", "total_padj") %in% names(res)))
+  expect_true(all(is.finite(res$total_pvalue)))
+  expect_gt(sum(abs(res$specific_effect) > 1e-8), 0)
+  expect_true(all(is.finite(res$specific_pvalue)))
+  expect_true(all(res$specific_padj >= 0 & res$specific_padj <= 1))
+
+  truth <- unique(dat[dat$compound != "DMSO", c("promoter", "compound", "truth_specific")])
+  joined <- merge(res, truth, by = c("promoter", "compound"))
+  active <- abs(joined$truth_specific) > 0
+  expect_gt(stats::cor(joined$specific_effect[active], joined$truth_specific[active]), 0.7)
+})
+
+test_that("fit_destress separates global compound effects from promoter-specific effects", {
+  dat <- expand.grid(
+    promoter = paste0("P", seq_len(6)),
+    compound = c("DMSO", "C_global", "C_specific"),
+    replicate = paste0("r", seq_len(6)),
+    stringsAsFactors = FALSE
+  )
+  baseline <- stats::setNames(seq(9.5, 10.5, length.out = 6), paste0("P", seq_len(6)))
+  dat$value <- baseline[dat$promoter] +
+    ifelse(dat$compound == "C_global", 1.5, 0) +
+    ifelse(dat$compound == "C_specific" & dat$promoter == "P3", 1.5, 0)
+
+  assay <- prepare_assay(
+    dat,
+    promoter = "promoter",
+    compound = "compound",
+    control = "DMSO",
+    response = "value",
+    replicate = "replicate"
+  )
+  fit <- fit_destress(assay, technical = "replicate", empirical_bayes = FALSE)
+  res <- results(fit)
+
+  global_rows <- res[res$compound == "C_global", ]
+  expect_equal(global_rows$total_effect, rep(1.5, nrow(global_rows)), tolerance = 1e-8)
+  expect_equal(unique(global_rows$global_effect), 1.5, tolerance = 1e-8)
+  expect_equal(global_rows$specific_effect, rep(0, nrow(global_rows)), tolerance = 1e-8)
+  expect_true(all(global_rows$specific_pvalue > 0.9))
+  expect_true(all(global_rows$global_pvalue < 1e-8))
+
+  specific_row <- res[res$compound == "C_specific" & res$promoter == "P3", ]
+  expect_gt(specific_row$specific_effect, 1)
+  expect_lt(specific_row$specific_pvalue, 1e-8)
+})
+
+test_that("fit_destress subtracts model-based empty-vector background before centering", {
+  dat <- expand.grid(
+    promoter = c("EVC", "P1", "P2"),
+    compound = c("DMSO", "C_background", "C_specific"),
+    replicate = paste0("r", seq_len(5)),
+    stringsAsFactors = FALSE
+  )
+  baseline <- c(EVC = 8, P1 = 10, P2 = 12)
+  background <- c(DMSO = 0, C_background = 1, C_specific = 0)
+  dat$value <- baseline[dat$promoter] + background[dat$compound] +
+    ifelse(dat$promoter == "P2" & dat$compound == "C_specific", 2, 0)
+
+  assay <- prepare_assay(
+    dat,
+    promoter = "promoter",
+    compound = "compound",
+    control = "DMSO",
+    response = "value",
+    replicate = "replicate"
+  )
+  fit <- fit_destress(
+    assay,
+    technical = "replicate",
+    empirical_bayes = FALSE,
+    empty_vector_promoter = "EVC"
+  )
+  res <- results(fit)
+  fit_no_evc <- fit_destress(
+    assay,
+    technical = "replicate",
+    empirical_bayes = FALSE
+  )
+  res_no_evc <- results(fit_no_evc, promoters = c("P1", "P2"))
+
+  expect_false("EVC" %in% res$promoter)
+  bg <- res[res$compound == "C_background", ]
+  expect_equal(bg$empty_vector_effect, rep(1, nrow(bg)), tolerance = 1e-8)
+  expect_equal(bg$background_adjusted_effect, rep(0, nrow(bg)), tolerance = 1e-8)
+  expect_equal(bg$specific_effect, rep(0, nrow(bg)), tolerance = 1e-8)
+
+  sig <- res[res$compound == "C_specific", ]
+  expect_equal(sig$background_adjusted_effect[match(c("P1", "P2"), sig$promoter)], c(0, 2), tolerance = 1e-8)
+  expect_equal(sig$specific_effect[match(c("P1", "P2"), sig$promoter)], c(-1, 1), tolerance = 1e-8)
+
+  merged <- merge(
+    res[, c("promoter", "compound", "specific_effect", "specific_se")],
+    res_no_evc[, c("promoter", "compound", "specific_effect", "specific_se")],
+    by = c("promoter", "compound"),
+    suffixes = c("_evc", "_no_evc")
+  )
+  expect_equal(merged$specific_effect_evc, merged$specific_effect_no_evc, tolerance = 1e-8)
+  expect_equal(merged$specific_se_evc, merged$specific_se_no_evc, tolerance = 1e-8)
+})
+
 test_that("fit_destress can prepare raw model data with growth-exponent options", {
   dat <- simulate_screen(seed = 6, n_promoters = 5, n_compounds = 6, n_replicates = 2)
 
@@ -148,6 +271,23 @@ test_that("fit_destress can prepare raw model data with growth-exponent options"
   expect_s3_class(direct, "destress_fit")
   expect_equal(results(direct), results(prepared), tolerance = 1e-10)
   expect_equal(unique(direct$assay_info$growth_exponent), 1)
+
+  estimated <- fit_destress(
+    dat,
+    preset = "model",
+    promoter = "promoter",
+    compound = "compound",
+    control = "DMSO",
+    lux = "LUX.AUC_16",
+    growth = "od_16h.measured",
+    growth_exponent = "estimate",
+    batch = "batch",
+    replicate = "replicate",
+    technical = c("batch", "replicate")
+  )
+  params <- model_parameters(estimated)
+  expect_true(all(c("growth_exponents", "promoter_effects") %in% names(params)))
+  expect_true(all(c("a_raw", "alpha_raw", "alpha_shrunk") %in% names(params$growth_exponents)))
 })
 
 test_that("fit_destress rejects unimplemented stage combinations", {
