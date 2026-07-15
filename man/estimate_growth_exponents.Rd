@@ -41,7 +41,8 @@ control slope.}
 Use \code{NULL} for no clipping.}
 }
 \value{
-A data frame with raw and shrunken growth exponents per promoter.
+A data frame with raw promoter intercepts and raw and shrunken growth
+exponents per promoter.
 }
 \description{
 Estimates how luminescence scales with growth in negative-control wells,

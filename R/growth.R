@@ -25,7 +25,8 @@
 #'   control slope.
 #' @param alpha_bounds Optional numeric length-2 bounds for the final exponent.
 #'   Use `NULL` for no clipping.
-#' @return A data frame with raw and shrunken growth exponents per promoter.
+#' @return A data frame with raw promoter intercepts and raw and shrunken growth
+#'   exponents per promoter.
 #' @export
 estimate_growth_exponents <- function(data,
                                       promoter = "promoter",
@@ -67,13 +68,21 @@ estimate_growth_exponents <- function(data,
     coefs <- summary(fit)$coefficients
     estimate <- NA_real_
     se <- NA_real_
+    intercept <- NA_real_
+    intercept_se <- NA_real_
     if (".log_growth" %in% rownames(coefs)) {
       estimate <- unname(coefs[".log_growth", "Estimate"])
       se <- unname(coefs[".log_growth", "Std. Error"])
     }
+    if ("(Intercept)" %in% rownames(coefs)) {
+      intercept <- unname(coefs["(Intercept)", "Estimate"])
+      intercept_se <- unname(coefs["(Intercept)", "Std. Error"])
+    }
     list(
       estimate = estimate,
       se = se,
+      intercept = intercept,
+      intercept_se = intercept_se,
       df = stats::df.residual(fit),
       covariates = paste(usable_covariates, collapse = ";")
     )
@@ -105,6 +114,9 @@ estimate_growth_exponents <- function(data,
       promoter = as.character(d[[promoter]][1]),
       control_n = n,
       log_growth_sd = stats::sd(d$.log_growth),
+      a_raw = NA_real_,
+      a_raw_se = NA_real_,
+      a_raw_df = NA_real_,
       alpha_raw = NA_real_,
       alpha_raw_se = NA_real_,
       alpha_raw_df = NA_real_,
@@ -117,6 +129,9 @@ estimate_growth_exponents <- function(data,
           !is.finite(slope$df) || slope$df <= 0) {
         slope <- fit_growth_slope(d, character())
       }
+      out$a_raw <- slope$intercept
+      out$a_raw_se <- slope$intercept_se
+      out$a_raw_df <- slope$df
       out$alpha_raw <- slope$estimate
       out$alpha_raw_se <- slope$se
       out$alpha_raw_df <- slope$df

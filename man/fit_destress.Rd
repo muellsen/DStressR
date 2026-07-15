@@ -8,10 +8,12 @@ fit_destress(
   assay,
   technical = NULL,
   empirical_bayes = TRUE,
+  empty_vector_promoter = NULL,
   normalization = NULL,
   testing = NULL,
   aggregation = NULL,
   adjustment = NULL,
+  interaction = FALSE,
   preset = NULL,
   ...
 )
@@ -28,6 +30,11 @@ technical-factor columns to include.}
 common prior variance. This maps to \code{testing = "moderated_t"} for the
 model path; \code{FALSE} maps to \code{testing = "student_t"}.}
 
+\item{empty_vector_promoter}{Optional promoter/control strain used as an
+empty-vector reporter in the model-based path. When supplied, its
+reference-relative compound effect is subtracted from every promoter's
+reference-relative compound effect before promoter-library centering.}
+
 \item{normalization}{One of \code{"linear_model"}, \code{"median_polish"}, or
 \code{"empty_vector"}. \code{"model"} and \code{"evc"} are accepted aliases.}
 
@@ -36,6 +43,12 @@ model path; \code{FALSE} maps to \code{testing = "student_t"}.}
 \item{aggregation}{One of \code{"none"} or \code{"max_p"}.}
 
 \item{adjustment}{One of \code{"global"}, \code{"by_promoter"}, or \code{"none"}.}
+
+\item{interaction}{If \code{FALSE}, fit one Gaussian linear
+model per promoter with the control compound as reference and the supplied
+technical covariates as design terms. The latter is the scalable path for
+promoter-specific compound effects. If \code{TRUE}, fit the historical full
+promoter-by-compound interaction model.}
 
 \item{preset}{Optional named preset: \code{"model"}, \code{"median_polish_legacy"}, or
 \code{"empty_vector_control"}. Common aliases such as \code{"median_polish"} and
