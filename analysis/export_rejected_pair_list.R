@@ -4,8 +4,8 @@ source(file.path("analysis", "_helpers.R"))
 
 methods <- c("median_polish", "destress_standard", "destress_moderated")
 out_dir <- comparison_results_dir("hit_overlap")
-comparison_file <- comparison_results_dir("pair_level", "pair_level_pvalue_comparison.tsv")
-membership_file <- comparison_results_dir("pair_level", "pair_level_hit_membership.tsv")
+comparison_file <- file.path(comparison_results_dir("pair_level"), "pair_level_pvalue_comparison.tsv")
+membership_file <- file.path(comparison_results_dir("pair_level"), "pair_level_hit_membership.tsv")
 
 if (!file.exists(comparison_file) || !file.exists(membership_file)) {
   stop(

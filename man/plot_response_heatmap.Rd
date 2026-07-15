@@ -37,11 +37,11 @@ to \code{compound}.}
 \item{show_compound_ids}{If \code{TRUE}, append compound IDs in square brackets
 to compound labels.}
 
-\item{top_n_compounds}{If finite, show only the top compounds by mean absolute
-response. Use \code{Inf} to show all compounds.}
+\item{top_n_compounds}{If finite, show only the top compounds by mean
+absolute response. Use \code{Inf} to show all compounds.}
 
-\item{cluster_rows, cluster_cols}{If \code{TRUE}, hierarchically cluster
-promoters and/or compounds.}
+\item{cluster_rows, cluster_cols}{If \code{TRUE}, hierarchically cluster promoters
+and/or compounds.}
 
 \item{clip_quantile}{Quantile of absolute response values used to clip the
 color scale. Set to \code{1} to use the observed maximum.}
@@ -56,7 +56,6 @@ A \code{ggplot} object. The plotted matrix is available as
 }
 \description{
 Creates a standard heatmap for normalized promoter-compound responses. The
-default \code{value} is \code{specific_effect}, matching
-\code{\link[=results]{results()}}, but workflow tables can use columns such as
-\code{destress_eb_effect_centered}.
+default \code{value} is \code{specific_effect}, matching \code{\link[=results]{results()}}, but workflow
+tables can use columns such as \code{destress_eb_effect_centered}.
 }

@@ -366,6 +366,7 @@ plot_response_heatmap <- function(table,
       high = high,
       midpoint = 0,
       limits = c(-limit, limit),
+      na.value = "#e5e7eb",
       name = value
     ) +
     ggplot2::theme_light(base_size = 8) +

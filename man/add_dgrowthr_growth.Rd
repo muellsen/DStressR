@@ -27,8 +27,8 @@ curve for each assay row. DGrowthR calls this \code{curve_id}.}
 corresponding to one GP fit per growth curve.}
 
 \item{growth_metric}{Column in \code{object@growth_parameters} to use as the
-growth measurement. Common choices are \code{max_growth}, \code{AUC}, \code{OD_16},
-and \code{AUC_16}.}
+growth measurement. Common choices are \code{max_growth}, \code{AUC}, \code{OD_16}, and
+\code{AUC_16}.}
 
 \item{output}{Column name to create in \code{data}.}
 
@@ -46,14 +46,12 @@ growth metric as the growth covariate in \code{\link[=prepare_assay]{prepare_ass
 \details{
 This function is deliberately opt-in. The current hit-determination scripts
 use the original exported growth summaries unless the analyst explicitly
-calls this helper and passes the resulting column to
-\code{\link[=prepare_assay]{prepare_assay()}}. This keeps the present analysis
-reproducible while making the DGrowthR bridge available for future
-comparisons.
+calls this helper and passes the resulting column to \code{\link[=prepare_assay]{prepare_assay()}}. This
+keeps the present analysis reproducible while making the DGrowthR bridge
+available for future comparisons.
 
 This helper joins \code{object@growth_parameters} from a fitted DGrowthR object
 onto a promoter/luminescence assay table. Run
 \code{DGrowthR::estimate_growth_parameters()} first, optionally with
-\code{od_auc_at_t} if you want time-specific columns such as \code{OD_16} or
-\code{AUC_16}.
+\code{od_auc_at_t} if you want time-specific columns such as \code{OD_16} or \code{AUC_16}.
 }

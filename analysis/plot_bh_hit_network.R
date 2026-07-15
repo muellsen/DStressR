@@ -9,7 +9,7 @@ suppressPackageStartupMessages({
 })
 
 methods <- c("median_polish", "destress_standard", "destress_moderated")
-input_file <- comparison_results_dir("hit_overlap", "differential_pair_list.tsv")
+input_file <- file.path(comparison_results_dir("hit_overlap"), "differential_pair_list.tsv")
 out_dir <- comparison_results_dir("hit_network")
 
 if (!file.exists(input_file)) {
