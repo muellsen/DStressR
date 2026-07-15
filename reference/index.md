@@ -29,6 +29,8 @@
   : Fit a named DStressR workflow
 - [`model_matrix_report()`](https://bio-datascience.github.io/DStressR/reference/model_matrix_report.md)
   : Summarize model dimensions
+- [`model_parameters()`](https://bio-datascience.github.io/DStressR/reference/model_parameters.md)
+  : Extract estimated model parameters
 - [`plot_effect_histogram()`](https://bio-datascience.github.io/DStressR/reference/plot_effect_histogram.md)
   : Histogram of DStressR promoter-compound effects
 - [`plot_response_cluster_blocks()`](https://bio-datascience.github.io/DStressR/reference/plot_response_cluster_blocks.md)

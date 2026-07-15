@@ -11,10 +11,12 @@ fit_destress(
   assay,
   technical = NULL,
   empirical_bayes = TRUE,
+  empty_vector_promoter = NULL,
   normalization = NULL,
   testing = NULL,
   aggregation = NULL,
   adjustment = NULL,
+  interaction = FALSE,
   preset = NULL,
   ...
 )
@@ -40,6 +42,13 @@ fit_destress(
   variance. This maps to `testing = "moderated_t"` for the model path;
   `FALSE` maps to `testing = "student_t"`.
 
+- empty_vector_promoter:
+
+  Optional promoter/control strain used as an empty-vector reporter in
+  the model-based path. When supplied, its reference-relative compound
+  effect is subtracted from every promoter's reference-relative compound
+  effect before promoter-library centering.
+
 - normalization:
 
   One of `"linear_model"`, `"median_polish"`, or `"empty_vector"`.
@@ -56,6 +65,14 @@ fit_destress(
 - adjustment:
 
   One of `"global"`, `"by_promoter"`, or `"none"`.
+
+- interaction:
+
+  If `FALSE`, fit one Gaussian linear model per promoter with the
+  control compound as reference and the supplied technical covariates as
+  design terms. The latter is the scalable path for promoter-specific
+  compound effects. If `TRUE`, fit the historical full
+  promoter-by-compound interaction model.
 
 - preset:
 

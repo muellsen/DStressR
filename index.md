@@ -126,6 +126,66 @@ Use `growth_exponent = 1` for the fixed log2(LUX / OD) normalization,
 `growth_exponent = "estimate"` to estimate promoter-specific `alpha_g`
 values from controls, or pass a named promoter vector.
 
+## Model-based Empty Vector Control
+
+If the screen contains an Empty Vector Control (EVC) reporter, it can be
+used inside the model-based
+[`fit_destress()`](https://bio-datascience.github.io/DStressR/reference/fit_destress.md)
+workflow. This is different from the project-level
+`preset = "empty_vector_control"` workflow below: the model-based path
+still fits promoter-specific linear models, but additionally estimates
+the DMSO-relative EVC response for each compound.
+
+``` r
+
+assay <- prepare_assay(
+  expression_df,
+  promoter = "promoter",
+  compound = "srn_code",
+  control = "DMSO",
+  lux = "LUX.AUC_16",
+  growth = "od_16h.measured",
+  batch = "batch",
+  replicate = "replicate"
+)
+
+fit <- fit_destress(
+  assay,
+  preset = "model",
+  technical = c("batch", "replicate"),
+  empirical_bayes = TRUE,
+  empty_vector_promoter = "PEVC3"
+)
+
+tab <- results(fit)
+```
+
+The result table then includes additional columns:
+
+- `empty_vector_effect`: fitted DMSO-relative response of the EVC
+  reporter for the compound.
+- `background_adjusted_effect`: fitted total response after subtracting
+  `empty_vector_effect`.
+- `specific_effect`: promoter-specific response after compound-wise
+  centering.
+
+For an additive compound-level EVC background, the subtraction cancels
+from the centered `specific_effect`. This means the EVC option is most
+useful for reporting and diagnosing background-adjusted total responses,
+while the final model-based hit calls still target promoter-specific
+deviations from the compound-wide average.
+
+Estimated model components, including growth-exponent parameters and
+promoter-compound effect estimates, can be extracted with:
+
+``` r
+
+params <- model_parameters(fit)
+
+growth_parameters <- params$growth_exponents
+promoter_effects <- params$promoter_effects
+```
+
 The median-polish compatibility workflow starts from the original
 exported expression table and DMSO library-well IDs:
 

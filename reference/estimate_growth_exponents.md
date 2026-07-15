@@ -63,7 +63,8 @@ estimate_growth_exponents(
 
 ## Value
 
-A data frame with raw and shrunken growth exponents per promoter.
+A data frame with raw promoter intercepts and raw and shrunken growth
+exponents per promoter.
 
 ## Details
 

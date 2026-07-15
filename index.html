@@ -152,8 +152,50 @@
 <span>  technical <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"batch"</span>, <span class="st">"replicate"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>Growth-response normalization for the model path is controlled in <code><a href="reference/prepare_assay.html">prepare_assay()</a></code> or by passing the same arguments through <code><a href="reference/fit_destress.html">fit_destress()</a></code>. Use <code>growth_exponent = 1</code> for the fixed log2(LUX / OD) normalization, <code>growth_exponent = "estimate"</code> to estimate promoter-specific <code>alpha_g</code> values from controls, or pass a named promoter vector.</p>
-<p>The median-polish compatibility workflow starts from the original exported expression table and DMSO library-well IDs:</p>
+</div>
+<div class="section level2">
+<h2 id="model-based-empty-vector-control">Model-based Empty Vector Control<a class="anchor" aria-label="anchor" href="#model-based-empty-vector-control"></a>
+</h2>
+<p>If the screen contains an Empty Vector Control (EVC) reporter, it can be used inside the model-based <code><a href="reference/fit_destress.html">fit_destress()</a></code> workflow. This is different from the project-level <code>preset = "empty_vector_control"</code> workflow below: the model-based path still fits promoter-specific linear models, but additionally estimates the DMSO-relative EVC response for each compound.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">assay</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/prepare_assay.html">prepare_assay</a></span><span class="op">(</span></span>
+<span>  <span class="va">expression_df</span>,</span>
+<span>  promoter <span class="op">=</span> <span class="st">"promoter"</span>,</span>
+<span>  compound <span class="op">=</span> <span class="st">"srn_code"</span>,</span>
+<span>  control <span class="op">=</span> <span class="st">"DMSO"</span>,</span>
+<span>  lux <span class="op">=</span> <span class="st">"LUX.AUC_16"</span>,</span>
+<span>  growth <span class="op">=</span> <span class="st">"od_16h.measured"</span>,</span>
+<span>  batch <span class="op">=</span> <span class="st">"batch"</span>,</span>
+<span>  replicate <span class="op">=</span> <span class="st">"replicate"</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/fit_destress.html">fit_destress</a></span><span class="op">(</span></span>
+<span>  <span class="va">assay</span>,</span>
+<span>  preset <span class="op">=</span> <span class="st">"model"</span>,</span>
+<span>  technical <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"batch"</span>, <span class="st">"replicate"</span><span class="op">)</span>,</span>
+<span>  empirical_bayes <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  empty_vector_promoter <span class="op">=</span> <span class="st">"PEVC3"</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">tab</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/results.html">results</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></code></pre></div>
+<p>The result table then includes additional columns:</p>
+<ul>
+<li>
+<code>empty_vector_effect</code>: fitted DMSO-relative response of the EVC reporter for the compound.</li>
+<li>
+<code>background_adjusted_effect</code>: fitted total response after subtracting <code>empty_vector_effect</code>.</li>
+<li>
+<code>specific_effect</code>: promoter-specific response after compound-wise centering.</li>
+</ul>
+<p>For an additive compound-level EVC background, the subtraction cancels from the centered <code>specific_effect</code>. This means the EVC option is most useful for reporting and diagnosing background-adjusted total responses, while the final model-based hit calls still target promoter-specific deviations from the compound-wide average.</p>
+<p>Estimated model components, including growth-exponent parameters and promoter-compound effect estimates, can be extracted with:</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">params</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/model_parameters.html">model_parameters</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">growth_parameters</span> <span class="op">&lt;-</span> <span class="va">params</span><span class="op">$</span><span class="va">growth_exponents</span></span>
+<span><span class="va">promoter_effects</span> <span class="op">&lt;-</span> <span class="va">params</span><span class="op">$</span><span class="va">promoter_effects</span></span></code></pre></div>
+<p>The median-polish compatibility workflow starts from the original exported expression table and DMSO library-well IDs:</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">legacy</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/fit_destress.html">fit_destress</a></span><span class="op">(</span></span>
 <span>  <span class="va">expression_df</span>,</span>
 <span>  preset <span class="op">=</span> <span class="st">"median_polish"</span>,</span>
@@ -167,7 +209,7 @@
 <span><span class="va">replicate_pvalues</span> <span class="op">&lt;-</span> <span class="va">legacy</span><span class="op">$</span><span class="va">replicate_results</span></span>
 <span><span class="va">hit_table</span> <span class="op">&lt;-</span> <span class="va">legacy</span><span class="op">$</span><span class="va">pair_results</span></span></code></pre></div>
 <p>The Empty Vector Control workflow uses the same named interface:</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">evc</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/fit_destress.html">fit_destress</a></span><span class="op">(</span></span>
 <span>  <span class="va">expression_df</span>,</span>
 <span>  preset <span class="op">=</span> <span class="st">"empty_vector_control"</span>,</span>
@@ -184,7 +226,7 @@
 <a class="anchor" aria-label="anchor" href="#how-to-use-dstressr"></a>
 </h2>
 <p>The typical DStressR analysis starts from promoter-level luminescence and growth summaries, together with compound, promoter, replicate, plate, and batch metadata.</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://muellsen.github.io/DStressR/" class="external-link">DStressR</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">assay</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/prepare_assay.html">prepare_assay</a></span><span class="op">(</span></span>
@@ -223,7 +265,7 @@
 <h2 id="standard-plots">Standard plots<a class="anchor" aria-label="anchor" href="#standard-plots"></a>
 </h2>
 <p><code>DStressR</code> includes standard output plots for common screening summaries, including volcano plots, promoter-compound response heatmaps, clustered heatmaps, effect histograms, and empirical-Bayes variance diagnostics.</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="reference/plot_volcano.html">plot_volcano</a></span><span class="op">(</span></span>
 <span>  <span class="va">tab</span>,</span>
 <span>  effect <span class="op">=</span> <span class="st">"specific_effect"</span>,</span>
@@ -259,7 +301,7 @@
 </li>
 </ul>
 <p>These columns are mapped explicitly in <code><a href="reference/prepare_assay.html">prepare_assay()</a></code>, so projects can use their own column names:</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">assay</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/prepare_assay.html">prepare_assay</a></span><span class="op">(</span></span>
 <span>  <span class="va">expression_df</span>,</span>
 <span>  promoter <span class="op">=</span> <span class="st">"promoter"</span>,</span>
@@ -299,14 +341,14 @@
 <p>The helper converts these to a compound key <code>srn_code = paste0("lp", Library plate, "_", Well)</code> and joins <code>ProductName</code> and <code>Catalog Number</code> onto the expression table.</p>
 </li>
 </ol>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">expression_df</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/read_campylobacter_expression.html">read_campylobacter_expression</a></span><span class="op">(</span></span>
 <span>  expression_file <span class="op">=</span> <span class="st">"expression_values.tsv.gz"</span>,</span>
 <span>  libmap_file <span class="op">=</span> <span class="st">"LibMap.txt"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>The returned object has the same number of rows as <code>expression_values.tsv.gz</code>, with compound annotations added. This joined table can then be passed directly to <code><a href="reference/prepare_assay.html">prepare_assay()</a></code>.</p>
 <p>To reproduce the original median-polish workflow, provide the DMSO library-well IDs and optional noisy-DMSO well IDs from <code>LibMap.txt</code>:</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">libmap</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.delim</a></span><span class="op">(</span><span class="st">"LibMap.txt"</span>, check.names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">libmap</span><span class="op">$</span><span class="va">srn_code</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"lp"</span>, <span class="va">libmap</span><span class="op">[[</span><span class="st">"Library plate"</span><span class="op">]</span><span class="op">]</span>, <span class="st">"_"</span>, <span class="va">libmap</span><span class="op">[[</span><span class="st">"Well"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
 <span></span>
@@ -344,7 +386,7 @@
 <li><code>Catalog Number</code></li>
 <li><code>ProductName</code></li>
 </ul>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">expression_df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.delim</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/connections.html" class="external-link">gzfile</a></span><span class="op">(</span><span class="st">"lux_auc_filtered_median.tsv.gz"</span><span class="op">)</span>,</span>
 <span>                            check.names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">libmap</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.delim</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/connections.html" class="external-link">gzfile</a></span><span class="op">(</span><span class="st">"LibMap.tsv.gz"</span><span class="op">)</span>, check.names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
@@ -373,7 +415,7 @@
 <h2 id="optional-dgrowthr-handoff">Optional DGrowthR handoff<a class="anchor" aria-label="anchor" href="#optional-dgrowthr-handoff"></a>
 </h2>
 <p>If growth curves have already been modeled with DGrowthR, DStressR can use a chosen DGrowthR growth parameter as the growth column for a sensitivity analysis:</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">expression_df2</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/add_dgrowthr_growth.html">add_dgrowthr_growth</a></span><span class="op">(</span></span>
 <span>  <span class="va">expression_df</span>,</span>
 <span>  object <span class="op">=</span> <span class="va">dgrowthr_fit</span>,</span>

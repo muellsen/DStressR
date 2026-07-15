@@ -63,10 +63,12 @@ legacy median-polish and Empty Vector Control analyses.</p>
 <span>  <span class="va">assay</span>,</span>
 <span>  technical <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  empirical_bayes <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  empty_vector_promoter <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  normalization <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  testing <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  aggregation <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  adjustment <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  interaction <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  preset <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -93,6 +95,13 @@ common prior variance. This maps to <code>testing = "moderated_t"</code> for the
 model path; <code>FALSE</code> maps to <code>testing = "student_t"</code>.</p></dd>
 
 
+<dt id="arg-empty-vector-promoter">empty_vector_promoter<a class="anchor" aria-label="anchor" href="#arg-empty-vector-promoter"></a></dt>
+<dd><p>Optional promoter/control strain used as an
+empty-vector reporter in the model-based path. When supplied, its
+reference-relative compound effect is subtracted from every promoter's
+reference-relative compound effect before promoter-library centering.</p></dd>
+
+
 <dt id="arg-normalization">normalization<a class="anchor" aria-label="anchor" href="#arg-normalization"></a></dt>
 <dd><p>One of <code>"linear_model"</code>, <code>"median_polish"</code>, or
 <code>"empty_vector"</code>. <code>"model"</code> and <code>"evc"</code> are accepted aliases.</p></dd>
@@ -108,6 +117,14 @@ model path; <code>FALSE</code> maps to <code>testing = "student_t"</code>.</p></
 
 <dt id="arg-adjustment">adjustment<a class="anchor" aria-label="anchor" href="#arg-adjustment"></a></dt>
 <dd><p>One of <code>"global"</code>, <code>"by_promoter"</code>, or <code>"none"</code>.</p></dd>
+
+
+<dt id="arg-interaction">interaction<a class="anchor" aria-label="anchor" href="#arg-interaction"></a></dt>
+<dd><p>If <code>FALSE</code>, fit one Gaussian linear
+model per promoter with the control compound as reference and the supplied
+technical covariates as design terms. The latter is the scalable path for
+promoter-specific compound effects. If <code>TRUE</code>, fit the historical full
+promoter-by-compound interaction model.</p></dd>
 
 
 <dt id="arg-preset">preset<a class="anchor" aria-label="anchor" href="#arg-preset"></a></dt>
