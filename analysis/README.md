@@ -35,6 +35,11 @@ These files should be exported by package code, for example from
 `results(fit_workflow(..., workflow = "model", ...))`, after any selected
 package-level p-value adjustment.
 
+The public template
+`scripts/export_campy_standard_model_template.R` shows the exact local call
+used to regenerate `destress_standard_pair_results.tsv` from the proprietary
+Campylobacter expression table.
+
 For model-based DStressR outputs, `effect`, `pvalue`, and adjusted p-values
 should refer to the promoter-specific effect after subtracting the compound's
 global effect across promoters (`specific_*` columns from `results()`), not the
