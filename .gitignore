@@ -11,3 +11,8 @@
 analysis/outputs/
 tmp/
 tmp_report_text.txt
+Rplots.pdf
+
+# Local manuscript draft and proprietary/supporting paper artifacts
+paper/
+assets/*.pdf

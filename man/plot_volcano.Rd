@@ -57,8 +57,8 @@ selected columns.}
 \item{label_by}{Label style for annotated points. The default, \code{"pair"},
 labels top hits as promoter-compound pairs.}
 
-\item{max_label_chars}{Maximum characters per annotation label. Longer labels
-are truncated with \code{...}. Use \code{Inf} to keep full labels.}
+\item{max_label_chars}{Maximum characters per annotation label. Longer
+labels are truncated with \code{...}. Use \code{Inf} to keep full labels.}
 
 \item{repel_labels}{If \code{TRUE} and the optional \code{ggrepel} package is
 installed, use repelled labels for the annotated top hits.}
@@ -75,11 +75,9 @@ p-value. Significant hits are emphasized, top promoter groups can be colored,
 and the most significant promoter-compound pairs are annotated.
 }
 \details{
-The defaults work with \code{\link[=results]{results()}} followed by
-\code{\link[=adjust_pvalues]{adjust_pvalues()}} or
-\code{\link[=call_hits]{call_hits()}}. For workflow comparison tables, pass the
-corresponding column names, for example
-\code{effect = "destress_eb_effect_centered"},
-\code{padj = "estimated_alpha_eb_padj_by_promoter"},
-\code{compound = "srn_code"}, and \code{compound_label = "ProductName"}.
+The defaults work with \code{\link[=results]{results()}} followed by \code{\link[=adjust_pvalues]{adjust_pvalues()}} or
+\code{\link[=call_hits]{call_hits()}}. For workflow comparison tables, pass the corresponding column
+names, for example \code{effect = "destress_eb_effect_centered"},
+\code{padj = "estimated_alpha_eb_padj_by_promoter"}, \code{compound = "srn_code"},
+and \code{compound_label = "ProductName"}.
 }

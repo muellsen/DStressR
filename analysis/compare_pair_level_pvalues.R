@@ -8,9 +8,10 @@ suppressPackageStartupMessages({
 
 methods <- c("median_polish", "destress_standard", "destress_moderated")
 out_dir <- comparison_results_dir("pair_level")
+adjustment <- comparison_adjustment()
 
 pair_table <- merge_package_pair_results(methods)
-pair_table <- add_hit_columns(pair_table, methods, fdr = 0.05)
+pair_table <- add_hit_columns(pair_table, methods, fdr = 0.05, adjustment = adjustment)
 
 write.table(
   pair_table,
@@ -26,7 +27,8 @@ summary_table <- do.call(rbind, lapply(methods, function(method) {
     label = method_label(method),
     common_pair_rows = nrow(pair_table),
     finite_pvalues = sum(is.finite(pair_table[[paste0(method, "_pvalue")]])),
-    finite_adjusted_pvalues = sum(is.finite(pair_table[[paste0(method, "_padj")]])),
+    adjustment = adjustment,
+    finite_adjusted_pvalues = sum(is.finite(pair_table[[padj_column(method, adjustment)]])),
     raw_p_lt_0.05 = sum(pair_table[[paste0(method, "_pvalue")]] < 0.05, na.rm = TRUE),
     adjusted_p_lt_0.05 = sum(pair_table[[method_hit_column(method)]], na.rm = TRUE),
     median_pvalue = stats::median(pair_table[[paste0(method, "_pvalue")]], na.rm = TRUE),
@@ -94,8 +96,8 @@ p1 <- ggplot(scatter_df, aes(median_polish_neglog10p, destress_moderated_neglog1
   labs(
     title = "Pair-level package p-values",
     subtitle = "One row per promoter-compound pair",
-    x = "Median-polish -log10(p)",
-    y = "DStressR moderated -log10(p)"
+    x = "Median-polish max-p model -log10(p)",
+    y = "DStressR moderated model -log10(p)"
   )
 
 p2 <- ggplot(scatter_df, aes(destress_standard_neglog10p, destress_moderated_neglog10p)) +
@@ -107,7 +109,7 @@ p2 <- ggplot(scatter_df, aes(destress_standard_neglog10p, destress_moderated_neg
     title = "Standard vs moderated DStressR package p-values",
     subtitle = "One row per promoter-compound pair",
     x = "DStressR standard -log10(p)",
-    y = "DStressR moderated -log10(p)"
+    y = "DStressR moderated model -log10(p)"
   )
 
 ggsave(file.path(out_dir, "median_polish_vs_destress_moderated_pair_pvalues.png"),

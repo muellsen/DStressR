@@ -92,7 +92,8 @@ read_package_pair_results <- function(method, path = package_pair_result_path(me
   if (!file.exists(path)) {
     stop(
       "Missing DStressR package output for method `", method, "`: ", path,
-      "\nExpected a TSV with columns: promoter, compound, effect, pvalue, padj.",
+      "\nExpected a TSV with columns: promoter, compound, effect, pvalue, ",
+      "padj_global, padj_by_promoter.",
       "\nGenerate/export this table from the package first; analysis scripts ",
       "must not compute estimators or p-values.",
       call. = FALSE
@@ -100,7 +101,7 @@ read_package_pair_results <- function(method, path = package_pair_result_path(me
   }
 
   tab <- read_tsv_base(path)
-  required <- c("promoter", "compound", "effect", "pvalue", "padj")
+  required <- c("promoter", "compound", "effect", "pvalue", "padj_global", "padj_by_promoter")
   missing <- setdiff(required, names(tab))
   if (length(missing)) {
     stop(
@@ -115,7 +116,8 @@ read_package_pair_results <- function(method, path = package_pair_result_path(me
   tab$compound <- as.character(tab$compound)
   tab$effect <- as.numeric(tab$effect)
   tab$pvalue <- as.numeric(tab$pvalue)
-  tab$padj <- as.numeric(tab$padj)
+  tab$padj_global <- as.numeric(tab$padj_global)
+  tab$padj_by_promoter <- as.numeric(tab$padj_by_promoter)
   tab$pair_id <- paste(tab$promoter, tab$compound, sep = "__")
 
   if (anyDuplicated(tab$pair_id)) {
@@ -128,8 +130,8 @@ read_package_pair_results <- function(method, path = package_pair_result_path(me
     )
   }
 
-  names(tab)[names(tab) %in% c("effect", "pvalue", "padj")] <-
-    paste(method, c("effect", "pvalue", "padj"), sep = "_")
+  names(tab)[names(tab) %in% c("effect", "pvalue", "padj_global", "padj_by_promoter")] <-
+    paste(method, c("effect", "pvalue", "padj_global", "padj_by_promoter"), sep = "_")
   tab
 }
 
@@ -159,9 +161,28 @@ method_hit_column <- function(method) {
   paste0(method, "_hit")
 }
 
-add_hit_columns <- function(tab, methods, fdr = 0.05) {
+comparison_adjustment <- function() {
+  adjustment <- Sys.getenv("DSTRESSR_COMPARISON_ADJUSTMENT", unset = "global")
+  adjustment <- gsub("-", "_", tolower(adjustment), fixed = TRUE)
+  if (adjustment %in% c("promoter", "within_promoter")) {
+    adjustment <- "by_promoter"
+  }
+  if (!adjustment %in% c("global", "by_promoter")) {
+    stop(
+      "DSTRESSR_COMPARISON_ADJUSTMENT must be `global` or `by_promoter`.",
+      call. = FALSE
+    )
+  }
+  adjustment
+}
+
+padj_column <- function(method, adjustment = comparison_adjustment()) {
+  paste0(method, "_padj_", adjustment)
+}
+
+add_hit_columns <- function(tab, methods, fdr = 0.05, adjustment = comparison_adjustment()) {
   for (method in methods) {
-    padj_col <- paste0(method, "_padj")
+    padj_col <- padj_column(method, adjustment)
     tab[[method_hit_column(method)]] <- is.finite(tab[[padj_col]]) & tab[[padj_col]] < fdr
   }
   tab
@@ -169,9 +190,9 @@ add_hit_columns <- function(tab, methods, fdr = 0.05) {
 
 method_label <- function(method) {
   labels <- c(
-    median_polish = "Median-polish",
-    destress_standard = "DStressR standard",
-    destress_moderated = "DStressR moderated",
+    median_polish = "Median-polish max-p model",
+    destress_standard = "DStressR standard model",
+    destress_moderated = "DStressR moderated model",
     empty_vector = "Empty-vector control"
   )
   ifelse(method %in% names(labels), labels[[method]], method)
