@@ -95,8 +95,8 @@ corresponding to one GP fit per growth curve.</p></dd>
 
 <dt id="arg-growth-metric">growth_metric<a class="anchor" aria-label="anchor" href="#arg-growth-metric"></a></dt>
 <dd><p>Column in <code>object@growth_parameters</code> to use as the
-growth measurement. Common choices are <code>max_growth</code>, <code>AUC</code>, <code>OD_16</code>,
-and <code>AUC_16</code>.</p></dd>
+growth measurement. Common choices are <code>max_growth</code>, <code>AUC</code>, <code>OD_16</code>, and
+<code>AUC_16</code>.</p></dd>
 
 
 <dt id="arg-output">output<a class="anchor" aria-label="anchor" href="#arg-output"></a></dt>
@@ -116,15 +116,13 @@ the unrenamed metric column when possible.</p></dd>
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>This function is deliberately opt-in. The current hit-determination scripts
 use the original exported growth summaries unless the analyst explicitly
-calls this helper and passes the resulting column to
-<code><a href="prepare_assay.html">prepare_assay()</a></code>. This keeps the present analysis
-reproducible while making the DGrowthR bridge available for future
-comparisons.</p>
+calls this helper and passes the resulting column to <code><a href="prepare_assay.html">prepare_assay()</a></code>. This
+keeps the present analysis reproducible while making the DGrowthR bridge
+available for future comparisons.</p>
 <p>This helper joins <code>object@growth_parameters</code> from a fitted DGrowthR object
 onto a promoter/luminescence assay table. Run
 <code><a href="https://bio-datascience.github.io/DGrowthR/reference/estimate_growth_parameters.html" class="external-link">DGrowthR::estimate_growth_parameters()</a></code> first, optionally with
-<code>od_auc_at_t</code> if you want time-specific columns such as <code>OD_16</code> or
-<code>AUC_16</code>.</p>
+<code>od_auc_at_t</code> if you want time-specific columns such as <code>OD_16</code> or <code>AUC_16</code>.</p>
     </div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

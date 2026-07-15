@@ -146,8 +146,8 @@ labels top hits as promoter-compound pairs.</p></dd>
 
 
 <dt id="arg-max-label-chars">max_label_chars<a class="anchor" aria-label="anchor" href="#arg-max-label-chars"></a></dt>
-<dd><p>Maximum characters per annotation label. Longer labels
-are truncated with <code>...</code>. Use <code>Inf</code> to keep full labels.</p></dd>
+<dd><p>Maximum characters per annotation label. Longer
+labels are truncated with <code>...</code>. Use <code>Inf</code> to keep full labels.</p></dd>
 
 
 <dt id="arg-repel-labels">repel_labels<a class="anchor" aria-label="anchor" href="#arg-repel-labels"></a></dt>
@@ -165,13 +165,11 @@ installed, use repelled labels for the annotated top hits.</p></dd>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p>The defaults work with <code><a href="results.html">results()</a></code> followed by
-<code><a href="adjust_pvalues.html">adjust_pvalues()</a></code> or
-<code><a href="call_hits.html">call_hits()</a></code>. For workflow comparison tables, pass the
-corresponding column names, for example
-<code>effect = "destress_eb_effect_centered"</code>,
-<code>padj = "estimated_alpha_eb_padj_by_promoter"</code>,
-<code>compound = "srn_code"</code>, and <code>compound_label = "ProductName"</code>.</p>
+    <p>The defaults work with <code><a href="results.html">results()</a></code> followed by <code><a href="adjust_pvalues.html">adjust_pvalues()</a></code> or
+<code><a href="call_hits.html">call_hits()</a></code>. For workflow comparison tables, pass the corresponding column
+names, for example <code>effect = "destress_eb_effect_centered"</code>,
+<code>padj = "estimated_alpha_eb_padj_by_promoter"</code>, <code>compound = "srn_code"</code>,
+and <code>compound_label = "ProductName"</code>.</p>
     </div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
