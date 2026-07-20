@@ -116,10 +116,10 @@ Use `growth_exponent = 1` for the fixed log2(LUX / OD) normalization,
 `growth_exponent = "estimate"` to estimate promoter-specific `alpha_g` values
 from controls, or pass a named promoter vector.
 
-In model-based analyses, `empirical_bayes = FALSE` is the standard
-Student-$t$ model and `empirical_bayes = TRUE` is the moderated model. The
-Campylobacter manuscript comparison currently uses the standard model
-(`empirical_bayes = FALSE`) against the median-polish max-p workflow.
+In model-based analyses, `empirical_bayes = TRUE` is the default moderated
+model and `empirical_bayes = FALSE` is the ordinary Student-$t$ sensitivity
+model. The Campylobacter manuscript comparison uses the default moderated
+model against the median-polish max-p workflow.
 
 ## Model-based Empty Vector Control
 
@@ -367,13 +367,15 @@ with compound annotations added. This joined table can then be passed directly
 to `prepare_assay()`.
 
 The public template script
-`scripts/export_campy_standard_model_template.R` records the exact
-Campylobacter standard-model call used to regenerate the local package output
-`analysis/outputs/package_results/destress_standard_pair_results.tsv` from the
-proprietary expression table. It sets `empirical_bayes = FALSE`,
-`interaction = FALSE`, uses promoter-specific estimated growth exponents, and
-exports the `specific_*` result columns expected by the downstream analysis
-scripts.
+`scripts/export_campy_default_model_template.R` records the exact
+Campylobacter default-model call used to regenerate the local package output
+`analysis/outputs/package_results/destress_moderated_pair_results.tsv` from the
+proprietary expression table. It sets `empirical_bayes = TRUE`,
+`interaction = FALSE`, `background_rank = 0`, uses promoter-specific estimated
+growth exponents, and exports the `specific_*` result columns expected by the
+downstream analysis scripts. The `scripts/README.md` file highlights this
+data-free export template as the canonical place to inspect the actual
+manuscript model call.
 
 To reproduce the original median-polish workflow, provide the DMSO library-well
 IDs and optional noisy-DMSO well IDs from `LibMap.txt`:

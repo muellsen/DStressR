@@ -185,6 +185,75 @@ test_that("fit_destress separates global compound effects from promoter-specific
   expect_lt(specific_row$specific_pvalue, 1e-8)
 })
 
+test_that("fit_destress can remove a low-rank compound background", {
+  promoters <- paste0("P", seq_len(6))
+  compounds <- c("DMSO", "C_factor1", "C_factor2", "C_specific")
+  dat <- expand.grid(
+    promoter = promoters,
+    compound = compounds,
+    replicate = paste0("r", seq_len(5)),
+    stringsAsFactors = FALSE
+  )
+
+  baseline <- stats::setNames(seq(9.5, 10.5, length.out = length(promoters)), promoters)
+  loading <- stats::setNames(c(-2, -1, 0, 0, 1, 2), promoters)
+  score <- c(DMSO = 0, C_factor1 = 1.2, C_factor2 = -0.8, C_specific = 0)
+  sparse_specific <- stats::setNames(c(1, -2, 1, 1, -2, 1), promoters)
+  dat$value <- baseline[dat$promoter] +
+    loading[dat$promoter] * score[dat$compound] +
+    ifelse(dat$compound == "C_specific", sparse_specific[dat$promoter], 0)
+
+  assay <- prepare_assay(
+    dat,
+    promoter = "promoter",
+    compound = "compound",
+    control = "DMSO",
+    response = "value",
+    replicate = "replicate"
+  )
+  rank0 <- results(fit_destress(assay, technical = "replicate", empirical_bayes = FALSE))
+  rank1 <- results(fit_destress(
+    assay,
+    technical = "replicate",
+    empirical_bayes = FALSE,
+    background_rank = 1
+  ))
+
+  factor0 <- rank0[rank0$compound %in% c("C_factor1", "C_factor2"), ]
+  factor1 <- rank1[rank1$compound %in% c("C_factor1", "C_factor2"), ]
+  expect_gt(stats::sd(factor0$specific_effect), 0.5)
+  expect_lt(max(abs(factor1$specific_effect)), 1e-8)
+  expect_gt(max(abs(factor1$low_rank_effect)), 0.5)
+
+  sparse1 <- rank1[rank1$compound == "C_specific", ]
+  expected_sparse <- sparse_specific[sparse1$promoter]
+  expect_equal(sparse1$specific_effect, unname(expected_sparse), tolerance = 1e-8)
+})
+
+test_that("background_rank_diagnostics detects broad low-rank structure", {
+  promoters <- paste0("P", seq_len(8))
+  compounds <- paste0("C", seq_len(10))
+  loading <- stats::setNames(seq(-1, 1, length.out = length(promoters)), promoters)
+  score <- stats::setNames(c(seq(-2, 2, length.out = 6), rep(0, 4)), compounds)
+  tab <- expand.grid(
+    promoter = promoters,
+    compound = compounds,
+    stringsAsFactors = FALSE
+  )
+  tab$specific_effect <- loading[tab$promoter] * score[tab$compound]
+
+  diag <- background_rank_diagnostics(
+    tab,
+    rank_max = 3,
+    permutations = 30,
+    seed = 1
+  )
+
+  expect_equal(nrow(diag), 3)
+  expect_gt(diag$observed[1], diag$null_q95[1])
+  expect_gt(diag$prop_variance[1], 0.9)
+})
+
 test_that("fit_destress subtracts model-based empty-vector background before centering", {
   dat <- expand.grid(
     promoter = c("EVC", "P1", "P2"),

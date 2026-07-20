@@ -106,11 +106,11 @@ standard_vs_median$hit_class[
 standard_vs_median$hit_class[
   !standard_vs_median[[method_hit_column("median_polish")]] &
     standard_vs_median[[method_hit_column("destress_standard")]]
-] <- "DStressR standard only"
+] <- "DStressR ordinary only"
 standard_vs_median$hit_class[standard_vs_median$both_global_hits] <- "Both"
 standard_vs_median$hit_class <- factor(
   standard_vs_median$hit_class,
-  levels = c("Not significant in both", "Median-polish max-p only", "DStressR standard only", "Both")
+  levels = c("Not significant in both", "Median-polish max-p only", "DStressR ordinary only", "Both")
 )
 
 pair_pvalue_scatter <- function(d, x_col, y_col, value_label, zoom = FALSE) {
@@ -126,7 +126,7 @@ pair_pvalue_scatter <- function(d, x_col, y_col, value_label, zoom = FALSE) {
       values = c(
         "Not significant in both" = "#94a3b8",
         "Median-polish max-p only" = "#f97316",
-        "DStressR standard only" = "#2563eb",
+        "DStressR ordinary only" = "#2563eb",
         "Both" = "#b91c1c"
       ),
       name = paste0(adjustment, " BH hit")
@@ -146,7 +146,7 @@ pair_pvalue_scatter <- function(d, x_col, y_col, value_label, zoom = FALSE) {
       title = title,
       subtitle = "One point per promoter-compound pair",
       x = paste0("Median-polish max-p ", value_label),
-      y = paste0("DStressR standard ", value_label)
+      y = paste0("DStressR ordinary ", value_label)
     )
 }
 
@@ -168,7 +168,7 @@ raw_combined <- arrangeGrob(
   raw_full + theme(legend.position = "none"),
   raw_zoom + theme(legend.position = "none"),
   ncol = 2,
-  top = "Median-polish max-p model vs DStressR standard model raw p-values"
+  top = "Median-polish max-p model vs DStressR ordinary model raw p-values"
 )
 
 adjusted_x <- padj_column("median_polish", adjustment)
@@ -198,7 +198,7 @@ adjusted_combined <- arrangeGrob(
   adjusted_full + theme(legend.position = "none"),
   adjusted_zoom + theme(legend.position = "none"),
   ncol = 2,
-  top = paste0("Median-polish max-p model vs DStressR standard model ", adjusted_label)
+  top = paste0("Median-polish max-p model vs DStressR ordinary model ", adjusted_label)
 )
 
 p1 <- ggplot(scatter_df, aes(median_polish_neglog10p, destress_moderated_neglog10p)) +
@@ -210,7 +210,7 @@ p1 <- ggplot(scatter_df, aes(median_polish_neglog10p, destress_moderated_neglog1
     title = "Pair-level package p-values",
     subtitle = "One row per promoter-compound pair",
     x = "Median-polish max-p model -log10(p)",
-    y = "DStressR moderated model -log10(p)"
+    y = "DStressR default moderated -log10(p)"
   )
 
 p2 <- ggplot(scatter_df, aes(destress_standard_neglog10p, destress_moderated_neglog10p)) +
@@ -219,10 +219,10 @@ p2 <- ggplot(scatter_df, aes(destress_standard_neglog10p, destress_moderated_neg
   coord_equal() +
   theme_bw(base_size = 10) +
   labs(
-    title = "Standard vs moderated DStressR package p-values",
+    title = "Ordinary vs default moderated DStressR package p-values",
     subtitle = "One row per promoter-compound pair",
-    x = "DStressR standard -log10(p)",
-    y = "DStressR moderated model -log10(p)"
+    x = "DStressR ordinary -log10(p)",
+    y = "DStressR default moderated -log10(p)"
   )
 
 ggsave(file.path(out_dir, "median_polish_vs_destress_moderated_pair_pvalues.png"),

@@ -8,7 +8,7 @@ suppressPackageStartupMessages({
 
 out_dir <- comparison_results_dir("hit_bipartite_network")
 adjustment <- comparison_adjustment()
-method <- "destress_standard"
+method <- "destress_moderated"
 padj_col <- padj_column(method, adjustment)
 
 libmap <- read_tsv_base(libmap_path())
@@ -25,7 +25,7 @@ tab <- read_package_pair_results(method)
 tab$hit <- is.finite(tab[[padj_col]]) & tab[[padj_col]] < 0.05
 hits <- tab[tab$hit, , drop = FALSE]
 if (nrow(hits) == 0) {
-  stop("No DStressR standard hits available for bipartite network.", call. = FALSE)
+  stop("No DStressR default moderated hits available for bipartite network.", call. = FALSE)
 }
 
 hits <- merge(hits, compound_lookup, by = "compound", all.x = TRUE, sort = FALSE)
@@ -177,7 +177,7 @@ p <- ggplot() +
     plot.margin = margin(12, 230, 12, 72)
   ) +
   labs(
-    title = "DStressR standard model bipartite hit network",
+    title = "DStressR default (moderated) bipartite hit network",
     subtitle = paste0(
       "Compounds ranked top-to-bottom by in-degree; promoters ordered by connected compound ranks; ",
       adjustment, " BH, FDR < 0.05. Top 25 compound names shown."
@@ -208,7 +208,7 @@ write.table(
 )
 
 ggsave(
-  file.path(out_dir, "dstressr_standard_bipartite_network.png"),
+  file.path(out_dir, "dstressr_default_moderated_bipartite_network.png"),
   p,
   width = 16,
   height = 12,
@@ -217,7 +217,7 @@ ggsave(
   limitsize = FALSE
 )
 ggsave(
-  file.path(out_dir, "dstressr_standard_bipartite_network.pdf"),
+  file.path(out_dir, "dstressr_default_moderated_bipartite_network.pdf"),
   p,
   width = 16,
   height = 12,
@@ -242,6 +242,6 @@ ggsave(
   limitsize = FALSE
 )
 
-message("Wrote DStressR standard model bipartite network to: ", out_dir)
+message("Wrote DStressR default moderated bipartite network to: ", out_dir)
 message("Promoters: ", nrow(promoter_nodes), "; compounds: ", nrow(compound_nodes), "; edges: ", nrow(edge_base))
 message("Labeled compounds: ", sum(compound_nodes$label_compound), " / ", nrow(compound_nodes))

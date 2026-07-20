@@ -51,7 +51,7 @@ p <- ggplot(plot_data, aes(pvalue)) +
   ) +
   labs(
     title = "Raw p-value histograms by promoter",
-    subtitle = "Median-polish max-p model vs DStressR moderated model",
+    subtitle = "Median-polish max-p model vs DStressR default moderated model",
     x = "Raw p-value",
     y = "Promoter-compound pairs"
   )
@@ -80,5 +80,5 @@ ggsave(
   bg = "white"
 )
 
-message("Wrote median-polish vs moderated p-value matrix to: ", out_dir)
+message("Wrote median-polish vs default moderated p-value matrix to: ", out_dir)
 print(summary[order(summary$promoter, summary$method), ])

@@ -51,7 +51,7 @@ moderated <- data.frame(
   promoter = moderated$promoter,
   compound = moderated$compound,
   pvalue = moderated$destress_moderated_pvalue,
-  method = "DStressR moderated model",
+  method = "DStressR default (moderated)",
   stringsAsFactors = FALSE
 )
 
@@ -64,7 +64,7 @@ moderated <- moderated[paste(moderated$promoter, moderated$compound, sep = "\r")
 
 plot_data <- rbind(legacy_pair, moderated)
 plot_data <- plot_data[is.finite(plot_data$pvalue), , drop = FALSE]
-plot_data$method <- factor(plot_data$method, levels = c("Legacy workflow", "DStressR moderated model"))
+plot_data$method <- factor(plot_data$method, levels = c("Legacy workflow", "DStressR default (moderated)"))
 plot_data$promoter <- factor(plot_data$promoter, levels = sort(unique(plot_data$promoter)))
 
 summary <- do.call(rbind, lapply(split(plot_data, list(plot_data$method, plot_data$promoter), drop = TRUE), function(x) {
@@ -93,7 +93,7 @@ p <- ggplot(plot_data, aes(pvalue)) +
   ) +
   labs(
     title = "Raw p-value histograms by promoter",
-    subtitle = "Legacy workflow median-polish p-values vs DStressR moderated model",
+    subtitle = "Legacy workflow median-polish p-values vs DStressR default moderated model",
     x = "Raw p-value",
     y = "Promoter-compound pairs"
   )
@@ -122,6 +122,6 @@ ggsave(
   bg = "white"
 )
 
-message("Wrote legacy workflow vs moderated p-value matrix to: ", out_dir)
+message("Wrote legacy workflow vs default moderated p-value matrix to: ", out_dir)
 message("Common promoter-compound pairs: ", length(common_keys))
 print(summary[order(summary$promoter, summary$method), ])

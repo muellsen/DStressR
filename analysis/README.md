@@ -36,9 +36,10 @@ These files should be exported by package code, for example from
 package-level p-value adjustment.
 
 The public template
-`scripts/export_campy_standard_model_template.R` shows the exact local call
-used to regenerate `destress_standard_pair_results.tsv` from the proprietary
-Campylobacter expression table.
+`scripts/export_campy_default_model_template.R` shows the exact local call
+used to regenerate `destress_moderated_pair_results.tsv`, the default
+moderated DStressR output, from the proprietary Campylobacter expression
+table. The script contains no data.
 
 For model-based DStressR outputs, `effect`, `pvalue`, and adjusted p-values
 should refer to the promoter-specific effect after subtracting the compound's
@@ -62,14 +63,14 @@ to choose the adjusted p-value family used for hit calls. The default is
   returned by the package (`a_raw`, `alpha_raw`, and `alpha_shrunk`).
 - `plot_response_heatmap_comparison.R`: plots the fixed-ratio response,
   modeled response, and modeled-minus-fixed-ratio difference heatmaps.
-- `plot_significance_summary.R`: creates the DStressR standard-model and
+- `plot_significance_summary.R`: creates the DStressR default moderated and
   median-polish max-p p-value/table panels, plus the volcano/Venn summary.
-- `plot_moderated_hit_bipartite_heatmap.R`: plots the DStressR standard-model
+- `plot_moderated_hit_bipartite_heatmap.R`: plots the DStressR default moderated
   hit/effect heatmap against the median-polish max-p calls in the same
   compound ordering. The file name is historical; the method used by the
   current script is documented in the plot title and output tables.
-- `plot_moderated_hit_network_no_pcmeA_unique.R`: plots the DStressR standard
-  hit network after removing compounds whose significant hit is unique to
+- `plot_moderated_hit_network_no_pcmeA_unique.R`: plots the DStressR default
+  moderated hit network after removing compounds whose significant hit is unique to
   `PcmeA`. The historical manuscript output names are still emitted as
   compatibility aliases.
 - `compare_pair_level_pvalues.R`: merges package pair-level outputs and writes
@@ -103,8 +104,8 @@ Current manuscript figure mapping:
 | Modeled response heatmap | `plot_response_heatmap_comparison.R` | `comparisons/response_heatmaps/modeled_response_heatmap.png` |
 | Fixed-ratio response heatmap | `plot_response_heatmap_comparison.R` | `comparisons/response_heatmaps/legacy_ratio_response_heatmap.png` |
 | Modeled-minus-fixed-ratio heatmap | `plot_response_heatmap_comparison.R` | `comparisons/response_heatmaps/modeled_minus_ratio_response_heatmap.png` |
-| DStressR p-value/table panel | `plot_significance_summary.R` | `comparisons/significance_summary/dstressr_standard_model_pvalue_histograms_with_hit_table.png` |
+| DStressR p-value/table panel | `plot_significance_summary.R` | `comparisons/significance_summary/dstressr_default_moderated_model_pvalue_histograms_with_hit_table.png` |
 | Median-polish p-value/table panel | `plot_significance_summary.R` | `comparisons/significance_summary/median_polish_model_pvalue_histograms_with_hit_table.png` |
 | Volcano/Venn summary | `plot_significance_summary.R` | `comparisons/significance_summary/volcano_venn_significance_summary.png` |
-| Hit/effect heatmap | `plot_moderated_hit_bipartite_heatmap.R` | `comparisons/hit_bipartite_heatmap/dstressr_standard_order_hit_bipartite_heatmap.png` |
-| Hit network | `plot_moderated_hit_network_no_pcmeA_unique.R` | `comparisons/hit_network/dstressr_standard_network_no_pcmeA_unique.png` |
+| Hit/effect heatmap | `plot_moderated_hit_bipartite_heatmap.R` | `comparisons/hit_bipartite_heatmap/dstressr_default_moderated_order_hit_bipartite_heatmap.png` |
+| Hit network | `plot_moderated_hit_network_no_pcmeA_unique.R` | `comparisons/hit_network/dstressr_default_moderated_network_no_pcmeA_unique.png` |

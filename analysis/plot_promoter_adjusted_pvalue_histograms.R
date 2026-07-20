@@ -47,8 +47,8 @@ plot_histograms <- function(label, x_column, x_label) {
     scale_x_continuous(limits = c(0, 1), breaks = c(0, 0.5, 1)) +
     scale_fill_manual(values = c(
       "Median-polish max-p model" = "#64748b",
-      "DStressR standard model" = "#2563eb",
-      "DStressR moderated model" = "#16a34a"
+      "DStressR ordinary model" = "#2563eb",
+      "DStressR default (moderated)" = "#16a34a"
     )) +
     theme_bw(base_size = 9) +
     theme(
