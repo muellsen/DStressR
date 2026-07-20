@@ -64,6 +64,7 @@ legacy median-polish and Empty Vector Control analyses.</p>
 <span>  technical <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  empirical_bayes <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  empty_vector_promoter <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  background_rank <span class="op">=</span> <span class="fl">0</span>,</span>
 <span>  normalization <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  testing <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  aggregation <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -100,6 +101,13 @@ model path; <code>FALSE</code> maps to <code>testing = "student_t"</code>.</p></
 empty-vector reporter in the model-based path. When supplied, its
 reference-relative compound effect is subtracted from every promoter's
 reference-relative compound effect before promoter-library centering.</p></dd>
+
+
+<dt id="arg-background-rank">background_rank<a class="anchor" aria-label="anchor" href="#arg-background-rank"></a></dt>
+<dd><p>Non-negative integer. The default <code>0</code> removes only
+the additive compound-wide mean. Values <code>1</code> or <code>2</code> additionally subtract a
+low-rank background term from the promoter-by-compound effect matrix before
+testing promoter-specific residual effects.</p></dd>
 
 
 <dt id="arg-normalization">normalization<a class="anchor" aria-label="anchor" href="#arg-normalization"></a></dt>

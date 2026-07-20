@@ -6,6 +6,8 @@
   : Add DGrowthR-derived growth metrics to a DStressR assay table
 - [`adjust_pvalues()`](https://muellsen.github.io/DStressR/reference/adjust_pvalues.md)
   : Adjust p-values within promoter
+- [`background_rank_diagnostics()`](https://muellsen.github.io/DStressR/reference/background_rank_diagnostics.md)
+  : Diagnose low-rank background structure
 - [`call_hits()`](https://muellsen.github.io/DStressR/reference/call_hits.md)
   : Call differential stress hits
 - [`destress_presets()`](https://muellsen.github.io/DStressR/reference/destress_presets.md)
