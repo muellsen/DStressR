@@ -9,6 +9,7 @@ fit_destress(
   technical = NULL,
   empirical_bayes = TRUE,
   empty_vector_promoter = NULL,
+  background_rank = 0,
   normalization = NULL,
   testing = NULL,
   aggregation = NULL,
@@ -34,6 +35,11 @@ model path; \code{FALSE} maps to \code{testing = "student_t"}.}
 empty-vector reporter in the model-based path. When supplied, its
 reference-relative compound effect is subtracted from every promoter's
 reference-relative compound effect before promoter-library centering.}
+
+\item{background_rank}{Non-negative integer. The default \code{0} removes only
+the additive compound-wide mean. Values \code{1} or \code{2} additionally subtract a
+low-rank background term from the promoter-by-compound effect matrix before
+testing promoter-specific residual effects.}
 
 \item{normalization}{One of \code{"linear_model"}, \code{"median_polish"}, or
 \code{"empty_vector"}. \code{"model"} and \code{"evc"} are accepted aliases.}

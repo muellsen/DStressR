@@ -10,9 +10,9 @@ model_parameters(fit)
 \item{fit}{A \code{destress_fit} object.}
 }
 \value{
-A named list of estimated parameter tables available for the fitted model.
-The scalable model path includes promoter-specific growth normalization
-estimates and promoter-compound effect estimates.
+A named list of estimated parameter tables available for the fitted
+model. The scalable model path includes promoter-specific growth
+normalization estimates and promoter-compound effect estimates.
 }
 \description{
 Extract estimated model parameters

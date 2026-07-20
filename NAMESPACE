@@ -1,5 +1,6 @@
 export(adjust_pvalues)
 export(add_dgrowthr_growth)
+export(background_rank_diagnostics)
 export(call_hits)
 export(destress_presets)
 export(destress_workflows)

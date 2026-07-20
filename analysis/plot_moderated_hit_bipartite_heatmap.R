@@ -8,7 +8,7 @@ suppressPackageStartupMessages({
 
 out_dir <- comparison_results_dir("hit_bipartite_heatmap")
 adjustment <- comparison_adjustment()
-dstressr_method <- "destress_standard"
+dstressr_method <- "destress_moderated"
 methods <- c(dstressr_method, "median_polish")
 
 libmap <- read_tsv_base(libmap_path())
@@ -31,7 +31,7 @@ median_polish$hit <- is.finite(median_polish[[median_padj]]) & median_polish[[me
 
 moderated_hits <- moderated[moderated$hit, c("promoter", "compound"), drop = FALSE]
 if (nrow(moderated_hits) == 0) {
-  stop("No DStressR standard hits available for bipartite heatmap.", call. = FALSE)
+  stop("No DStressR default moderated hits available for bipartite heatmap.", call. = FALSE)
 }
 
 compound_promoters <- split(moderated_hits$promoter, moderated_hits$compound)
@@ -171,10 +171,10 @@ p <- ggplot(plot_data, aes(compound, promoter, fill = hit_effect)) +
   labs(
     title = "Bipartite hit-effect heatmap",
     subtitle = paste0(
-      "Compounds uniquely connected to PcmeA removed; columns sorted by DStressR standard model in-degree; ",
+      "Compounds uniquely connected to PcmeA removed; columns sorted by DStressR default moderated in-degree; ",
       "tile color shows signed effect for ", adjustment, " BH hits"
     ),
-    x = paste0("DStressR standard model significant compounds after removing PcmeA-unique hits (n = ", length(col_order), ")"),
+    x = paste0("DStressR default moderated significant compounds after removing PcmeA-unique hits (n = ", length(col_order), ")"),
     y = "Promoter"
   )
 
@@ -208,7 +208,7 @@ write.table(
 )
 
 ggsave(
-  file.path(out_dir, "dstressr_standard_order_hit_bipartite_heatmap.png"),
+  file.path(out_dir, "dstressr_default_moderated_order_hit_bipartite_heatmap.png"),
   p,
   width = 30,
   height = 12,
@@ -216,7 +216,7 @@ ggsave(
   bg = "white"
 )
 ggsave(
-  file.path(out_dir, "dstressr_standard_order_hit_bipartite_heatmap.pdf"),
+  file.path(out_dir, "dstressr_default_moderated_order_hit_bipartite_heatmap.pdf"),
   p,
   width = 30,
   height = 12,

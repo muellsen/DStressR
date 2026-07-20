@@ -10,7 +10,7 @@ suppressPackageStartupMessages({
 
 out_dir <- comparison_results_dir("hit_network")
 adjustment <- comparison_adjustment()
-method <- "destress_standard"
+method <- "destress_moderated"
 padj_col <- padj_column(method, adjustment)
 
 libmap <- read_tsv_base(libmap_path())
@@ -27,7 +27,7 @@ tab <- read_package_pair_results(method)
 tab$hit <- is.finite(tab[[padj_col]]) & tab[[padj_col]] < 0.05
 hits <- tab[tab$hit, , drop = FALSE]
 if (nrow(hits) == 0) {
-  stop("No DStressR standard hits available for network.", call. = FALSE)
+  stop("No DStressR default moderated hits available for network.", call. = FALSE)
 }
 
 compound_promoters <- split(hits$promoter, hits$compound)
@@ -236,7 +236,7 @@ p <- ggplot() +
   ) +
   guides(color = guide_legend(override.aes = list(linewidth = 1.2, alpha = 1))) +
   labs(
-    title = "DStressR standard model hit network",
+    title = "DStressR default (moderated) hit network",
     subtitle = paste0(
       "Compounds uniquely connected to PcmeA removed; node size proportional to degree; ",
       "top 25 compounds labeled"
@@ -246,21 +246,21 @@ p <- ggplot() +
 
 write.table(
   edge_base,
-  file.path(out_dir, "dstressr_standard_network_no_pcmeA_unique_edges.tsv"),
+  file.path(out_dir, "dstressr_default_moderated_network_no_pcmeA_unique_edges.tsv"),
   sep = "\t",
   row.names = FALSE,
   quote = FALSE
 )
 write.table(
   nodes,
-  file.path(out_dir, "dstressr_standard_network_no_pcmeA_unique_nodes.tsv"),
+  file.path(out_dir, "dstressr_default_moderated_network_no_pcmeA_unique_nodes.tsv"),
   sep = "\t",
   row.names = FALSE,
   quote = FALSE
 )
 write.table(
   top_compounds,
-  file.path(out_dir, "dstressr_standard_network_no_pcmeA_unique_top25_compounds.tsv"),
+  file.path(out_dir, "dstressr_default_moderated_network_no_pcmeA_unique_top25_compounds.tsv"),
   sep = "\t",
   row.names = FALSE,
   quote = FALSE
@@ -288,7 +288,7 @@ write.table(
 )
 
 ggsave(
-  file.path(out_dir, "dstressr_standard_network_no_pcmeA_unique.png"),
+  file.path(out_dir, "dstressr_default_moderated_network_no_pcmeA_unique.png"),
   p,
   width = 12,
   height = 10,
@@ -296,7 +296,7 @@ ggsave(
   bg = "white"
 )
 ggsave(
-  file.path(out_dir, "dstressr_standard_network_no_pcmeA_unique.pdf"),
+  file.path(out_dir, "dstressr_default_moderated_network_no_pcmeA_unique.pdf"),
   p,
   width = 12,
   height = 10,
@@ -318,6 +318,6 @@ ggsave(
   bg = "white"
 )
 
-message("Wrote DStressR standard network without PcmeA-unique compounds to: ", out_dir)
+message("Wrote DStressR default moderated network without PcmeA-unique compounds to: ", out_dir)
 message("Removed PcmeA-unique compounds: ", length(pcmeA_unique_compounds))
 message("Promoters: ", sum(nodes$type == "promoter"), "; compounds: ", sum(nodes$type == "compound"), "; edges: ", nrow(edge_base))

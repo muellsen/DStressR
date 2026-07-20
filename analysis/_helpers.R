@@ -191,8 +191,8 @@ add_hit_columns <- function(tab, methods, fdr = 0.05, adjustment = comparison_ad
 method_label <- function(method) {
   labels <- c(
     median_polish = "Median-polish max-p model",
-    destress_standard = "DStressR standard model",
-    destress_moderated = "DStressR moderated model",
+    destress_standard = "DStressR ordinary model",
+    destress_moderated = "DStressR default (moderated)",
     empty_vector = "Empty-vector control"
   )
   ifelse(method %in% names(labels), labels[[method]], method)

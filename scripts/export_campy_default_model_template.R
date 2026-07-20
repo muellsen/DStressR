@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
 
-# Template for regenerating the local Campylobacter DStressR standard-model
+# Template for regenerating the local Campylobacter DStressR default-model
 # package output used by the downstream manuscript analysis scripts.
 #
 # This script contains no data. It expects the proprietary Campylobacter
@@ -9,7 +9,7 @@
 # data next to this repository as described in analysis/_helpers.R.
 #
 # Run from the repository root:
-#   Rscript scripts/export_campy_standard_model_template.R
+#   Rscript scripts/export_campy_default_model_template.R
 
 source(file.path("analysis", "_helpers.R"))
 load_destress_package()
@@ -40,36 +40,39 @@ assay <- prepare_assay(
   replicate = "replicate"
 )
 
-fit_standard <- fit_destress(
+fit_default <- fit_destress(
   assay,
   technical = c("libplate", "replicate"),
-  empirical_bayes = FALSE,
+  empirical_bayes = TRUE,
   interaction = FALSE,
-  adjustment = "global"
+  adjustment = "global",
+  background_rank = 0
 )
 
-res <- results(fit_standard)
+res <- results(fit_default)
 
-standard_pairs <- data.frame(
+default_pairs <- data.frame(
   promoter = res$promoter,
   compound = res$compound,
   effect = res$specific_effect,
+  low_rank_effect = res$low_rank_effect,
+  global_effect = res$global_effect,
   pvalue = res$specific_pvalue,
   padj_global = res$specific_padj_global,
   padj_by_promoter = res$specific_padj_by_promoter,
   stringsAsFactors = FALSE
 )
 
-out_file <- file.path(out_dir, "destress_standard_pair_results.tsv")
+out_file <- file.path(out_dir, "destress_moderated_pair_results.tsv")
 write.table(
-  standard_pairs,
+  default_pairs,
   out_file,
   sep = "\t",
   row.names = FALSE,
   quote = FALSE
 )
 
-params <- model_parameters(fit_standard)
+params <- model_parameters(fit_default)
 if (!is.null(params$growth_exponents)) {
   write.table(
     params$growth_exponents,
@@ -80,5 +83,5 @@ if (!is.null(params$growth_exponents)) {
   )
 }
 
-message("Wrote DStressR standard pair results to: ", out_file)
-message("Rows: ", nrow(standard_pairs))
+message("Wrote DStressR default moderated pair results to: ", out_file)
+message("Rows: ", nrow(default_pairs))

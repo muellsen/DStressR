@@ -141,6 +141,198 @@ wald_t_test <- function(estimate, se, df) {
   list(statistic = statistic, pvalue = pvalue)
 }
 
+validate_background_rank <- function(background_rank) {
+  if (is.null(background_rank)) {
+    return(0L)
+  }
+  if (length(background_rank) != 1 || is.na(background_rank)) {
+    stop("`background_rank` must be one non-negative integer.", call. = FALSE)
+  }
+  if (!is.numeric(background_rank) || background_rank < 0 || background_rank != floor(background_rank)) {
+    stop("`background_rank` must be one non-negative integer.", call. = FALSE)
+  }
+  as.integer(background_rank)
+}
+
+low_rank_background_effect <- function(table, effect, rank) {
+  rank <- validate_background_rank(rank)
+  if (rank == 0 || nrow(table) == 0) {
+    return(rep(0, nrow(table)))
+  }
+
+  required <- c("promoter", "compound", effect)
+  missing <- setdiff(required, names(table))
+  if (length(missing) > 0) {
+    stop("Cannot estimate low-rank background; missing columns: ",
+         paste(missing, collapse = ", "), call. = FALSE)
+  }
+
+  promoters <- unique(as.character(table$promoter))
+  compounds <- unique(as.character(table$compound))
+  mat <- matrix(
+    NA_real_,
+    nrow = length(promoters),
+    ncol = length(compounds),
+    dimnames = list(promoters, compounds)
+  )
+  idx <- cbind(
+    match(as.character(table$promoter), promoters),
+    match(as.character(table$compound), compounds)
+  )
+  mat[idx] <- as.numeric(table[[effect]])
+
+  observed <- is.finite(mat)
+  col_mean <- colMeans(mat, na.rm = TRUE)
+  col_mean[!is.finite(col_mean)] <- 0
+  centered <- sweep(mat, 2, col_mean, "-")
+  centered[!observed] <- 0
+
+  rank <- min(rank, nrow(centered), ncol(centered))
+  if (rank == 0 || all(abs(centered[observed]) < sqrt(.Machine$double.eps))) {
+    return(rep(0, nrow(table)))
+  }
+
+  sv <- svd(centered, nu = rank, nv = rank)
+  keep <- seq_len(rank)
+  low_rank <- sv$u[, keep, drop = FALSE] %*%
+    (diag(sv$d[keep], nrow = rank, ncol = rank) %*% t(sv$v[, keep, drop = FALSE]))
+
+  # Keep the low-rank term orthogonal to the additive compound mean already
+  # removed by global_effect, so residual specific effects still average to zero
+  # within each compound over observed promoters.
+  for (j in seq_len(ncol(low_rank))) {
+    obs_j <- observed[, j]
+    if (any(obs_j)) {
+      low_rank[obs_j, j] <- low_rank[obs_j, j] - mean(low_rank[obs_j, j], na.rm = TRUE)
+    }
+  }
+  low_rank[!observed] <- NA_real_
+  as.numeric(low_rank[idx])
+}
+
+effect_matrix_from_table <- function(table, effect, promoter = "promoter", compound = "compound") {
+  required <- c(promoter, compound, effect)
+  missing <- setdiff(required, names(table))
+  if (length(missing) > 0) {
+    stop("Cannot build effect matrix; missing columns: ",
+         paste(missing, collapse = ", "), call. = FALSE)
+  }
+
+  promoters <- unique(as.character(table[[promoter]]))
+  compounds <- unique(as.character(table[[compound]]))
+  mat <- matrix(
+    NA_real_,
+    nrow = length(promoters),
+    ncol = length(compounds),
+    dimnames = list(promoters, compounds)
+  )
+  idx <- cbind(
+    match(as.character(table[[promoter]]), promoters),
+    match(as.character(table[[compound]]), compounds)
+  )
+  mat[idx] <- as.numeric(table[[effect]])
+  mat
+}
+
+#' Diagnose low-rank background structure
+#'
+#' Computes singular values of a promoter-by-compound effect matrix and compares
+#' them with a permutation null. The default permutation shuffles promoter
+#' labels within each compound, preserving the compound-wise marginal
+#' distribution while breaking shared promoter-loading structure.
+#'
+#' @param table Data frame with promoter, compound, and effect columns.
+#' @param effect Numeric effect column to decompose, usually
+#'   `specific_effect`.
+#' @param promoter,compound Column names identifying promoters and compounds.
+#' @param rank_max Maximum component index to report.
+#' @param permutations Number of null permutations. Use `0` to skip the null.
+#' @param seed Optional random seed for reproducible permutations.
+#' @return A data frame with observed singular values, variance fractions, and
+#'   optional permutation summaries.
+#' @export
+background_rank_diagnostics <- function(table,
+                                        effect = "specific_effect",
+                                        promoter = "promoter",
+                                        compound = "compound",
+                                        rank_max = 10,
+                                        permutations = 100,
+                                        seed = NULL) {
+  rank_max <- validate_background_rank(rank_max)
+  permutations <- validate_background_rank(permutations)
+  mat <- effect_matrix_from_table(
+    table,
+    effect = effect,
+    promoter = promoter,
+    compound = compound
+  )
+  observed <- is.finite(mat)
+  col_mean <- colMeans(mat, na.rm = TRUE)
+  col_mean[!is.finite(col_mean)] <- 0
+  centered <- sweep(mat, 2, col_mean, "-")
+  centered[!observed] <- 0
+
+  rank_max <- min(rank_max, nrow(centered), ncol(centered))
+  if (rank_max == 0) {
+    return(data.frame())
+  }
+
+  singular_values <- svd(centered, nu = 0, nv = 0)$d
+  total_ss <- sum(singular_values^2)
+  component <- seq_len(rank_max)
+  observed_sv <- singular_values[component]
+  prop_var <- if (total_ss > 0) observed_sv^2 / total_ss else rep(NA_real_, rank_max)
+
+  null_median <- null_q95 <- null_q99 <- rep(NA_real_, rank_max)
+  if (permutations > 0) {
+    if (!is.null(seed)) {
+      old_seed <- if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
+        get(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
+      } else {
+        NULL
+      }
+      on.exit({
+        if (is.null(old_seed)) {
+          rm(".Random.seed", envir = .GlobalEnv)
+        } else {
+          assign(".Random.seed", old_seed, envir = .GlobalEnv)
+        }
+      }, add = TRUE)
+      set.seed(seed)
+    }
+
+    null_sv <- matrix(NA_real_, nrow = permutations, ncol = rank_max)
+    for (b in seq_len(permutations)) {
+      permuted <- centered
+      for (j in seq_len(ncol(permuted))) {
+        obs_j <- observed[, j]
+        if (sum(obs_j) > 1) {
+          permuted[obs_j, j] <- sample(permuted[obs_j, j])
+        }
+      }
+      sv_b <- svd(permuted, nu = 0, nv = 0)$d
+      null_sv[b, ] <- sv_b[component]
+    }
+    null_median <- apply(null_sv, 2, stats::median, na.rm = TRUE)
+    null_q95 <- apply(null_sv, 2, stats::quantile, probs = 0.95, na.rm = TRUE)
+    null_q99 <- apply(null_sv, 2, stats::quantile, probs = 0.99, na.rm = TRUE)
+  }
+
+  data.frame(
+    component = component,
+    observed = observed_sv,
+    prop_variance = prop_var,
+    cumulative_prop_variance = cumsum(prop_var),
+    null_median = null_median,
+    null_q95 = null_q95,
+    null_q99 = null_q99,
+    n_promoters = nrow(centered),
+    n_compounds = ncol(centered),
+    permutations = permutations,
+    stringsAsFactors = FALSE
+  )
+}
+
 modal_factor_level <- function(x) {
   names(sort(table(x), decreasing = TRUE))[1]
 }
@@ -286,7 +478,12 @@ promoter_effect_results <- function(fit, compounds = NULL, promoters = NULL) {
   names(global)[2] <- "global_effect"
   out <- merge(out, global, by = "compound", all.x = TRUE, sort = FALSE)
   out$centering_effect <- out$global_effect
-  out$specific_effect <- out$background_adjusted_effect - out$centering_effect
+  out$low_rank_effect <- low_rank_background_effect(
+    out,
+    effect = "background_adjusted_effect",
+    rank = fit$background_rank
+  )
+  out$specific_effect <- out$background_adjusted_effect - out$centering_effect - out$low_rank_effect
 
   variance_compounds <- unique(out$compound)
   total_variance_split <- split(out$total_var, out$compound)
@@ -339,6 +536,7 @@ promoter_effect_results <- function(fit, compounds = NULL, promoters = NULL) {
     "additive_total_effect", "additive_total_se",
     "empty_vector_effect", "background_adjusted_effect",
     "global_effect", "global_se", "global_statistic", "global_pvalue",
+    "low_rank_effect",
     "specific_effect", "specific_se", "specific_statistic", "specific_pvalue",
     "total_padj_global", "total_padj_by_promoter", "specific_padj_global",
     "specific_padj_by_promoter", "total_padj", "specific_padj"
@@ -398,7 +596,12 @@ promoter_lm_results <- function(fit, compounds = NULL, promoters = NULL) {
   global <- stats::aggregate(total_effect ~ compound, out, mean, na.rm = TRUE)
   names(global)[2] <- "global_effect"
   out <- merge(out, global, by = "compound", all.x = TRUE, sort = FALSE)
-  out$specific_effect <- out$total_effect - out$global_effect
+  out$low_rank_effect <- low_rank_background_effect(
+    out,
+    effect = "total_effect",
+    rank = fit$background_rank
+  )
+  out$specific_effect <- out$total_effect - out$global_effect - out$low_rank_effect
 
   df <- min(vapply(fit$promoter_fits[promoters], fit_df_residual, numeric(1)), na.rm = TRUE)
   if (isTRUE(fit$empirical_bayes)) {
@@ -449,6 +652,7 @@ promoter_lm_results <- function(fit, compounds = NULL, promoters = NULL) {
     "total_effect", "total_se", "total_statistic", "total_pvalue",
     "additive_total_effect", "additive_total_se",
     "global_effect", "global_se", "global_statistic", "global_pvalue",
+    "low_rank_effect",
     "specific_effect", "specific_se", "specific_statistic", "specific_pvalue",
     "total_padj_global", "total_padj_by_promoter", "specific_padj_global",
     "specific_padj_by_promoter", "total_padj", "specific_padj"
@@ -516,7 +720,12 @@ observed_mean_results <- function(fit, compounds = NULL, promoters = NULL) {
   global <- stats::aggregate(total_effect ~ compound, out, mean, na.rm = TRUE)
   names(global)[2] <- "global_effect"
   out <- merge(out, global, by = "compound", all.x = TRUE, sort = FALSE)
-  out$specific_effect <- out$total_effect - out$global_effect
+  out$low_rank_effect <- low_rank_background_effect(
+    out,
+    effect = "total_effect",
+    rank = fit$background_rank
+  )
+  out$specific_effect <- out$total_effect - out$global_effect - out$low_rank_effect
 
   variance_summary <- stats::aggregate(
     total_var ~ compound,
@@ -563,7 +772,8 @@ observed_mean_results <- function(fit, compounds = NULL, promoters = NULL) {
     "promoter", "compound",
     "total_effect", "total_se", "total_statistic", "total_pvalue",
     "additive_total_effect", "additive_total_se",
-    "global_effect", "specific_effect", "specific_se", "specific_statistic",
+    "global_effect", "low_rank_effect",
+    "specific_effect", "specific_se", "specific_statistic",
     "specific_pvalue",
     "total_padj_global", "total_padj_by_promoter", "specific_padj_global",
     "specific_padj_by_promoter", "total_padj", "specific_padj"
@@ -751,6 +961,10 @@ resolve_destress_stages <- function(preset,
 #'   empty-vector reporter in the model-based path. When supplied, its
 #'   reference-relative compound effect is subtracted from every promoter's
 #'   reference-relative compound effect before promoter-library centering.
+#' @param background_rank Non-negative integer. The default `0` removes only
+#'   the additive compound-wide mean. Values `1` or `2` additionally subtract a
+#'   low-rank background term from the promoter-by-compound effect matrix before
+#'   testing promoter-specific residual effects.
 #' @param normalization One of `"linear_model"`, `"median_polish"`, or
 #'   `"empty_vector"`. `"model"` and `"evc"` are accepted aliases.
 #' @param testing One of `"student_t"`, `"moderated_t"`, or `"gaussian_z"`.
@@ -774,6 +988,7 @@ fit_destress <- function(assay,
                          technical = NULL,
                          empirical_bayes = TRUE,
                          empty_vector_promoter = NULL,
+                         background_rank = 0,
                          normalization = NULL,
                          testing = NULL,
                          aggregation = NULL,
@@ -805,6 +1020,7 @@ fit_destress <- function(assay,
   }
 
   empirical_bayes <- identical(stages$testing, "moderated_t")
+  background_rank <- validate_background_rank(background_rank)
   if (!inherits(assay, "destress_assay")) {
     if (!is.data.frame(assay)) {
       stop("`assay` must be a data frame or be produced by prepare_assay().", call. = FALSE)
@@ -871,6 +1087,7 @@ fit_destress <- function(assay,
       technical = technical,
       empirical_bayes = empirical_bayes,
       empty_vector_promoter = empty_vector_promoter,
+      background_rank = background_rank,
       stages = stages,
       preset = if (is.null(preset)) "model" else preset,
       adjustment = stages$adjustment
@@ -892,6 +1109,9 @@ model_parameters <- function(fit) {
   }
 
   out <- list(
+    background = data.frame(
+      background_rank = validate_background_rank(fit$background_rank)
+    ),
     growth_exponents = fit$growth_exponents,
     promoter_effects = fit$promoter_effects
   )
@@ -1008,7 +1228,12 @@ results <- function(fit, compounds = NULL, promoters = NULL) {
     stringsAsFactors = FALSE
   )
   out <- merge(out, global_df, by = "compound", sort = FALSE)
-  out$specific_effect <- out$total_effect - out$global_effect
+  out$low_rank_effect <- low_rank_background_effect(
+    out,
+    effect = "total_effect",
+    rank = fit$background_rank
+  )
+  out$specific_effect <- out$total_effect - out$global_effect - out$low_rank_effect
   out$specific_se <- out$total_se
   if (isTRUE(fit$empirical_bayes)) {
     out$specific_se <- eb_shrink(out$specific_se, fit_sigma(fit$full_fit), fit_df_residual(fit$full_fit))
@@ -1024,6 +1249,15 @@ results <- function(fit, compounds = NULL, promoters = NULL) {
   adjustment <- if (is.null(fit$adjustment)) "global" else fit$adjustment
   out$total_padj <- if (adjustment == "by_promoter") out$total_padj_by_promoter else if (adjustment == "none") out$total_pvalue else out$total_padj_global
   out$specific_padj <- if (adjustment == "by_promoter") out$specific_padj_by_promoter else if (adjustment == "none") out$specific_pvalue else out$specific_padj_global
+  out <- out[, c(
+    "promoter", "compound",
+    "total_effect", "total_se", "total_statistic", "total_pvalue",
+    "additive_total_effect", "additive_total_se",
+    "global_effect", "low_rank_effect",
+    "specific_effect", "specific_se", "specific_statistic", "specific_pvalue",
+    "total_padj_global", "total_padj_by_promoter", "specific_padj_global",
+    "specific_padj_by_promoter", "total_padj", "specific_padj"
+  ), drop = FALSE]
   out[order(out$promoter, out$compound), ]
 }
 

@@ -11,13 +11,13 @@ suppressPackageStartupMessages({
 
 out_dir <- comparison_results_dir("significance_summary")
 adjustment <- comparison_adjustment()
-methods <- c("destress_standard", "median_polish")
+methods <- c("destress_moderated", "median_polish")
 method_labels <- c(
-  destress_standard = "DStressR standard model",
+  destress_moderated = "DStressR default (moderated)",
   median_polish = "Median-polish max-p model"
 )
 table_labels <- c(
-  destress_standard = "DStressR standard\nmodel",
+  destress_moderated = "DStressR default\n(moderated)",
   median_polish = "Median-polish\nmax-p model"
 )
 
@@ -171,7 +171,7 @@ venn_plot <- function(tab, direction_filter = NULL, title = "All hits") {
     tab$pair_id[keep]
   })
   names(sets) <- methods
-  counts <- venn_counts(sets$destress_standard, sets$median_polish)
+  counts <- venn_counts(sets$destress_moderated, sets$median_polish)
   left <- circle_df(-0.55, 0, 1)
   right <- circle_df(0.55, 0, 1)
 
@@ -181,7 +181,7 @@ venn_plot <- function(tab, direction_filter = NULL, title = "All hits") {
     annotate("text", x = -1.0, y = 0, label = counts[["stats_only"]], size = 5, fontface = "bold") +
     annotate("text", x = 0, y = 0, label = counts[["overlap"]], size = 5, fontface = "bold") +
     annotate("text", x = 1.0, y = 0, label = counts[["median_only"]], size = 5, fontface = "bold") +
-    annotate("text", x = -0.75, y = -1.18, label = "DStressR standard model", size = 3.1) +
+    annotate("text", x = -0.75, y = -1.18, label = "DStressR default (moderated)", size = 3.1) +
     annotate("text", x = 0.75, y = -1.18, label = "Median-polish max-p model", size = 3.1) +
     coord_equal(xlim = c(-1.8, 1.8), ylim = c(-1.35, 1.2), clip = "off") +
     theme_void(base_size = 9) +
@@ -217,7 +217,7 @@ hit_counts <- Reduce(
 )
 hit_counts[is.na(hit_counts)] <- 0
 hit_counts <- hit_counts[order(
-  -hit_counts$destress_standard_positive_hits - hit_counts$destress_standard_negative_hits,
+  -hit_counts$destress_moderated_positive_hits - hit_counts$destress_moderated_negative_hits,
   hit_counts$promoter
 ), , drop = FALSE]
 
@@ -362,7 +362,7 @@ write_histogram_table_combined <- function(tab, hit_counts, method, table_plot, 
   invisible(combined)
 }
 
-volcano_stats <- volcano_plot(pair_table, "destress_standard")
+volcano_stats <- volcano_plot(pair_table, "destress_moderated")
 volcano_median <- volcano_plot(pair_table, "median_polish")
 venn_all <- venn_plot(pair_table, NULL, "All significant pairs")
 venn_pos <- venn_plot(pair_table, "Positive", "Positive hits")
@@ -384,20 +384,20 @@ pdf(file.path(out_dir, "volcano_venn_significance_summary.pdf"), width = 16, hei
 grid.draw(combined)
 dev.off()
 
-dstressr_table <- plot_count_table(hit_counts, "destress_standard", "dstressr_standard_model_promoter_hit_count_table")
-dstressr_table_compat <- plot_count_table(hit_counts, "destress_standard", "dstressr_model_promoter_hit_count_table")
+dstressr_table <- plot_count_table(hit_counts, "destress_moderated", "dstressr_default_moderated_model_promoter_hit_count_table")
+dstressr_table_compat <- plot_count_table(hit_counts, "destress_moderated", "dstressr_model_promoter_hit_count_table")
 median_table <- plot_count_table(hit_counts, "median_polish", "median_polish_model_promoter_hit_count_table")
 write_histogram_table_combined(
   pair_table,
   hit_counts,
-  "destress_standard",
+  "destress_moderated",
   dstressr_table,
-  "dstressr_standard_model_pvalue_histograms_with_hit_table"
+  "dstressr_default_moderated_model_pvalue_histograms_with_hit_table"
 )
 write_histogram_table_combined(
   pair_table,
   hit_counts,
-  "destress_standard",
+  "destress_moderated",
   dstressr_table_compat,
   "dstressr_model_pvalue_histograms_with_hit_table"
 )
