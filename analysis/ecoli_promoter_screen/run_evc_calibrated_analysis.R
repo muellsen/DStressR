@@ -30,16 +30,16 @@ assay <- prepare_assay(
   lux = "lux_auc",
   growth = "od_auc",
   growth_exponent = "estimate",
-  batch = "concentration_index",
+  batch = "dose_level",
   replicate = "replicate",
   background_promoter = "EVC",
   background_method = "huber",
-  background_by = c("compound", "concentration_index", "replicate")
+  background_by = c("compound", "dose_level", "replicate")
 )
 
 fit <- fit_destress(
   assay,
-  technical = c("replicate", "concentration_index"),
+  technical = c("replicate", "dose_level"),
   empirical_bayes = TRUE,
   adjustment = "by_promoter",
   interaction = FALSE

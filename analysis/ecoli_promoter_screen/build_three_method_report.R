@@ -56,14 +56,14 @@ run_destress <- function(growth_exponent, label) {
     lux = "lux_auc",
     growth = "od_auc",
     growth_exponent = growth_exponent,
-    batch = "concentration_index",
+    batch = "dose_level",
     replicate = "replicate"
   )
 
   fit <- fit_destress(
     assay,
     preset = "model",
-    technical = c("replicate", "concentration_index"),
+    technical = c("replicate", "dose_level"),
     empirical_bayes = TRUE,
     adjustment = "by_promoter",
     interaction = FALSE
@@ -847,7 +847,7 @@ code { background: #f3f4f6; padding: 1px 4px; border-radius: 3px; }
 </div>
 
 <h2>Data and Analysis Scope</h2>
-<p>This report uses the public <em>E. coli</em> reporter-screen data from Binsfeld et al. The comparison is limited to WT rows. The author-style analysis uses WT Z-scores, while both DStressR analyses use AUC rows with <code>removed == "No"</code>, water controls, technical terms for replicate and concentration index, empirical-Bayes moderation, promoter-wise FDR adjustment, and the EVC reporter excluded from the tested promoter set.</p>
+<p>This report uses the public <em>E. coli</em> reporter-screen data from Binsfeld et al. The comparison is limited to WT rows. The author-style analysis uses WT Z-scores, while both DStressR analyses use AUC rows with <code>removed == "No"</code>, water controls, technical terms for replicate and dose level, empirical-Bayes moderation, promoter-wise FDR adjustment, and the EVC reporter excluded from the tested promoter set.</p>
 
 <h2>Methods Compared</h2>
 <ul>

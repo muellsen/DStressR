@@ -25,7 +25,7 @@ prepare_binsfeld <- function(growth_exponent) {
     lux = "lux_auc",
     growth = "od_auc",
     growth_exponent = growth_exponent,
-    batch = "concentration_index",
+    batch = "dose_level",
     replicate = "replicate"
   )
 }
@@ -37,7 +37,7 @@ raw <- prepare_assay(
   compound = "compound",
   control = "Water",
   response = "raw_log2_lux",
-  batch = "concentration_index",
+  batch = "dose_level",
   replicate = "replicate"
 )
 modeled <- prepare_binsfeld("estimate")
@@ -50,11 +50,11 @@ evc_huber <- prepare_assay(
   lux = "lux_auc",
   growth = "od_auc",
   growth_exponent = "estimate",
-  batch = "concentration_index",
+  batch = "dose_level",
   replicate = "replicate",
   background_promoter = "EVC",
   background_method = "huber",
-  background_by = c("compound", "concentration_index", "replicate")
+  background_by = c("compound", "dose_level", "replicate")
 )
 
 growth_parameters <- attr(modeled, "destress")$growth_exponent_fit
