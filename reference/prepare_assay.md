@@ -23,6 +23,8 @@ prepare_assay(
   batch = NULL,
   plate = NULL,
   replicate = NULL,
+  growth_covariates = NULL,
+  numeric_covariates = NULL,
   background_promoter = NULL,
   background_method = c("none", "subtract", "lm", "huber"),
   background_by = NULL,
@@ -68,7 +70,21 @@ prepare_assay(
 
   Optional technical-factor column names. When
   `growth_exponent = "estimate"`, these columns are also used as
-  covariates while estimating promoter-specific growth exponents.
+  covariates while estimating promoter-specific growth exponents unless
+  `growth_covariates` is supplied.
+
+- growth_covariates:
+
+  Optional technical covariate column names used only while estimating
+  promoter-specific growth exponents from control wells. If `NULL`,
+  DStressR uses the supplied `batch`, `plate`, and `replicate` columns
+  for backwards compatibility.
+
+- numeric_covariates:
+
+  Optional subset of technical covariate column names that should remain
+  numeric in model matrices. Other optional covariates are converted to
+  factors.
 
 - background_promoter:
 

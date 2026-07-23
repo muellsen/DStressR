@@ -154,6 +154,8 @@
 <span>  growth_exponent <span class="op">=</span> <span class="st">"estimate"</span>,</span>
 <span>  batch <span class="op">=</span> <span class="st">"dose_level"</span>,</span>
 <span>  replicate <span class="op">=</span> <span class="st">"replicate"</span>,</span>
+<span>  growth_covariates <span class="op">=</span> <span class="st">"replicate"</span>,</span>
+<span>  numeric_covariates <span class="op">=</span> <span class="st">"dose_level"</span>,</span>
 <span>  background_promoter <span class="op">=</span> <span class="st">"EVC"</span>,</span>
 <span>  background_by <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"compound"</span>, <span class="st">"dose_level"</span>, <span class="st">"replicate"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
@@ -166,7 +168,8 @@
 <span>  adjustment <span class="op">=</span> <span class="st">"by_promoter"</span>,</span>
 <span>  interaction <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p>The public sources are the PLOS article <a href="https://doi.org/10.1371/journal.pbio.3003260" class="external-link uri">https://doi.org/10.1371/journal.pbio.3003260</a> and the Zenodo archive <a href="https://doi.org/10.5281/zenodo.15600688" class="external-link uri">https://doi.org/10.5281/zenodo.15600688</a>. The reproducibility script <code>analysis/ecoli_promoter_screen/compare_reporter_hits.R</code> rebuilds the Binsfeld-style Wilcoxon/Z-score hit calls and compares them with the default DStressR modeled-response analyses. In the current WT analysis, the reconstructed reference rule calls 53 hits, the default DStressR modeled response calls 77 hits, and the EVC-Huber DStressR workflow calls 92 hits. The EVC-Huber workflow overlaps with 37 of the 53 reference hits.</p>
+<p>Here <code>growth_covariates = "replicate"</code> keeps the water-control growth-response model separate from the downstream concentration-index adjustment: <code>dose_level</code> is used in the compound-effect model, not in the estimation of <code>alpha_g</code>.</p>
+<p>The public sources are the PLOS article <a href="https://doi.org/10.1371/journal.pbio.3003260" class="external-link uri">https://doi.org/10.1371/journal.pbio.3003260</a> and the Zenodo archive <a href="https://doi.org/10.5281/zenodo.15600688" class="external-link uri">https://doi.org/10.5281/zenodo.15600688</a>. The reproducibility script <code>analysis/ecoli_promoter_screen/compare_reporter_hits.R</code> rebuilds the Binsfeld-style Wilcoxon/Z-score hit calls and compares them with the default DStressR modeled-response analyses. In the current WT analysis, the reconstructed reference rule calls 53 hits, the default DStressR modeled response calls 80 hits, and the EVC-Huber DStressR workflow calls 92 hits. The EVC-Huber workflow overlaps with 37 of the 53 reference hits.</p>
 <p>Equivalently, using staged options directly:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/fit_destress.html">fit_destress</a></span><span class="op">(</span></span>

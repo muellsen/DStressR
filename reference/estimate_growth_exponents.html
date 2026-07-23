@@ -67,6 +67,7 @@ replicate:</p>
 <span>  lux <span class="op">=</span> <span class="st">"lux"</span>,</span>
 <span>  growth <span class="op">=</span> <span class="st">"growth"</span>,</span>
 <span>  covariates <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  numeric_covariates <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  controls <span class="op">=</span> <span class="st">"DMSO"</span>,</span>
 <span>  pseudocount <span class="op">=</span> <span class="fl">1e-08</span>,</span>
 <span>  min_control_n <span class="op">=</span> <span class="fl">8</span>,</span>
@@ -88,9 +89,15 @@ replicate:</p>
 
 
 <dt id="arg-covariates">covariates<a class="anchor" aria-label="anchor" href="#arg-covariates"></a></dt>
-<dd><p>Optional technical-factor column names to include as
+<dd><p>Optional technical covariate column names to include as
 additive adjustment terms when estimating growth slopes. Only covariates
-with more than one observed level in the relevant control subset are used.</p></dd>
+with more than one observed value in the relevant control subset are used.</p></dd>
+
+
+<dt id="arg-numeric-covariates">numeric_covariates<a class="anchor" aria-label="anchor" href="#arg-numeric-covariates"></a></dt>
+<dd><p>Optional subset of <code>covariates</code> that should enter
+the growth-slope model as numeric variables. Other covariates are converted
+to factors.</p></dd>
 
 
 <dt id="arg-controls">controls<a class="anchor" aria-label="anchor" href="#arg-controls"></a></dt>

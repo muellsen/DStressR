@@ -14,6 +14,7 @@ estimate_growth_exponents(
   lux = "lux",
   growth = "growth",
   covariates = NULL,
+  numeric_covariates = NULL,
   controls = "DMSO",
   pseudocount = 1e-08,
   min_control_n = 8,
@@ -34,9 +35,14 @@ estimate_growth_exponents(
 
 - covariates:
 
-  Optional technical-factor column names to include as additive
+  Optional technical covariate column names to include as additive
   adjustment terms when estimating growth slopes. Only covariates with
-  more than one observed level in the relevant control subset are used.
+  more than one observed value in the relevant control subset are used.
+
+- numeric_covariates:
+
+  Optional subset of `covariates` that should enter the growth-slope
+  model as numeric variables. Other covariates are converted to factors.
 
 - controls:
 

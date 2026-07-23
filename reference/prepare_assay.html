@@ -82,6 +82,8 @@ response.</p>
 <span>  batch <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  plate <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  replicate <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  growth_covariates <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  numeric_covariates <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  background_promoter <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  background_method <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"none"</span>, <span class="st">"subtract"</span>, <span class="st">"lm"</span>, <span class="st">"huber"</span><span class="op">)</span>,</span>
 <span>  background_by <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -128,7 +130,21 @@ exponent estimation. Defaults to <code>control</code>.</p></dd>
 <dt id="arg-batch-plate-replicate">batch, plate, replicate<a class="anchor" aria-label="anchor" href="#arg-batch-plate-replicate"></a></dt>
 <dd><p>Optional technical-factor column names.
 When <code>growth_exponent = "estimate"</code>, these columns are also used as
-covariates while estimating promoter-specific growth exponents.</p></dd>
+covariates while estimating promoter-specific growth exponents unless
+<code>growth_covariates</code> is supplied.</p></dd>
+
+
+<dt id="arg-growth-covariates">growth_covariates<a class="anchor" aria-label="anchor" href="#arg-growth-covariates"></a></dt>
+<dd><p>Optional technical covariate column names used only
+while estimating promoter-specific growth exponents from control wells. If
+<code>NULL</code>, DStressR uses the supplied <code>batch</code>, <code>plate</code>, and
+<code>replicate</code> columns for backwards compatibility.</p></dd>
+
+
+<dt id="arg-numeric-covariates">numeric_covariates<a class="anchor" aria-label="anchor" href="#arg-numeric-covariates"></a></dt>
+<dd><p>Optional subset of technical covariate column names
+that should remain numeric in model matrices. Other optional covariates are
+converted to factors.</p></dd>
 
 
 <dt id="arg-background-promoter">background_promoter<a class="anchor" aria-label="anchor" href="#arg-background-promoter"></a></dt>
