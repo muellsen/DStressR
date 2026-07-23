@@ -10,6 +10,57 @@ test_that("prepare_assay reproduces log2 lux over growth", {
   expect_equal(assay$.response, c(3, 4), tolerance = 1e-6)
 })
 
+test_that("prepare_assay preserves requested numeric covariates", {
+  dat <- data.frame(
+    promoter = rep("P1", 4),
+    compound = c("DMSO", "C1", "C1", "DMSO"),
+    lux = c(16, 32, 64, 16),
+    growth = c(2, 2, 2, 2),
+    replicate = c(1, 1, 2, 2),
+    dose_level = c(0, 1, 2, 0)
+  )
+  assay <- prepare_assay(
+    dat,
+    promoter = "promoter",
+    compound = "compound",
+    lux = "lux",
+    growth = "growth",
+    growth_exponent = 1,
+    batch = "dose_level",
+    replicate = "replicate",
+    numeric_covariates = "dose_level"
+  )
+
+  expect_type(assay$dose_level, "double")
+  expect_s3_class(assay$replicate, "factor")
+})
+
+test_that("growth-exponent estimation accepts numeric covariates", {
+  dat <- expand.grid(
+    promoter = c("P1", "P2"),
+    dose_level = 0:3,
+    replicate = 1:2,
+    KEEP.OUT.ATTRS = FALSE,
+    stringsAsFactors = FALSE
+  )
+  dat$compound <- "DMSO"
+  dat$growth <- 2^(1 + 0.1 * dat$dose_level + 0.05 * dat$replicate +
+    c(0.00, 0.04, -0.02, 0.03, -0.01, 0.05, -0.03, 0.02,
+      0.01, -0.04, 0.02, -0.03, 0.04, -0.01, 0.03, -0.02))
+  dat$lux <- 2^(0.5 + 0.8 * log2(dat$growth) + 0.2 * dat$dose_level)
+
+  fit <- estimate_growth_exponents(
+    dat,
+    covariates = c("dose_level", "replicate"),
+    numeric_covariates = "dose_level",
+    min_control_n = 4,
+    shrink = FALSE
+  )
+
+  expect_true(all(is.finite(fit$alpha_shrunk)))
+  expect_true(all(grepl("dose_level", fit$alpha_covariates)))
+})
+
 test_that("estimate_growth_exponents recovers promoter-specific scaling", {
   dat <- expand.grid(
     promoter = c("P1", "P2"),
@@ -84,7 +135,7 @@ test_that("Binsfeld reporter data support DStressR model analysis", {
 
   expect_equal(nrow(binsfeld_reporter_auc), 24576)
   expect_true(all(c(
-    "strain", "promoter", "compound", "od_auc", "lux_auc", "removed"
+    "strain", "promoter", "compound", "dose_level", "od_auc", "lux_auc", "removed"
   ) %in% names(binsfeld_reporter_auc)))
   expect_equal(
     sort(unique(binsfeld_reporter_auc$compound[grepl("^Water_", binsfeld_reporter_auc$drug)])),
@@ -105,12 +156,16 @@ test_that("Binsfeld reporter data support DStressR model analysis", {
     lux = "lux_auc",
     growth = "od_auc",
     growth_exponent = "estimate",
-    batch = "concentration_index",
-    replicate = "replicate"
+    batch = "dose_level",
+    replicate = "replicate",
+    growth_covariates = "replicate",
+    numeric_covariates = "dose_level"
   )
+  growth_fit <- attr(assay, "destress")$growth_exponent_fit
+  expect_true(all(growth_fit$alpha_covariates == "replicate"))
   fit <- fit_destress(
     assay,
-    technical = c("replicate", "concentration_index"),
+    technical = c("replicate", "dose_level"),
     empirical_bayes = TRUE,
     adjustment = "by_promoter",
     interaction = FALSE,

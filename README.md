@@ -106,6 +106,8 @@ assay <- prepare_assay(
   growth_exponent = "estimate",
   batch = "dose_level",
   replicate = "replicate",
+  growth_covariates = "replicate",
+  numeric_covariates = "dose_level",
   background_promoter = "EVC",
   background_by = c("compound", "dose_level", "replicate")
 )
@@ -120,13 +122,17 @@ fit <- fit_destress(
 )
 ```
 
+Here `growth_covariates = "replicate"` keeps the water-control growth-response
+model separate from the downstream concentration-index adjustment: `dose_level`
+is used in the compound-effect model, not in the estimation of `alpha_g`.
+
 The public sources are the PLOS article
 <https://doi.org/10.1371/journal.pbio.3003260> and the Zenodo archive
 <https://doi.org/10.5281/zenodo.15600688>. The reproducibility script
 `analysis/ecoli_promoter_screen/compare_reporter_hits.R` rebuilds the Binsfeld-style
 Wilcoxon/Z-score hit calls and compares them with the default DStressR
 modeled-response analyses. In the current WT analysis, the reconstructed
-reference rule calls 53 hits, the default DStressR modeled response calls 77
+reference rule calls 53 hits, the default DStressR modeled response calls 80
 hits, and the EVC-Huber DStressR workflow calls 92 hits. The EVC-Huber
 workflow overlaps with 37 of the 53 reference hits.
 

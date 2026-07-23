@@ -57,7 +57,9 @@ run_destress <- function(growth_exponent, label) {
     growth = "od_auc",
     growth_exponent = growth_exponent,
     batch = "dose_level",
-    replicate = "replicate"
+    replicate = "replicate",
+    growth_covariates = "replicate",
+    numeric_covariates = "dose_level"
   )
 
   fit <- fit_destress(

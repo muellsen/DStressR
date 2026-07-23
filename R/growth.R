@@ -14,9 +14,12 @@
 #'
 #' @param data A data frame with one row per well.
 #' @param promoter,compound,lux,growth Column names.
-#' @param covariates Optional technical-factor column names to include as
+#' @param covariates Optional technical covariate column names to include as
 #'   additive adjustment terms when estimating growth slopes. Only covariates
-#'   with more than one observed level in the relevant control subset are used.
+#'   with more than one observed value in the relevant control subset are used.
+#' @param numeric_covariates Optional subset of `covariates` that should enter
+#'   the growth-slope model as numeric variables. Other covariates are converted
+#'   to factors.
 #' @param controls Control values in `compound`, usually DMSO wells.
 #' @param pseudocount Added before log2 transformation.
 #' @param min_control_n Minimum control wells needed for a promoter-specific
@@ -34,6 +37,7 @@ estimate_growth_exponents <- function(data,
                                       lux = "lux",
                                       growth = "growth",
                                       covariates = NULL,
+                                      numeric_covariates = NULL,
                                       controls = "DMSO",
                                       pseudocount = 1e-8,
                                       min_control_n = 8,
@@ -89,9 +93,15 @@ estimate_growth_exponents <- function(data,
   }
 
   covariates <- unique(stats::na.omit(covariates))
+  numeric_covariates <- unique(stats::na.omit(numeric_covariates))
+  numeric_covariates <- intersect(covariates, numeric_covariates)
   controls_df[[promoter]] <- factor(controls_df[[promoter]])
   for (nm in covariates) {
-    controls_df[[nm]] <- factor(controls_df[[nm]])
+    if (nm %in% numeric_covariates) {
+      controls_df[[nm]] <- as.numeric(controls_df[[nm]])
+    } else {
+      controls_df[[nm]] <- factor(controls_df[[nm]])
+    }
   }
   global_covariates <- unique(c(promoter, covariates))
   global <- fit_growth_slope(controls_df, global_covariates)

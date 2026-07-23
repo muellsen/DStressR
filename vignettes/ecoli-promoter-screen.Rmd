@@ -46,7 +46,9 @@ control, replicate, and serial-dilution observation. The package-level
 `compound` column keeps the original compound labels, except that the water
 control wells are collapsed to `Water`. The original label remains in `drug`.
 The source `concentration_index` increases with dilution; `dose_level` reverses
-this coding so that larger values correspond to higher concentration.
+this coding so that larger values correspond to higher concentration for
+non-water compound wells. For water controls, the same column records the
+matched concentration-index position in the screen layout.
 
 ```{r auc-columns}
 names(binsfeld_reporter_auc)
@@ -83,6 +85,8 @@ assay <- prepare_assay(
   growth_exponent = "estimate",
   batch = "dose_level",
   replicate = "replicate",
+  growth_covariates = "replicate",
+  numeric_covariates = "dose_level",
   background_promoter = "EVC",
   background_by = c("compound", "dose_level", "replicate")
 )
@@ -120,14 +124,14 @@ The current wild-type comparison gives:
 
 ```text
 Reference WT hits: 53
-DStressR default modeled-response WT hits: 77
+DStressR default modeled-response WT hits: 80
 DStressR EVC-Huber WT hits: 92
 All three analyses: 35
 Reference-only hits: 16
-DStressR modeled-only hits: 8
-DStressR EVC-Huber-only hits: 21
-Modeled + EVC-Huber only: 34
-Union significant by at least one primary analysis: 116
+DStressR modeled-only hits: 9
+DStressR EVC-Huber-only hits: 19
+Modeled + EVC-Huber only: 36
+Union significant by at least one primary analysis: 117
 ```
 
 Additional scripts in `analysis/ecoli_promoter_screen/` recreate the

@@ -20,7 +20,15 @@
 #'   `growth` are not used to compute the response.
 #' @param batch,plate,replicate Optional technical-factor column names.
 #'   When `growth_exponent = "estimate"`, these columns are also used as
-#'   covariates while estimating promoter-specific growth exponents.
+#'   covariates while estimating promoter-specific growth exponents unless
+#'   `growth_covariates` is supplied.
+#' @param growth_covariates Optional technical covariate column names used only
+#'   while estimating promoter-specific growth exponents from control wells. If
+#'   `NULL`, DStressR uses the supplied `batch`, `plate`, and `replicate`
+#'   columns for backwards compatibility.
+#' @param numeric_covariates Optional subset of technical covariate column names
+#'   that should remain numeric in model matrices. Other optional covariates are
+#'   converted to factors.
 #' @param background_promoter Optional reporter promoter used as a background
 #'   reference, e.g. an Empty Vector Control. When supplied, the default
 #'   background method is `"huber"`. The background reporter is matched to other
@@ -50,6 +58,8 @@ prepare_assay <- function(data,
                           batch = NULL,
                           plate = NULL,
                           replicate = NULL,
+                          growth_covariates = NULL,
+                          numeric_covariates = NULL,
                           background_promoter = NULL,
                           background_method = c("none", "subtract", "lm", "huber"),
                           background_by = NULL,
@@ -61,10 +71,16 @@ prepare_assay <- function(data,
   } else {
     required <- c(required, lux, growth)
   }
-  optional <- c(batch, plate, replicate, background_by)
+  optional <- unique(c(batch, plate, replicate, background_by, growth_covariates))
   missing_cols <- setdiff(c(required, optional), names(data))
   if (length(missing_cols) > 0) {
     stop("Missing required columns: ", paste(missing_cols, collapse = ", "), call. = FALSE)
+  }
+  numeric_covariates <- numeric_covariates[!is.na(numeric_covariates) & nzchar(numeric_covariates)]
+  missing_numeric_covariates <- setdiff(numeric_covariates, names(data))
+  if (length(missing_numeric_covariates) > 0) {
+    stop("Unknown numeric covariate columns: ",
+         paste(missing_numeric_covariates, collapse = ", "), call. = FALSE)
   }
 
   out <- data
@@ -87,7 +103,9 @@ prepare_assay <- function(data,
       stop("Growth values must be positive after adding pseudocount.", call. = FALSE)
     }
     if (is.character(growth_exponent) && identical(growth_exponent, "estimate")) {
-      growth_covariates <- c(batch, plate, replicate)
+      if (is.null(growth_covariates)) {
+        growth_covariates <- c(batch, plate, replicate)
+      }
       growth_fit <- estimate_growth_exponents(
         out,
         promoter = promoter,
@@ -95,6 +113,7 @@ prepare_assay <- function(data,
         lux = lux,
         growth = growth,
         covariates = growth_covariates,
+        numeric_covariates = numeric_covariates,
         controls = control_values,
         pseudocount = pseudocount
       )
@@ -117,7 +136,11 @@ prepare_assay <- function(data,
       alpha * log2(growth_value + pseudocount)
   }
 
-  for (nm in optional) {
+  numeric_optional <- intersect(optional, numeric_covariates)
+  for (nm in numeric_optional) {
+    out[[nm]] <- as.numeric(out[[nm]])
+  }
+  for (nm in setdiff(optional, numeric_covariates)) {
     out[[nm]] <- factor(out[[nm]])
   }
 
@@ -164,6 +187,8 @@ prepare_assay <- function(data,
     batch = batch,
     plate = plate,
     replicate = replicate,
+    growth_covariates = growth_covariates,
+    numeric_covariates = numeric_covariates,
     growth_exponent = growth_exponent,
     growth_exponent_fit = if (exists("growth_fit")) growth_fit else NULL,
     background_promoter = background_promoter,
