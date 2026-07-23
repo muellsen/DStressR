@@ -215,16 +215,16 @@ assay_fixed <- prepare_assay(
 
 ## Fit the model workflow
 
-`fit_workflow(..., workflow = "model")` fits promoter and compound
-effects while accounting for technical covariates. The result table
-reports both the DMSO-relative total effect and the promoter-specific
-effect after subtracting the compound-wide effect.
+[`fit_destress()`](https://muellsen.github.io/DStressR/reference/fit_destress.md)
+fits promoter and compound effects while accounting for technical
+covariates. The result table reports both the DMSO-relative total effect
+and the promoter-specific effect after subtracting the compound-wide
+effect.
 
 ``` r
 
-fit <- fit_workflow(
+fit <- fit_destress(
   assay,
-  workflow = "model",
   technical = c("batch", "replicate"),
   empirical_bayes = TRUE
 )
@@ -286,9 +286,38 @@ The key columns are:
 - `specific_pvalue` and `specific_padj`: test and BH-adjusted p-value.
 
 The direct fitting functions remain available for existing scripts, but
-[`fit_workflow()`](https://muellsen.github.io/DStressR/reference/fit_workflow.md)
-makes the selected statistical path explicit and is the recommended
-entry point for new analyses.
+[`fit_destress()`](https://muellsen.github.io/DStressR/reference/fit_destress.md)
+is the recommended entry point for new model-based analyses.
+
+## Optional background reporter calibration
+
+If a screen contains a matched background reporter, such as an Empty
+Vector Control, the background reporter can be used during response
+construction. When `background_promoter` is supplied, DStressR uses
+Huber calibration by default; least-squares calibration and direct
+subtraction remain available through `background_method`.
+
+``` r
+
+assay_bg <- prepare_assay(
+  screen_with_evc,
+  promoter = "promoter",
+  compound = "compound",
+  control = "DMSO",
+  lux = "LUX.AUC_16",
+  growth = "od_16h.measured",
+  batch = "batch",
+  replicate = "replicate",
+  background_promoter = "EVC",
+  background_by = c("compound", "batch", "replicate")
+)
+
+fit_bg <- fit_destress(
+  assay_bg,
+  technical = c("batch", "replicate"),
+  empirical_bayes = TRUE
+)
+```
 
 ## Call hits
 

@@ -100,7 +100,10 @@ model path; <code>FALSE</code> maps to <code>testing = "student_t"</code>.</p></
 <dd><p>Optional promoter/control strain used as an
 empty-vector reporter in the model-based path. When supplied, its
 reference-relative compound effect is subtracted from every promoter's
-reference-relative compound effect before promoter-library centering.</p></dd>
+reference-relative compound effect before promoter-library centering.
+For new analyses, prefer <code>background_promoter</code> in <code><a href="prepare_assay.html">prepare_assay()</a></code>, which
+performs explicit response-level background calibration before model
+fitting.</p></dd>
 
 
 <dt id="arg-background-rank">background_rank<a class="anchor" aria-label="anchor" href="#arg-background-rank"></a></dt>

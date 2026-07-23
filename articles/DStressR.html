@@ -279,14 +279,13 @@ shrinks them toward a global control-well slope.</p>
 <div class="section level2">
 <h2 id="fit-the-model-workflow">Fit the model workflow<a class="anchor" aria-label="anchor" href="#fit-the-model-workflow"></a>
 </h2>
-<p><code>fit_workflow(..., workflow = "model")</code> fits promoter and
-compound effects while accounting for technical covariates. The result
-table reports both the DMSO-relative total effect and the
-promoter-specific effect after subtracting the compound-wide effect.</p>
+<p><code><a href="../reference/fit_destress.html">fit_destress()</a></code> fits promoter and compound effects while
+accounting for technical covariates. The result table reports both the
+DMSO-relative total effect and the promoter-specific effect after
+subtracting the compound-wide effect.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fit_workflow.html">fit_workflow</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fit_destress.html">fit_destress</a></span><span class="op">(</span></span>
 <span>  <span class="va">assay</span>,</span>
-<span>  workflow <span class="op">=</span> <span class="st">"model"</span>,</span>
 <span>  technical <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"batch"</span>, <span class="st">"replicate"</span><span class="op">)</span>,</span>
 <span>  empirical_bayes <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span>
@@ -353,13 +352,42 @@ compound-wide effect.</li>
 and BH-adjusted p-value.</li>
 </ul>
 <p>The direct fitting functions remain available for existing scripts,
-but <code><a href="../reference/fit_workflow.html">fit_workflow()</a></code> makes the selected statistical path
-explicit and is the recommended entry point for new analyses.</p>
+but <code><a href="../reference/fit_destress.html">fit_destress()</a></code> is the recommended entry point for new
+model-based analyses.</p>
+</div>
+<div class="section level2">
+<h2 id="optional-background-reporter-calibration">Optional background reporter calibration<a class="anchor" aria-label="anchor" href="#optional-background-reporter-calibration"></a>
+</h2>
+<p>If a screen contains a matched background reporter, such as an Empty
+Vector Control, the background reporter can be used during response
+construction. When <code>background_promoter</code> is supplied,
+DStressR uses Huber calibration by default; least-squares calibration
+and direct subtraction remain available through
+<code>background_method</code>.</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">assay_bg</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/prepare_assay.html">prepare_assay</a></span><span class="op">(</span></span>
+<span>  <span class="va">screen_with_evc</span>,</span>
+<span>  promoter <span class="op">=</span> <span class="st">"promoter"</span>,</span>
+<span>  compound <span class="op">=</span> <span class="st">"compound"</span>,</span>
+<span>  control <span class="op">=</span> <span class="st">"DMSO"</span>,</span>
+<span>  lux <span class="op">=</span> <span class="st">"LUX.AUC_16"</span>,</span>
+<span>  growth <span class="op">=</span> <span class="st">"od_16h.measured"</span>,</span>
+<span>  batch <span class="op">=</span> <span class="st">"batch"</span>,</span>
+<span>  replicate <span class="op">=</span> <span class="st">"replicate"</span>,</span>
+<span>  background_promoter <span class="op">=</span> <span class="st">"EVC"</span>,</span>
+<span>  background_by <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"compound"</span>, <span class="st">"batch"</span>, <span class="st">"replicate"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">fit_bg</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fit_destress.html">fit_destress</a></span><span class="op">(</span></span>
+<span>  <span class="va">assay_bg</span>,</span>
+<span>  technical <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"batch"</span>, <span class="st">"replicate"</span><span class="op">)</span>,</span>
+<span>  empirical_bayes <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="call-hits">Call hits<a class="anchor" aria-label="anchor" href="#call-hits"></a>
 </h2>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">hits</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/call_hits.html">call_hits</a></span><span class="op">(</span></span>
 <span>  <span class="va">tab</span>,</span>
 <span>  fdr <span class="op">=</span> <span class="fl">0.05</span>,</span>
@@ -464,7 +492,7 @@ check.</p>
 </h2>
 <p>The standard volcano plot labels the strongest promoter-compound
 pairs.</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/plot_volcano.html">plot_volcano</a></span><span class="op">(</span></span>
 <span>  <span class="va">hits</span>,</span>
 <span>  effect <span class="op">=</span> <span class="st">"specific_effect"</span>,</span>
@@ -477,7 +505,7 @@ pairs.</p>
 <p><img src="DStressR_files/figure-html/volcano-1.png" class="r-plt" alt="" width="672"></p>
 <p>A response heatmap gives a matrix-level view of the promoter-compound
 response surface.</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/plot_response_heatmap.html">plot_response_heatmap</a></span><span class="op">(</span></span>
 <span>  <span class="va">hits</span>,</span>
 <span>  value <span class="op">=</span> <span class="st">"specific_effect"</span>,</span>
@@ -486,7 +514,7 @@ response surface.</p>
 <p><img src="DStressR_files/figure-html/heatmap-1.png" class="r-plt" alt="" width="672"></p>
 <p>For broader screens, clustered heatmaps help reveal compound and
 promoter groups with similar response profiles.</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/plot_response_clustered_heatmap.html">plot_response_clustered_heatmap</a></span><span class="op">(</span></span>
 <span>  <span class="va">hits</span>,</span>
 <span>  value <span class="op">=</span> <span class="st">"specific_effect"</span>,</span>
@@ -502,7 +530,7 @@ promoter groups with similar response profiles.</p>
 supplied to <code><a href="../reference/prepare_assay.html">prepare_assay()</a></code>. If growth curves have already
 been modeled with DGrowthR, the DGrowthR-derived growth parameter can be
 joined explicitly before assay preparation.</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">screen2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_dgrowthr_growth.html">add_dgrowthr_growth</a></span><span class="op">(</span></span>
 <span>  <span class="va">screen</span>,</span>
 <span>  object <span class="op">=</span> <span class="va">dgrowthr_fit</span>,</span>

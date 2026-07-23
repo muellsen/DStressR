@@ -48,7 +48,11 @@ fit_destress(
   Optional promoter/control strain used as an empty-vector reporter in
   the model-based path. When supplied, its reference-relative compound
   effect is subtracted from every promoter's reference-relative compound
-  effect before promoter-library centering.
+  effect before promoter-library centering. For new analyses, prefer
+  `background_promoter` in
+  [`prepare_assay()`](https://muellsen.github.io/DStressR/reference/prepare_assay.md),
+  which performs explicit response-level background calibration before
+  model fitting.
 
 - background_rank:
 

@@ -8,6 +8,10 @@
   : Adjust p-values within promoter
 - [`background_rank_diagnostics()`](https://muellsen.github.io/DStressR/reference/background_rank_diagnostics.md)
   : Diagnose low-rank background structure
+- [`binsfeld_reporter_auc`](https://muellsen.github.io/DStressR/reference/binsfeld_reporter_auc.md)
+  : Binsfeld et al. reporter screen AUC data
+- [`binsfeld_reporter_scores`](https://muellsen.github.io/DStressR/reference/binsfeld_reporter_scores.md)
+  : Binsfeld et al. reporter scores and Z-scores
 - [`call_hits()`](https://muellsen.github.io/DStressR/reference/call_hits.md)
   : Call differential stress hits
 - [`destress_presets()`](https://muellsen.github.io/DStressR/reference/destress_presets.md)

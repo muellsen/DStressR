@@ -64,12 +64,12 @@
   </div>
 </nav><div class="container template-home">
 <div class="row">
-  <main id="main" class="col-md-9"><p><img src="assets/Logo-DStressR.svg"></p>
+  <main id="main" class="col-md-9"><p><img src="reference/figures/Logo-DStressR.svg"></p>
 <div class="section level1">
 <div class="page-header"><h1 id="dstressr-differential-stress-response-modeling-for-chemical-genomics-screens">DStressR: Differential stress-response modeling for chemical genomics screens<a class="anchor" aria-label="anchor" href="#dstressr-differential-stress-response-modeling-for-chemical-genomics-screens"></a>
 </h1></div>
 <p>This repository hosts the <code>DStressR</code> R package and companion analysis workflow for high-throughput bacterial chemical genomics screens. <code>DStressR</code> is designed to go hand in hand with <a href="https://bio-datascience.github.io/DGrowthR/" class="external-link"><code>DGrowthR</code></a>: <code>DGrowthR</code> models bacterial growth curves, while <code>DStressR</code> models promoter-activity responses after accounting for growth, compound-wide effects, technical covariates, and promoter-specific uncertainty.</p>
-<p><img src="assets/dstressr_panel.svg"></p>
+<p><img src="reference/figures/dstressr_panel.svg"></p>
 <blockquote>
 <p>[!TIP] <code>DStressR</code> is intended as the promoter-response counterpart to <a href="https://bio-datascience.github.io/DGrowthR/" class="external-link"><code>DGrowthR</code></a>. The current default hit-determination workflow is based on the original exported luminescence and growth summaries; DGrowthR-derived growth parameters can be handed over explicitly for sensitivity analyses.</p>
 </blockquote>
@@ -91,9 +91,6 @@
 </ol>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">install</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<p>For permutation-based empirical p-values, install the <a href="https://github.com/stefpeschel/permApprox" class="external-link"><code>permApprox</code></a> package:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"stefpeschel/permApprox"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="get-started">Get started<a class="anchor" aria-label="anchor" href="#get-started"></a>
@@ -108,7 +105,7 @@
 <code>preset = "empty_vector_control"</code> for the Empty Vector Control workflow</li>
 </ul>
 <p>The model workflow starts from an assay prepared with <code><a href="reference/prepare_assay.html">prepare_assay()</a></code>:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://muellsen.github.io/DStressR/">DStressR</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">screen</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/simulate_screen.html">simulate_screen</a></span><span class="op">(</span>seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
@@ -133,6 +130,42 @@
 <span></span>
 <span><span class="va">tab</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/results.html">results</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span>
 <span><span class="va">hits</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/call_hits.html">call_hits</a></span><span class="op">(</span><span class="va">tab</span>, fdr <span class="op">=</span> <span class="fl">0.05</span>, effect <span class="op">=</span> <span class="st">"specific_effect"</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="public-e-coli-promoter-compound-screen">Public E. coli Promoter-Compound Screen<a class="anchor" aria-label="anchor" href="#public-e-coli-promoter-compound-screen"></a>
+</h2>
+<p><code>DStressR</code> ships the public <em>E. coli</em> reporter-screen AUC data from Binsfeld et al. (2025), PLOS Biology, as <code>binsfeld_reporter_auc</code>. The matching author score/Z-score table is available as <code>binsfeld_reporter_scores</code>.</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"binsfeld_reporter_auc"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">wt_auc</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/subset.html" class="external-link">subset</a></span><span class="op">(</span></span>
+<span>  <span class="va">binsfeld_reporter_auc</span>,</span>
+<span>  <span class="va">strain</span> <span class="op">==</span> <span class="st">"WT"</span> <span class="op">&amp;</span> <span class="va">removed</span> <span class="op">==</span> <span class="st">"No"</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">assay</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/prepare_assay.html">prepare_assay</a></span><span class="op">(</span></span>
+<span>  <span class="va">wt_auc</span>,</span>
+<span>  promoter <span class="op">=</span> <span class="st">"promoter"</span>,</span>
+<span>  compound <span class="op">=</span> <span class="st">"compound"</span>,</span>
+<span>  control <span class="op">=</span> <span class="st">"Water"</span>,</span>
+<span>  lux <span class="op">=</span> <span class="st">"lux_auc"</span>,</span>
+<span>  growth <span class="op">=</span> <span class="st">"od_auc"</span>,</span>
+<span>  growth_exponent <span class="op">=</span> <span class="st">"estimate"</span>,</span>
+<span>  batch <span class="op">=</span> <span class="st">"concentration_index"</span>,</span>
+<span>  replicate <span class="op">=</span> <span class="st">"replicate"</span>,</span>
+<span>  background_promoter <span class="op">=</span> <span class="st">"EVC"</span>,</span>
+<span>  background_by <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"compound"</span>, <span class="st">"concentration_index"</span>, <span class="st">"replicate"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/fit_destress.html">fit_destress</a></span><span class="op">(</span></span>
+<span>  <span class="va">assay</span>,</span>
+<span>  preset <span class="op">=</span> <span class="st">"model"</span>,</span>
+<span>  technical <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"replicate"</span>, <span class="st">"concentration_index"</span><span class="op">)</span>,</span>
+<span>  empirical_bayes <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  adjustment <span class="op">=</span> <span class="st">"by_promoter"</span>,</span>
+<span>  interaction <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>The public sources are the PLOS article <a href="https://doi.org/10.1371/journal.pbio.3003260" class="external-link uri">https://doi.org/10.1371/journal.pbio.3003260</a> and the Zenodo archive <a href="https://doi.org/10.5281/zenodo.15600688" class="external-link uri">https://doi.org/10.5281/zenodo.15600688</a>. The reproducibility script <code>analysis/ecoli_promoter_screen/compare_reporter_hits.R</code> rebuilds the Binsfeld-style Wilcoxon/Z-score hit calls and compares them with the default DStressR modeled-response analyses. In the current WT analysis, the reconstructed reference rule calls 53 hits, the default DStressR modeled response calls 77 hits, and the EVC-Huber DStressR workflow calls 92 hits. The EVC-Huber workflow overlaps with 37 of the 53 reference hits.</p>
 <p>Equivalently, using staged options directly:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/fit_destress.html">fit_destress</a></span><span class="op">(</span></span>
@@ -155,9 +188,9 @@
 <p>In model-based analyses, <code>empirical_bayes = TRUE</code> is the default moderated model and <code>empirical_bayes = FALSE</code> is the ordinary Student-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>t</mi><annotation encoding="application/x-tex">t</annotation></semantics></math> sensitivity model. The Campylobacter manuscript comparison uses the default moderated model against the median-polish max-p workflow.</p>
 </div>
 <div class="section level2">
-<h2 id="model-based-empty-vector-control">Model-based Empty Vector Control<a class="anchor" aria-label="anchor" href="#model-based-empty-vector-control"></a>
+<h2 id="model-based-background-reporter-calibration">Model-based Background Reporter Calibration<a class="anchor" aria-label="anchor" href="#model-based-background-reporter-calibration"></a>
 </h2>
-<p>If the screen contains an Empty Vector Control (EVC) reporter, it can be used inside the model-based <code><a href="reference/fit_destress.html">fit_destress()</a></code> workflow. This is different from the project-level <code>preset = "empty_vector_control"</code> workflow below: the model-based path still fits promoter-specific linear models, but additionally estimates the DMSO-relative EVC response for each compound.</p>
+<p>If the screen contains an Empty Vector Control (EVC) reporter, it can be used when constructing the model-based response. This is different from the project-level <code>preset = "empty_vector_control"</code> workflow below: the model-based path still fits promoter-specific linear models, but first calibrates each non-background reporter against the matched background reporter.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">assay</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/prepare_assay.html">prepare_assay</a></span><span class="op">(</span></span>
 <span>  <span class="va">expression_df</span>,</span>
@@ -167,28 +200,15 @@
 <span>  lux <span class="op">=</span> <span class="st">"LUX.AUC_16"</span>,</span>
 <span>  growth <span class="op">=</span> <span class="st">"od_16h.measured"</span>,</span>
 <span>  batch <span class="op">=</span> <span class="st">"batch"</span>,</span>
-<span>  replicate <span class="op">=</span> <span class="st">"replicate"</span></span>
+<span>  replicate <span class="op">=</span> <span class="st">"replicate"</span>,</span>
+<span>  background_promoter <span class="op">=</span> <span class="st">"PEVC3"</span>,</span>
+<span>  background_by <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"srn_code"</span>, <span class="st">"batch"</span>, <span class="st">"replicate"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/fit_destress.html">fit_destress</a></span><span class="op">(</span></span>
-<span>  <span class="va">assay</span>,</span>
-<span>  preset <span class="op">=</span> <span class="st">"model"</span>,</span>
-<span>  technical <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"batch"</span>, <span class="st">"replicate"</span><span class="op">)</span>,</span>
-<span>  empirical_bayes <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  empty_vector_promoter <span class="op">=</span> <span class="st">"PEVC3"</span></span>
-<span><span class="op">)</span></span>
-<span></span>
+<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/fit_destress.html">fit_destress</a></span><span class="op">(</span><span class="va">assay</span>, technical <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"batch"</span>, <span class="st">"replicate"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">tab</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/results.html">results</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></code></pre></div>
-<p>The result table then includes additional columns:</p>
-<ul>
-<li>
-<code>empty_vector_effect</code>: fitted DMSO-relative response of the EVC reporter for the compound.</li>
-<li>
-<code>background_adjusted_effect</code>: fitted total response after subtracting <code>empty_vector_effect</code>.</li>
-<li>
-<code>specific_effect</code>: promoter-specific response after compound-wise centering.</li>
-</ul>
-<p>For an additive compound-level EVC background, the subtraction cancels from the centered <code>specific_effect</code>. This means the EVC option is most useful for reporting and diagnosing background-adjusted total responses, while the final model-based hit calls still target promoter-specific deviations from the compound-wide average.</p>
+<p>When <code>background_promoter</code> is supplied, <code><a href="reference/prepare_assay.html">prepare_assay()</a></code> uses Huber calibration by default. Use <code>background_method = "lm"</code> for least-squares calibration or <code>background_method = "subtract"</code> for direct matched-background subtraction. Without <code>background_promoter</code>, no background calibration is applied and the default DStressR workflow is unchanged.</p>
+<p>The fitted object stores growth-exponent and background-calibration metadata, and the background reporter is excluded from model-based testing.</p>
 <p>Estimated model components, including growth-exponent parameters and promoter-compound effect estimates, can be extracted with:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">params</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/model_parameters.html">model_parameters</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span>
@@ -440,7 +460,7 @@
 <div class="section level2">
 <h2 id="analysis-workflow">Analysis workflow<a class="anchor" aria-label="anchor" href="#analysis-workflow"></a>
 </h2>
-<p>The <code>analysis/</code> folder is a downstream comparison and figure-generation layer. It reads package-generated TSV outputs from <code>analysis/outputs/package_results/</code> and must not reimplement estimators, p-value calculations, empirical-Bayes moderation, replicate aggregation, or multiple-testing correction. Generated outputs under <code>analysis/outputs/</code> are intentionally ignored by Git so proprietary result tables and manuscript figures stay local.</p>
+<p>The <code>analysis/</code> folder is a downstream comparison and figure-generation layer that is excluded from the CRAN source package. Public <em>E. coli</em> promoter-screen reproducibility checks live in <code>analysis/ecoli_promoter_screen/</code>; the previous Campylobacter manuscript comparison workflow lives in <code>analysis/campylobacter_manuscript/</code>. Analysis scripts read package-generated outputs and must not reimplement estimators, p-value calculations, empirical-Bayes moderation, replicate aggregation, or multiple-testing correction. Generated outputs under <code>analysis/outputs/</code> are intentionally ignored by Git so proprietary result tables and manuscript figures stay local.</p>
 </div>
 </div>
 

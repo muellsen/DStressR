@@ -81,6 +81,9 @@ response.</p>
 <span>  batch <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  plate <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  replicate <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  background_promoter <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  background_method <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"none"</span>, <span class="st">"subtract"</span>, <span class="st">"lm"</span>, <span class="st">"huber"</span><span class="op">)</span>,</span>
+<span>  background_by <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  pseudocount <span class="op">=</span> <span class="fl">1e-08</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -125,6 +128,29 @@ exponent estimation. Defaults to <code>control</code>.</p></dd>
 <dd><p>Optional technical-factor column names.
 When <code>growth_exponent = "estimate"</code>, these columns are also used as
 covariates while estimating promoter-specific growth exponents.</p></dd>
+
+
+<dt id="arg-background-promoter">background_promoter<a class="anchor" aria-label="anchor" href="#arg-background-promoter"></a></dt>
+<dd><p>Optional reporter promoter used as a background
+reference, e.g. an Empty Vector Control. When supplied, the default
+background method is <code>"huber"</code>. The background reporter is matched to other
+promoters by <code>background_by</code>, the response is calibrated, and the
+background reporter is excluded from model-based testing.</p></dd>
+
+
+<dt id="arg-background-method">background_method<a class="anchor" aria-label="anchor" href="#arg-background-method"></a></dt>
+<dd><p>One of <code>"none"</code>, <code>"subtract"</code>, <code>"lm"</code>, or
+<code>"huber"</code>. If omitted, DStressR uses <code>"none"</code> when no
+<code>background_promoter</code> is supplied and <code>"huber"</code> when one is supplied.
+<code>"subtract"</code> subtracts the matched background response. <code>"lm"</code> and
+<code>"huber"</code> replace each non-background promoter response by residuals from
+a promoter-wise calibration against the matched background.</p></dd>
+
+
+<dt id="arg-background-by">background_by<a class="anchor" aria-label="anchor" href="#arg-background-by"></a></dt>
+<dd><p>Columns used to match each observation to the
+background reporter. Defaults to <code>compound</code> plus the supplied technical
+columns.</p></dd>
 
 
 <dt id="arg-pseudocount">pseudocount<a class="anchor" aria-label="anchor" href="#arg-pseudocount"></a></dt>

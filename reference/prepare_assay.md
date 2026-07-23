@@ -23,6 +23,9 @@ prepare_assay(
   batch = NULL,
   plate = NULL,
   replicate = NULL,
+  background_promoter = NULL,
+  background_method = c("none", "subtract", "lm", "huber"),
+  background_by = NULL,
   pseudocount = 1e-08
 )
 ```
@@ -66,6 +69,28 @@ prepare_assay(
   Optional technical-factor column names. When
   `growth_exponent = "estimate"`, these columns are also used as
   covariates while estimating promoter-specific growth exponents.
+
+- background_promoter:
+
+  Optional reporter promoter used as a background reference, e.g. an
+  Empty Vector Control. When supplied, the default background method is
+  `"huber"`. The background reporter is matched to other promoters by
+  `background_by`, the response is calibrated, and the background
+  reporter is excluded from model-based testing.
+
+- background_method:
+
+  One of `"none"`, `"subtract"`, `"lm"`, or `"huber"`. If omitted,
+  DStressR uses `"none"` when no `background_promoter` is supplied and
+  `"huber"` when one is supplied. `"subtract"` subtracts the matched
+  background response. `"lm"` and `"huber"` replace each non-background
+  promoter response by residuals from a promoter-wise calibration
+  against the matched background.
+
+- background_by:
+
+  Columns used to match each observation to the background reporter.
+  Defaults to `compound` plus the supplied technical columns.
 
 - pseudocount:
 

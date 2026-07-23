@@ -235,7 +235,8 @@ legacy$pair_results
 The median-polish path is intended as a reproducible baseline. The
 model-based DStressR analysis starts from the same long table but uses
 [`prepare_assay()`](https://muellsen.github.io/DStressR/reference/prepare_assay.md)
-and `fit_workflow(..., workflow = "model")`:
+and
+[`fit_destress()`](https://muellsen.github.io/DStressR/reference/fit_destress.md):
 
 ``` r
 
@@ -251,9 +252,8 @@ assay <- prepare_assay(
   replicate = "replicate"
 )
 
-fit <- fit_workflow(
+fit <- fit_destress(
   assay,
-  workflow = "model",
   technical = c("batch", "libplate", "replicate"),
   empirical_bayes = TRUE
 )
@@ -262,5 +262,6 @@ model_results <- results(fit)
 ```
 
 This gives a direct apples-to-apples setup: `workflow = "median_polish"`
-recovers the legacy workflow, while `workflow = "model"` provides the
-model-based replacement.
+recovers the legacy workflow, while
+[`fit_destress()`](https://muellsen.github.io/DStressR/reference/fit_destress.md)
+provides the model-based replacement.
