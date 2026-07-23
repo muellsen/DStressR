@@ -34,7 +34,10 @@ model path; \code{FALSE} maps to \code{testing = "student_t"}.}
 \item{empty_vector_promoter}{Optional promoter/control strain used as an
 empty-vector reporter in the model-based path. When supplied, its
 reference-relative compound effect is subtracted from every promoter's
-reference-relative compound effect before promoter-library centering.}
+reference-relative compound effect before promoter-library centering.
+For new analyses, prefer \code{background_promoter} in \code{\link[=prepare_assay]{prepare_assay()}}, which
+performs explicit response-level background calibration before model
+fitting.}
 
 \item{background_rank}{Non-negative integer. The default \code{0} removes only
 the additive compound-wide mean. Values \code{1} or \code{2} additionally subtract a

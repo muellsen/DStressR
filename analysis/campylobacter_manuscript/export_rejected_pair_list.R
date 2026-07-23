@@ -10,7 +10,7 @@ membership_file <- file.path(comparison_results_dir("pair_level"), "pair_level_h
 if (!file.exists(comparison_file) || !file.exists(membership_file)) {
   stop(
     "Missing pair-level comparison outputs.",
-    "\nRun analysis/compare_pair_level_pvalues.R first.",
+    "\nRun analysis/campylobacter_manuscript/compare_pair_level_pvalues.R first.",
     call. = FALSE
   )
 }

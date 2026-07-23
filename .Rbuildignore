@@ -22,3 +22,7 @@
 ^analysis/.*\.csv$
 ^\.DS_Store$
 ^analysis/outputs/\.DS_Store$
+^analysis$
+^data-raw$
+^paper$
+^paper/manuscript_files$

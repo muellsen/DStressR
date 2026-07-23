@@ -15,7 +15,7 @@ out_dir <- comparison_results_dir("hit_network")
 if (!file.exists(input_file)) {
   stop(
     "Missing differential pair list: ", input_file,
-    "\nRun analysis/export_rejected_pair_list.R first.",
+    "\nRun analysis/campylobacter_manuscript/export_rejected_pair_list.R first.",
     call. = FALSE
   )
 }
