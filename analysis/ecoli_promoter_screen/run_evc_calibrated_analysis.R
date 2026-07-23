@@ -32,6 +32,8 @@ assay <- prepare_assay(
   growth_exponent = "estimate",
   batch = "dose_level",
   replicate = "replicate",
+  growth_covariates = "replicate",
+  numeric_covariates = "dose_level",
   background_promoter = "EVC",
   background_method = "huber",
   background_by = c("compound", "dose_level", "replicate")
@@ -114,7 +116,7 @@ if (file.exists(comparison_file)) {
     comparison[, c("binsfeld_hit", "modeled_hit", "evc_huber_hit")],
     1,
     function(x) {
-      names <- c("E. coli reference", "DStressR modeled", "DStressR EVC-Huber")[as.logical(x)]
+      names <- c("Binsfeld reference", "DStressR modeled", "DStressR EVC-Huber")[as.logical(x)]
       if (length(names) == 0) {
         "None"
       } else {
@@ -221,7 +223,7 @@ if (file.exists(comparison_file)) {
     data.frame(x = cx + r * cos(theta), y = cy + r * sin(theta))
   }
   venn_df <- rbind(
-    cbind(circle_points(-0.55, 0.25, 0.9), method = "E. coli reference"),
+    cbind(circle_points(-0.55, 0.25, 0.9), method = "Binsfeld reference"),
     cbind(circle_points(0.55, 0.25, 0.9), method = "DStressR alpha_g"),
     cbind(circle_points(0, -0.48, 0.9), method = "DStressR alpha_g + EVC-Huber")
   )
@@ -234,16 +236,16 @@ if (file.exists(comparison_file)) {
     ggplot2$annotate("text", x = -0.42, y = -0.22, label = region_counts[["binsfeld_evc_huber"]], size = 6, fontface = "bold") +
     ggplot2$annotate("text", x = 0.42, y = -0.22, label = region_counts[["modeled_evc_huber"]], size = 6, fontface = "bold") +
     ggplot2$annotate("text", x = 0, y = 0.1, label = region_counts[["all_three"]], size = 6.3, fontface = "bold") +
-    ggplot2$annotate("text", x = -0.75, y = 1.35, label = paste0("E. coli reference\n", set_counts[["binsfeld"]], " hits"), size = 3.7, fontface = "bold") +
+    ggplot2$annotate("text", x = -0.75, y = 1.35, label = paste0("Binsfeld reference\n", set_counts[["binsfeld"]], " hits"), size = 3.7, fontface = "bold") +
     ggplot2$annotate("text", x = 0.75, y = 1.35, label = paste0("DStressR alpha_g\n", set_counts[["modeled"]], " hits"), size = 3.7, fontface = "bold") +
     ggplot2$annotate("text", x = 0, y = -1.65, label = paste0("DStressR alpha_g + EVC-Huber\n", set_counts[["evc_huber"]], " hits"), size = 3.7, fontface = "bold") +
     ggplot2$scale_fill_manual(values = c(
-      "E. coli reference" = "#2563eb",
+      "Binsfeld reference" = "#2563eb",
       "DStressR alpha_g" = "#dc2626",
       "DStressR alpha_g + EVC-Huber" = "#059669"
     )) +
     ggplot2$scale_color_manual(values = c(
-      "E. coli reference" = "#1d4ed8",
+      "Binsfeld reference" = "#1d4ed8",
       "DStressR alpha_g" = "#b91c1c",
       "DStressR alpha_g + EVC-Huber" = "#047857"
     )) +
@@ -251,12 +253,12 @@ if (file.exists(comparison_file)) {
     ggplot2$theme_void(base_size = 10) +
     ggplot2$theme(legend.position = "none") +
     ggplot2$labs(
-      title = "Hit overlap across E. coli reference and DStressR response-construction analyses"
+      title = "Hit overlap across Binsfeld reference and DStressR response-construction analyses"
     )
 
   volcano_data <- rbind(
     data.frame(
-      method = "E. coli reference",
+      method = "Binsfeld reference",
       promoter = comparison$promoter,
       compound = comparison$compound,
       effect = comparison$mean_z,
@@ -285,17 +287,90 @@ if (file.exists(comparison_file)) {
   )
   volcano_data$method <- factor(
     volcano_data$method,
-    levels = c("E. coli reference", "DStressR modeled", "DStressR EVC-Huber")
+    levels = c("Binsfeld reference", "DStressR modeled", "DStressR EVC-Huber")
+  )
+  volcano_data$in_all_three <- comparison$binsfeld_hit & comparison$modeled_hit & comparison$evc_huber_hit
+  volcano_data$method_hit_count <- ave(
+    volcano_data$hit,
+    volcano_data$method,
+    FUN = function(x) sum(x, na.rm = TRUE)
   )
   volcano_data$status <- ifelse(volcano_data$hit, "Hit", "Not called")
   volcano_data$label <- paste(volcano_data$promoter, volcano_data$compound, sep = "-")
   volcano_data$label_hjust <- ifelse(volcano_data$effect > 0, 1.05, -0.05)
+  volcano_data$rank_score <- volcano_data$neglog10_pvalue + 0.15 * abs(volcano_data$effect)
 
   top_volcano_labels <- do.call(rbind, lapply(split(volcano_data, volcano_data$method), function(d) {
     d <- d[d$hit & is.finite(d$effect) & is.finite(d$neglog10_pvalue), , drop = FALSE]
     d <- d[order(-d$neglog10_pvalue, -abs(d$effect)), , drop = FALSE]
     utils::head(d, 6)
   }))
+
+  pvalue_long <- rbind(
+    data.frame(
+      method = "Binsfeld reference",
+      promoter = comparison$promoter,
+      pvalue = comparison$binsfeld_pvalue,
+      hit = comparison$binsfeld_hit,
+      stringsAsFactors = FALSE
+    ),
+    data.frame(
+      method = "DStressR modeled",
+      promoter = comparison$promoter,
+      pvalue = comparison$modeled_pvalue,
+      hit = comparison$modeled_hit,
+      stringsAsFactors = FALSE
+    ),
+    data.frame(
+      method = "DStressR EVC-Huber",
+      promoter = comparison$promoter,
+      pvalue = comparison$evc_huber_pvalue,
+      hit = comparison$evc_huber_hit,
+      stringsAsFactors = FALSE
+    )
+  )
+  pvalue_long$method <- factor(
+    pvalue_long$method,
+    levels = c("Binsfeld reference", "DStressR modeled", "DStressR EVC-Huber")
+  )
+  pvalue_long$status <- ifelse(pvalue_long$hit, "Called hit", "Not called")
+  pvalue_long <- pvalue_long[is.finite(pvalue_long$pvalue), , drop = FALSE]
+  promoter_levels <- c("All promoters", "acrABp", "marRABp", "micFp", "ompFp", "robp", "soxSp", "tolCp")
+  pvalue_panel <- rbind(
+    transform(pvalue_long, panel = "All promoters"),
+    transform(pvalue_long, panel = as.character(promoter))
+  )
+  pvalue_panel$panel <- factor(pvalue_panel$panel, levels = promoter_levels)
+  pvalue_hist <- ggplot2$ggplot(pvalue_panel, ggplot2$aes(pvalue)) +
+    ggplot2$geom_histogram(
+      data = pvalue_panel[!pvalue_panel$hit, , drop = FALSE],
+      bins = 30,
+      fill = "#d1d5db",
+      color = "white",
+      linewidth = 0.2
+    ) +
+    ggplot2$geom_histogram(
+      data = pvalue_panel[pvalue_panel$hit, , drop = FALSE],
+      bins = 30,
+      fill = "#111827",
+      color = "white",
+      linewidth = 0.2
+    ) +
+    ggplot2$facet_grid(ggplot2$vars(panel), ggplot2$vars(method), scales = "free_y") +
+    ggplot2$scale_x_continuous(breaks = seq(0, 1, by = 0.25)) +
+    ggplot2$coord_cartesian(xlim = c(0, 1)) +
+    ggplot2$theme_light(base_size = 10) +
+    ggplot2$theme(
+      panel.grid.minor = ggplot2$element_blank(),
+      plot.title = ggplot2$element_text(face = "bold"),
+      strip.text = ggplot2$element_text(face = "bold")
+    ) +
+    ggplot2$labs(
+      title = "Raw p-value distributions across the three E. coli analyses",
+      subtitle = "Global distributions are shown on top; promoter-specific distributions are shown below. Dark bars mark called hits.",
+      x = "Raw p-value",
+      y = "Promoter-compound pairs"
+    )
 
   reference_volcano <- comparison[, c(
     "promoter", "compound", "mean_z", "binsfeld_padj",
@@ -356,7 +431,7 @@ if (file.exists(comparison_file)) {
       legend.position = "bottom"
     ) +
     ggplot2$labs(
-      title = "E. coli reference volcano plot",
+      title = "Binsfeld reference volcano plot",
       subtitle = "Reference rule: promoter-wise BH-adjusted Wilcoxon p < 0.05 and absolute mean Z-score > 1",
       x = "Mean Z-score",
       y = "-log10 promoter-wise BH adjusted p-value",
@@ -391,18 +466,142 @@ if (file.exists(comparison_file)) {
       plot.margin = ggplot2$margin(8, 12, 8, 8)
     ) +
     ggplot2$labs(
-      title = "E. coli reference, modeled-response, and EVC-Huber volcano plots",
+      title = "Binsfeld reference, modeled-response, and EVC-Huber volcano plots",
       x = "Effect score",
       y = "-log10 raw p-value",
       color = "Call"
     )
 
+  intersection_labels <- volcano_data[
+    volcano_data$in_all_three & is.finite(volcano_data$effect) & is.finite(volcano_data$neglog10_pvalue),
+    ,
+    drop = FALSE
+  ]
+  intersection_labels <- intersection_labels[
+    order(intersection_labels$method, -intersection_labels$rank_score),
+    ,
+    drop = FALSE
+  ]
+  intersection_plot <- ggplot2$ggplot(
+    volcano_data,
+    ggplot2$aes(effect, neglog10_pvalue)
+  ) +
+    ggplot2$geom_hline(yintercept = -log10(0.05), color = "#9ca3af", linewidth = 0.3, linetype = "dashed") +
+    ggplot2$geom_vline(xintercept = 0, color = "#9ca3af", linewidth = 0.3) +
+    ggplot2$geom_point(color = "#d1d5db", alpha = 0.55, size = 1.2) +
+    ggplot2$geom_point(
+      data = volcano_data[volcano_data$in_all_three, , drop = FALSE],
+      ggplot2$aes(color = promoter),
+      alpha = 0.9,
+      size = 1.9
+    ) +
+    ggplot2$geom_text(
+      data = intersection_labels,
+      ggplot2$aes(label = label, color = promoter, hjust = label_hjust),
+      size = 2.15,
+      vjust = -0.55,
+      check_overlap = TRUE,
+      show.legend = FALSE
+    ) +
+    ggplot2$facet_wrap(ggplot2$vars(method), scales = "free_x", ncol = 3) +
+    ggplot2$scale_color_manual(values = promoter_colors[names(promoter_colors) != "Not called"]) +
+    ggplot2$scale_x_continuous(expand = ggplot2$expansion(mult = c(0.08, 0.12))) +
+    ggplot2$scale_y_continuous(expand = ggplot2$expansion(mult = c(0.04, 0.18))) +
+    ggplot2$theme_light(base_size = 10) +
+    ggplot2$theme(
+      panel.grid.minor = ggplot2$element_blank(),
+      plot.title = ggplot2$element_text(face = "bold"),
+      legend.position = "bottom",
+      plot.margin = ggplot2$margin(8, 12, 8, 8)
+    ) +
+    ggplot2$labs(
+      title = "Volcano locations of the 35 promoter-compound pairs called by all three analyses",
+      x = "Effect score",
+      y = "-log10 raw p-value",
+      color = "Promoter"
+    )
+
+  non_intersection <- volcano_data[
+    volcano_data$hit & !volcano_data$in_all_three &
+      is.finite(volcano_data$effect) & is.finite(volcano_data$neglog10_pvalue),
+    ,
+    drop = FALSE
+  ]
+  top_non_intersection <- do.call(rbind, lapply(split(non_intersection, non_intersection$method), function(d) {
+    d <- d[order(-d$rank_score), , drop = FALSE]
+    utils::head(d, 18)
+  }))
+  non_intersection$panel_label <- paste0(
+    as.character(non_intersection$method),
+    "\n",
+    ave(non_intersection$hit, non_intersection$method, FUN = function(x) length(x)),
+    " non-intersection hits"
+  )
+  panel_lookup <- stats::setNames(
+    as.character(non_intersection$panel_label),
+    as.character(non_intersection$method)
+  )
+  top_non_intersection$panel_label <- unname(panel_lookup[as.character(top_non_intersection$method)])
+  top_non_intersection$panel_label <- factor(
+    top_non_intersection$panel_label,
+    levels = unique(non_intersection$panel_label)
+  )
+  non_intersection$panel_label <- factor(
+    non_intersection$panel_label,
+    levels = unique(non_intersection$panel_label)
+  )
+  non_intersection_plot <- ggplot2$ggplot(
+    volcano_data,
+    ggplot2$aes(effect, neglog10_pvalue)
+  ) +
+    ggplot2$geom_hline(yintercept = -log10(0.05), color = "#9ca3af", linewidth = 0.3, linetype = "dashed") +
+    ggplot2$geom_vline(xintercept = 0, color = "#9ca3af", linewidth = 0.3) +
+    ggplot2$geom_point(color = "#e5e7eb", alpha = 0.45, size = 1.1) +
+    ggplot2$geom_point(
+      data = non_intersection,
+      ggplot2$aes(color = promoter),
+      alpha = 0.88,
+      size = 1.75
+    ) +
+    ggplot2$geom_text(
+      data = top_non_intersection,
+      ggplot2$aes(label = label, color = promoter, hjust = label_hjust),
+      size = 2.05,
+      vjust = -0.55,
+      check_overlap = TRUE,
+      show.legend = FALSE
+    ) +
+    ggplot2$facet_wrap(ggplot2$vars(panel_label), scales = "free_x", ncol = 3) +
+    ggplot2$scale_color_manual(values = promoter_colors[names(promoter_colors) != "Not called"]) +
+    ggplot2$scale_x_continuous(expand = ggplot2$expansion(mult = c(0.08, 0.12))) +
+    ggplot2$scale_y_continuous(expand = ggplot2$expansion(mult = c(0.04, 0.18))) +
+    ggplot2$theme_light(base_size = 10) +
+    ggplot2$theme(
+      panel.grid.minor = ggplot2$element_blank(),
+      plot.title = ggplot2$element_text(face = "bold"),
+      legend.position = "bottom",
+      plot.margin = ggplot2$margin(8, 12, 8, 8)
+    ) +
+    ggplot2$labs(
+      title = "Method-specific hit extensions beyond the 35-pair common core",
+      subtitle = "All non-intersection hits are colored; up to the top 18 per method are annotated.",
+      x = "Effect score",
+      y = "-log10 raw p-value",
+      color = "Promoter"
+    )
+
   ggplot2$ggsave(file.path(out_dir, "evc_huber_hit_overlap_venn.png"), venn, width = 7.2, height = 6.8, dpi = 220)
   ggplot2$ggsave(file.path(out_dir, "evc_huber_hit_overlap_venn.pdf"), venn, width = 7.2, height = 6.8)
+  ggplot2$ggsave(file.path(out_dir, "evc_huber_pvalue_histograms.png"), pvalue_hist, width = 11, height = 10.5, dpi = 220)
+  ggplot2$ggsave(file.path(out_dir, "evc_huber_pvalue_histograms.pdf"), pvalue_hist, width = 11, height = 10.5)
   ggplot2$ggsave(file.path(out_dir, "ecoli_reference_volcano_plot.png"), reference_plot, width = 8.2, height = 5.6, dpi = 220)
   ggplot2$ggsave(file.path(out_dir, "ecoli_reference_volcano_plot.pdf"), reference_plot, width = 8.2, height = 5.6)
   ggplot2$ggsave(file.path(out_dir, "evc_huber_volcano_plots.png"), volcano_plot, width = 12, height = 4.8, dpi = 220)
   ggplot2$ggsave(file.path(out_dir, "evc_huber_volcano_plots.pdf"), volcano_plot, width = 12, height = 4.8)
+  ggplot2$ggsave(file.path(out_dir, "evc_huber_intersection_volcano_plots.png"), intersection_plot, width = 12, height = 5.2, dpi = 220)
+  ggplot2$ggsave(file.path(out_dir, "evc_huber_intersection_volcano_plots.pdf"), intersection_plot, width = 12, height = 5.2)
+  ggplot2$ggsave(file.path(out_dir, "evc_huber_nonintersection_volcano_plots.png"), non_intersection_plot, width = 12, height = 5.4, dpi = 220)
+  ggplot2$ggsave(file.path(out_dir, "evc_huber_nonintersection_volcano_plots.pdf"), non_intersection_plot, width = 12, height = 5.4)
 
   print(summary)
 }

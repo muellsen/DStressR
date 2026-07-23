@@ -31,14 +31,14 @@ Current WT result:
 
 ```text
 Reference WT hits: 53
-DStressR default modeled-response WT hits: 77
+DStressR default modeled-response WT hits: 80
 DStressR EVC-Huber WT hits: 92
 All three analyses: 35
 Reference-only hits: 16
-DStressR modeled-only hits: 8
-DStressR EVC-Huber-only hits: 21
-Modeled + EVC-Huber only: 34
-Union significant by at least one primary analysis: 116
+DStressR modeled-only hits: 9
+DStressR EVC-Huber-only hits: 19
+Modeled + EVC-Huber only: 36
+Union significant by at least one primary analysis: 117
 ```
 
 ## Supplemental Comparison Scripts

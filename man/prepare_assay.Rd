@@ -17,6 +17,8 @@ prepare_assay(
   batch = NULL,
   plate = NULL,
   replicate = NULL,
+  growth_covariates = NULL,
+  numeric_covariates = NULL,
   background_promoter = NULL,
   background_method = c("none", "subtract", "lm", "huber"),
   background_by = NULL,
@@ -44,7 +46,17 @@ exponent estimation. Defaults to \code{control}.}
 
 \item{batch, plate, replicate}{Optional technical-factor column names.
 When \code{growth_exponent = "estimate"}, these columns are also used as
-covariates while estimating promoter-specific growth exponents.}
+covariates while estimating promoter-specific growth exponents unless
+\code{growth_covariates} is supplied.}
+
+\item{growth_covariates}{Optional technical covariate column names used only
+while estimating promoter-specific growth exponents from control wells. If
+\code{NULL}, DStressR uses the supplied \code{batch}, \code{plate}, and
+\code{replicate} columns for backwards compatibility.}
+
+\item{numeric_covariates}{Optional subset of technical covariate column names
+that should remain numeric in model matrices. Other optional covariates are
+converted to factors.}
 
 \item{background_promoter}{Optional reporter promoter used as a background
 reference, e.g. an Empty Vector Control. When supplied, the default

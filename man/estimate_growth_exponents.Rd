@@ -11,6 +11,7 @@ estimate_growth_exponents(
   lux = "lux",
   growth = "growth",
   covariates = NULL,
+  numeric_covariates = NULL,
   controls = "DMSO",
   pseudocount = 1e-08,
   min_control_n = 8,
@@ -23,9 +24,13 @@ estimate_growth_exponents(
 
 \item{promoter, compound, lux, growth}{Column names.}
 
-\item{covariates}{Optional technical-factor column names to include as
+\item{covariates}{Optional technical covariate column names to include as
 additive adjustment terms when estimating growth slopes. Only covariates
-with more than one observed level in the relevant control subset are used.}
+with more than one observed value in the relevant control subset are used.}
+
+\item{numeric_covariates}{Optional subset of \code{covariates} that should enter
+the growth-slope model as numeric variables. Other covariates are converted
+to factors.}
 
 \item{controls}{Control values in \code{compound}, usually DMSO wells.}
 

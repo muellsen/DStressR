@@ -9,7 +9,7 @@ ggplot2 <- asNamespace("ggplot2")
 
 load(analysis_path("data", "binsfeld_reporter_data.rda"))
 out_dir <- analysis_output_dir("binsfeld_modeling_steps")
-three_method_dir <- analysis_output_dir("binsfeld_three_method")
+evc_method_dir <- analysis_output_dir("binsfeld_evc_calibrated")
 
 wt_auc <- binsfeld_reporter_auc[
   binsfeld_reporter_auc$strain == "WT" &
@@ -26,7 +26,9 @@ prepare_binsfeld <- function(growth_exponent) {
     growth = "od_auc",
     growth_exponent = growth_exponent,
     batch = "dose_level",
-    replicate = "replicate"
+    replicate = "replicate",
+    growth_covariates = "replicate",
+    numeric_covariates = "dose_level"
   )
 }
 
@@ -38,7 +40,8 @@ raw <- prepare_assay(
   control = "Water",
   response = "raw_log2_lux",
   batch = "dose_level",
-  replicate = "replicate"
+  replicate = "replicate",
+  numeric_covariates = "dose_level"
 )
 modeled <- prepare_binsfeld("estimate")
 alpha1 <- prepare_binsfeld(1)
@@ -52,6 +55,8 @@ evc_huber <- prepare_assay(
   growth_exponent = "estimate",
   batch = "dose_level",
   replicate = "replicate",
+  growth_covariates = "replicate",
+  numeric_covariates = "dose_level",
   background_promoter = "EVC",
   background_method = "huber",
   background_by = c("compound", "dose_level", "replicate")
@@ -153,9 +158,14 @@ response_construction$modeled_minus_raw <- response_construction$modeled_respons
 response_construction$evc_huber_minus_raw <- response_construction$evc_huber_response -
   response_construction$raw_response
 
-union_file <- file.path(three_method_dir, "binsfeld_three_method_significant_union.tsv")
+union_file <- file.path(evc_method_dir, "evc_huber_comparison_to_binsfeld_and_default.tsv")
 if (file.exists(union_file)) {
   union_pairs <- read.delim(union_file, check.names = FALSE, stringsAsFactors = FALSE)
+  union_pairs <- union_pairs[
+    union_pairs$binsfeld_hit | union_pairs$modeled_hit | union_pairs$evc_huber_hit,
+    ,
+    drop = FALSE
+  ]
   keep_compounds <- sort(unique(union_pairs$compound))
   matched <- matched[matched$compound %in% keep_compounds, ]
   response_construction <- response_construction[response_construction$compound %in% keep_compounds, ]
