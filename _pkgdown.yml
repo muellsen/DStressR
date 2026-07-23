@@ -20,5 +20,6 @@ articles:
     navbar: "Get started"
     contents:
       - DStressR
+      - ecoli-promoter-screen
       - median-polish-workflow
       - salmonella-empty-vector-workflow

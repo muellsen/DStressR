@@ -5,6 +5,8 @@
 #' rows are promoter/strain/replicate/well observations from the PLOS Biology
 #' S3 Data supplement. `compound` collapses the water control wells
 #' (`Water_1`, `Water_2`) to `Water`; the original label remains in `drug`.
+#' `dose_level` is derived from `concentration_index` so that larger values
+#' correspond to higher compound concentration.
 #'
 #' The source article is https://doi.org/10.1371/journal.pbio.3003260. The
 #' associated Zenodo code/data archive is https://doi.org/10.5281/zenodo.15600688.
@@ -18,6 +20,8 @@
 #'   \item{drug}{Original compound/control label.}
 #'   \item{compound}{DStressR compound label, with water controls collapsed.}
 #'   \item{concentration_index}{Dose-series index from the source table.}
+#'   \item{dose_level}{Dose-oriented serial dilution level; larger values
+#'   correspond to higher concentration.}
 #'   \item{concentration_ug_ml}{Compound concentration in micrograms per ml.}
 #'   \item{od_auc}{Optical-density area under the curve.}
 #'   \item{lux_auc}{Luminescence area under the curve.}

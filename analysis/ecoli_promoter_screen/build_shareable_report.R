@@ -188,7 +188,7 @@ code { background: #f3f4f6; padding: 1px 4px; border-radius: 3px; }
 <ul>
 <li>Input: WT AUC rows from <code>binsfeld_reporter_auc</code> with <code>removed == "No"</code>.</li>
 <li>Response: package-default modeled response, <code>log2(lux_auc) - alpha_g * log2(od_auc)</code>, with promoter-specific <code>alpha_g</code> estimated from water controls.</li>
-<li>Model: DStressR model preset, empirical-Bayes moderation enabled, technical terms for replicate and concentration index.</li>
+<li>Model: DStressR model preset, empirical-Bayes moderation enabled, technical terms for replicate and dose level.</li>
 <li>Call a hit using promoter-specific effect p-values adjusted within promoter at FDR 0.05.</li>
 </ul>
 

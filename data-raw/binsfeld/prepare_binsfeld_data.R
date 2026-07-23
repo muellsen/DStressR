@@ -44,13 +44,14 @@ auc$promoter[auc$promoter == "EVC (empty vector control)"] <- "EVC"
 auc$compound <- ifelse(grepl("^Water_", auc$drug), "Water", auc$drug)
 auc$replicate <- as.integer(auc$replicate)
 auc$concentration_index <- as.integer(auc$concentration_index)
+auc$dose_level <- max(auc$concentration_index, na.rm = TRUE) + 1L - auc$concentration_index
 auc$od_auc <- as.numeric(auc$od_auc)
 auc$lux_auc <- as.numeric(auc$lux_auc)
 auc$od_auc_per_lux_auc <- as.numeric(auc$od_auc_per_lux_auc)
 auc$concentration_ug_ml <- as.numeric(auc$concentration_ug_ml)
 auc <- auc[, c(
   "strain", "promoter", "replicate", "well", "drug", "compound",
-  "concentration_index", "concentration_ug_ml", "od_auc", "lux_auc",
+  "concentration_index", "dose_level", "concentration_ug_ml", "od_auc", "lux_auc",
   "od_auc_per_lux_auc", "removed"
 )]
 
