@@ -1,4 +1,4 @@
-![](assets/Logo-DStressR.svg)
+![](man/figures/Logo-DStressR.svg)
 
 # DStressR: Differential stress-response modeling for chemical genomics screens
 
@@ -10,7 +10,7 @@ bacterial growth curves, while `DStressR` models promoter-activity responses
 after accounting for growth, compound-wide effects, technical covariates, and
 promoter-specific uncertainty.
 
-![](assets/dstressr_panel.svg)
+![](man/figures/dstressr_panel.svg)
 
 > [!TIP]
 > `DStressR` is intended as the promoter-response counterpart to
@@ -40,13 +40,6 @@ library(devtools)
 
 ```r
 install()
-```
-
-For permutation-based empirical p-values, install the
-[`permApprox`](https://github.com/stefpeschel/permApprox) package:
-
-```r
-remotes::install_github("stefpeschel/permApprox")
 ```
 
 ## Get started
@@ -89,6 +82,54 @@ tab <- results(fit)
 hits <- call_hits(tab, fdr = 0.05, effect = "specific_effect")
 ```
 
+## Public E. coli Promoter-Compound Screen
+
+`DStressR` ships the public *E. coli* reporter-screen AUC data from
+Binsfeld et al. (2025), PLOS Biology, as `binsfeld_reporter_auc`. The matching
+author score/Z-score table is available as `binsfeld_reporter_scores`.
+
+```r
+data("binsfeld_reporter_auc")
+
+wt_auc <- subset(
+  binsfeld_reporter_auc,
+  strain == "WT" & removed == "No"
+)
+
+assay <- prepare_assay(
+  wt_auc,
+  promoter = "promoter",
+  compound = "compound",
+  control = "Water",
+  lux = "lux_auc",
+  growth = "od_auc",
+  growth_exponent = "estimate",
+  batch = "concentration_index",
+  replicate = "replicate",
+  background_promoter = "EVC",
+  background_by = c("compound", "concentration_index", "replicate")
+)
+
+fit <- fit_destress(
+  assay,
+  preset = "model",
+  technical = c("replicate", "concentration_index"),
+  empirical_bayes = TRUE,
+  adjustment = "by_promoter",
+  interaction = FALSE
+)
+```
+
+The public sources are the PLOS article
+<https://doi.org/10.1371/journal.pbio.3003260> and the Zenodo archive
+<https://doi.org/10.5281/zenodo.15600688>. The reproducibility script
+`analysis/ecoli_promoter_screen/compare_reporter_hits.R` rebuilds the Binsfeld-style
+Wilcoxon/Z-score hit calls and compares them with the default DStressR
+modeled-response analyses. In the current WT analysis, the reconstructed
+reference rule calls 53 hits, the default DStressR modeled response calls 77
+hits, and the EVC-Huber DStressR workflow calls 92 hits. The EVC-Huber
+workflow overlaps with 37 of the 53 reference hits.
+
 Equivalently, using staged options directly:
 
 ```r
@@ -121,13 +162,13 @@ model and `empirical_bayes = FALSE` is the ordinary Student-$t$ sensitivity
 model. The Campylobacter manuscript comparison uses the default moderated
 model against the median-polish max-p workflow.
 
-## Model-based Empty Vector Control
+## Model-based Background Reporter Calibration
 
 If the screen contains an Empty Vector Control (EVC) reporter, it can be used
-inside the model-based `fit_destress()` workflow. This is different from the
+when constructing the model-based response. This is different from the
 project-level `preset = "empty_vector_control"` workflow below: the model-based
-path still fits promoter-specific linear models, but additionally estimates the
-DMSO-relative EVC response for each compound.
+path still fits promoter-specific linear models, but first calibrates each
+non-background reporter against the matched background reporter.
 
 ```r
 assay <- prepare_assay(
@@ -138,33 +179,23 @@ assay <- prepare_assay(
   lux = "LUX.AUC_16",
   growth = "od_16h.measured",
   batch = "batch",
-  replicate = "replicate"
+  replicate = "replicate",
+  background_promoter = "PEVC3",
+  background_by = c("srn_code", "batch", "replicate")
 )
 
-fit <- fit_destress(
-  assay,
-  preset = "model",
-  technical = c("batch", "replicate"),
-  empirical_bayes = TRUE,
-  empty_vector_promoter = "PEVC3"
-)
-
+fit <- fit_destress(assay, technical = c("batch", "replicate"))
 tab <- results(fit)
 ```
 
-The result table then includes additional columns:
+When `background_promoter` is supplied, `prepare_assay()` uses Huber
+calibration by default. Use `background_method = "lm"` for least-squares
+calibration or `background_method = "subtract"` for direct matched-background
+subtraction. Without `background_promoter`, no background calibration is
+applied and the default DStressR workflow is unchanged.
 
-- `empty_vector_effect`: fitted DMSO-relative response of the EVC reporter for
-  the compound.
-- `background_adjusted_effect`: fitted total response after subtracting
-  `empty_vector_effect`.
-- `specific_effect`: promoter-specific response after compound-wise centering.
-
-For an additive compound-level EVC background, the subtraction cancels from the
-centered `specific_effect`. This means the EVC option is most useful for
-reporting and diagnosing background-adjusted total responses, while the final
-model-based hit calls still target promoter-specific deviations from the
-compound-wide average.
+The fitted object stores growth-exponent and background-calibration metadata,
+and the background reporter is excluded from model-based testing.
 
 Estimated model components, including growth-exponent parameters and
 promoter-compound effect estimates, can be extracted with:
@@ -481,9 +512,13 @@ assay <- prepare_assay(
 
 ## Analysis workflow
 
-The `analysis/` folder is a downstream comparison and figure-generation layer.
-It reads package-generated TSV outputs from `analysis/outputs/package_results/`
-and must not reimplement estimators, p-value calculations, empirical-Bayes
-moderation, replicate aggregation, or multiple-testing correction. Generated
-outputs under `analysis/outputs/` are intentionally ignored by Git so
-proprietary result tables and manuscript figures stay local.
+The `analysis/` folder is a downstream comparison and figure-generation layer
+that is excluded from the CRAN source package. Public *E. coli*
+promoter-screen reproducibility checks live in
+`analysis/ecoli_promoter_screen/`; the previous Campylobacter manuscript
+comparison workflow lives in `analysis/campylobacter_manuscript/`.
+Analysis scripts read package-generated outputs and must not reimplement
+estimators, p-value calculations, empirical-Bayes moderation, replicate
+aggregation, or multiple-testing correction. Generated outputs under
+`analysis/outputs/` are intentionally ignored by Git so proprietary result
+tables and manuscript figures stay local.

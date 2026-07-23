@@ -31,6 +31,7 @@ It writes the promoter-specific centered result columns from `results()` to:
 analysis/outputs/package_results/destress_moderated_pair_results.tsv
 ```
 
-This table is the input used by the downstream manuscript figure scripts. The
-ordinary unmoderated model remains available as a sensitivity analysis, but the
-moderated model is the default used for Campylobacter hit discovery.
+This table is the input used by the downstream manuscript figure scripts under
+`analysis/campylobacter_manuscript/`. The ordinary unmoderated model remains
+available as a sensitivity analysis, but the moderated model is the default
+used for Campylobacter hit discovery.

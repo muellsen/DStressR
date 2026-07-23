@@ -78,6 +78,52 @@ test_that("fit_destress detects simulated specific effects", {
   expect_gt(stats::cor(joined$specific_effect[active], joined$truth_specific[active]), 0.7)
 })
 
+test_that("Binsfeld reporter data support DStressR model analysis", {
+  data("binsfeld_reporter_auc", package = "DStressR")
+  data("binsfeld_reporter_scores", package = "DStressR")
+
+  expect_equal(nrow(binsfeld_reporter_auc), 24576)
+  expect_true(all(c(
+    "strain", "promoter", "compound", "od_auc", "lux_auc", "removed"
+  ) %in% names(binsfeld_reporter_auc)))
+  expect_equal(
+    sort(unique(binsfeld_reporter_auc$compound[grepl("^Water_", binsfeld_reporter_auc$drug)])),
+    "Water"
+  )
+  expect_true(all(c("Scores", "Z_scores") %in% unique(binsfeld_reporter_scores$statistic)))
+
+  wt_auc <- binsfeld_reporter_auc[
+    binsfeld_reporter_auc$strain == "WT" &
+      binsfeld_reporter_auc$removed == "No" &
+      binsfeld_reporter_auc$compound %in% c("Water", "Azithromycin", "Clarithromycin"),
+  ]
+  assay <- prepare_assay(
+    wt_auc,
+    promoter = "promoter",
+    compound = "compound",
+    control = "Water",
+    lux = "lux_auc",
+    growth = "od_auc",
+    growth_exponent = "estimate",
+    batch = "concentration_index",
+    replicate = "replicate"
+  )
+  fit <- fit_destress(
+    assay,
+    technical = c("replicate", "concentration_index"),
+    empirical_bayes = TRUE,
+    adjustment = "by_promoter",
+    interaction = FALSE,
+    empty_vector_promoter = "EVC"
+  )
+  res <- results(fit)
+
+  expect_s3_class(fit, "destress_fit")
+  expect_true(all(c("empty_vector_effect", "specific_effect", "specific_padj") %in% names(res)))
+  expect_false(is.null(fit$growth_exponents))
+  expect_true(nrow(res) > 0)
+})
+
 test_that("fit_workflow dispatches to the model workflow", {
   dat <- simulate_screen(seed = 3, n_promoters = 5, n_compounds = 6, n_replicates = 2)
   assay <- prepare_assay(dat, promoter = "promoter", compound = "compound",
@@ -306,6 +352,115 @@ test_that("fit_destress subtracts model-based empty-vector background before cen
   )
   expect_equal(merged$specific_effect_evc, merged$specific_effect_no_evc, tolerance = 1e-8)
   expect_equal(merged$specific_se_evc, merged$specific_se_no_evc, tolerance = 1e-8)
+})
+
+test_that("prepare_assay can calibrate responses against a background promoter", {
+  compounds <- c("DMSO", paste0("C_bg", seq_len(6)), "C_specific")
+  dat <- expand.grid(
+    promoter = c("EVC", "P1", "P2"),
+    compound = compounds,
+    replicate = paste0("r", seq_len(5)),
+    stringsAsFactors = FALSE
+  )
+  background_score <- stats::setNames(c(0, seq(-1.5, 1.5, length.out = 6), 0.5), compounds)
+  dat$value <- ifelse(
+    dat$promoter == "EVC",
+    5 + background_score[dat$compound],
+    ifelse(dat$promoter == "P1", 10 + 2 * background_score[dat$compound], 12 - background_score[dat$compound])
+  )
+  dat$value <- dat$value + ifelse(dat$promoter == "P2" & dat$compound == "C_specific", 2, 0)
+
+  plain <- prepare_assay(
+    dat,
+    promoter = "promoter",
+    compound = "compound",
+    control = "DMSO",
+    response = "value",
+    replicate = "replicate"
+  )
+  calibrated <- prepare_assay(
+    dat,
+    promoter = "promoter",
+    compound = "compound",
+    control = "DMSO",
+    response = "value",
+    replicate = "replicate",
+    background_promoter = "EVC",
+    background_method = "lm",
+    background_by = c("compound", "replicate")
+  )
+
+  fit_plain <- fit_destress(plain, technical = "replicate", empirical_bayes = FALSE)
+  fit_calibrated <- fit_destress(calibrated, technical = "replicate", empirical_bayes = FALSE)
+  res_plain <- results(fit_plain, promoters = c("P1", "P2"))
+  res_calibrated <- results(fit_calibrated)
+  params <- model_parameters(fit_calibrated)
+
+  expect_false("EVC" %in% res_calibrated$promoter)
+  expect_true(all(c(".background_response", ".response_uncalibrated") %in% names(calibrated)))
+  expect_true(all(c("P1", "P2") %in% params$background_calibration$promoter))
+  expect_gt(max(abs(res_plain$specific_effect[res_plain$compound %in% paste0("C_bg", seq_len(6))])), 0.5)
+  expect_lt(max(abs(res_calibrated$specific_effect[res_calibrated$compound %in% paste0("C_bg", seq_len(6))])), 0.25)
+
+  specific <- res_calibrated[res_calibrated$compound == "C_specific", ]
+  expect_gt(specific$specific_effect[match("P2", specific$promoter)], 0.8)
+  expect_lt(specific$specific_effect[match("P1", specific$promoter)], -0.8)
+})
+
+test_that("prepare_assay defaults to Huber calibration when a background promoter is supplied", {
+  skip_if_not_installed("MASS")
+  dat <- expand.grid(
+    promoter = c("EVC", "P1"),
+    compound = c("DMSO", "C1", "C2"),
+    replicate = paste0("r", seq_len(3)),
+    stringsAsFactors = FALSE
+  )
+  score <- stats::setNames(c(0, 1, 2), unique(dat$compound))
+  dat$value <- ifelse(dat$promoter == "EVC", 5 + score[dat$compound], 10 + 2 * score[dat$compound])
+
+  assay <- prepare_assay(
+    dat,
+    promoter = "promoter",
+    compound = "compound",
+    control = "DMSO",
+    response = "value",
+    replicate = "replicate",
+    background_promoter = "EVC",
+    background_by = c("compound", "replicate")
+  )
+
+  expect_equal(attr(assay, "destress")$background_method, "huber")
+  expect_equal(attr(assay, "destress")$background_fit$method, "huber")
+})
+
+test_that("prepare_assay supports Huber background calibration when MASS is available", {
+  skip_if_not_installed("MASS")
+  dat <- expand.grid(
+    promoter = c("EVC", "P1"),
+    compound = c("DMSO", paste0("C", seq_len(5))),
+    replicate = paste0("r", seq_len(4)),
+    stringsAsFactors = FALSE
+  )
+  score <- stats::setNames(c(0, -2, -1, 0.5, 1, 2), unique(dat$compound))
+  dat$value <- ifelse(dat$promoter == "EVC", 5 + score[dat$compound], 10 + 2 * score[dat$compound])
+  dat$value[dat$promoter == "P1" & dat$compound == "C5" & dat$replicate == "r4"] <- 30
+
+  assay <- prepare_assay(
+    dat,
+    promoter = "promoter",
+    compound = "compound",
+    control = "DMSO",
+    response = "value",
+    replicate = "replicate",
+    background_promoter = "EVC",
+    background_method = "huber",
+    background_by = c("compound", "replicate")
+  )
+  params <- attr(assay, "destress")$background_fit
+
+  expect_equal(attr(assay, "destress")$background_method, "huber")
+  expect_equal(params$method, "huber")
+  expect_true(is.finite(params$slope))
 })
 
 test_that("fit_destress can prepare raw model data with growth-exponent options", {

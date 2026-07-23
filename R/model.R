@@ -961,6 +961,9 @@ resolve_destress_stages <- function(preset,
 #'   empty-vector reporter in the model-based path. When supplied, its
 #'   reference-relative compound effect is subtracted from every promoter's
 #'   reference-relative compound effect before promoter-library centering.
+#'   For new analyses, prefer `background_promoter` in [prepare_assay()], which
+#'   performs explicit response-level background calibration before model
+#'   fitting.
 #' @param background_rank Non-negative integer. The default `0` removes only
 #'   the additive compound-wide mean. Values `1` or `2` additionally subtract a
 #'   low-rank background term from the promoter-by-compound effect matrix before
@@ -1027,6 +1030,14 @@ fit_destress <- function(assay,
     }
     assay <- prepare_assay(assay, ...)
   }
+  background_promoter <- attr(assay, "destress")$background_promoter
+  if (!is.null(background_promoter) && nzchar(background_promoter)) {
+    assay_for_model <- assay[as.character(assay$.promoter) != background_promoter, , drop = FALSE]
+    assay_for_model$.promoter <- droplevels(assay_for_model$.promoter)
+    assay_for_model$.compound <- droplevels(assay_for_model$.compound)
+  } else {
+    assay_for_model <- assay
+  }
   technical <- technical[!is.na(technical) & nzchar(technical)]
   missing_technical <- setdiff(technical, names(assay))
   if (length(missing_technical) > 0) {
@@ -1044,19 +1055,19 @@ fit_destress <- function(assay,
   }
   formulas <- make_formulas(technical)
   total_fit <- if (interaction) {
-    stats::lm(formulas$total, data = assay, na.action = stats::na.exclude)
+    stats::lm(formulas$total, data = assay_for_model, na.action = stats::na.exclude)
   } else {
     NULL
   }
   full_fit <- if (interaction) {
-    stats::lm(formulas$full, data = assay, na.action = stats::na.exclude)
+    stats::lm(formulas$full, data = assay_for_model, na.action = stats::na.exclude)
   } else {
     NULL
   }
   assay_data <- if (interaction) {
     NULL
   } else {
-    assay
+    assay_for_model
   }
   promoter_formula <- stats::as.formula(paste(".response ~ .compound +", technical_formula(technical)))
   promoter_fits <- if (interaction) {
@@ -1067,7 +1078,7 @@ fit_destress <- function(assay,
   promoter_effects <- if (interaction) {
     NULL
   } else {
-    fit_promoter_effects(assay, technical, attr(assay, "destress")$control)
+    fit_promoter_effects(assay_for_model, technical, attr(assay, "destress")$control)
   }
 
   structure(
@@ -1081,12 +1092,13 @@ fit_destress <- function(assay,
       growth_exponents = attr(assay, "destress")$growth_exponent_fit,
       assay_info = attr(assay, "destress"),
       levels = list(
-        promoter = levels(assay$.promoter),
-        compound = levels(assay$.compound)
+        promoter = levels(assay_for_model$.promoter),
+        compound = levels(assay_for_model$.compound)
       ),
       technical = technical,
       empirical_bayes = empirical_bayes,
       empty_vector_promoter = empty_vector_promoter,
+      background_promoter = background_promoter,
       background_rank = background_rank,
       stages = stages,
       preset = if (is.null(preset)) "model" else preset,
@@ -1110,9 +1122,12 @@ model_parameters <- function(fit) {
 
   out <- list(
     background = data.frame(
-      background_rank = validate_background_rank(fit$background_rank)
+      background_rank = validate_background_rank(fit$background_rank),
+      background_promoter = if (is.null(fit$background_promoter)) NA_character_ else fit$background_promoter,
+      background_method = if (is.null(fit$assay_info$background_method)) "none" else fit$assay_info$background_method
     ),
     growth_exponents = fit$growth_exponents,
+    background_calibration = fit$assay_info$background_fit,
     promoter_effects = fit$promoter_effects
   )
 

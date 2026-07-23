@@ -4,11 +4,11 @@ source(file.path("analysis", "_helpers.R"))
 
 project_root <- analysis_project_root()
 scripts <- c(
-  "analysis/plot_growth_parameter_estimates.R",
-  "analysis/plot_response_heatmap_comparison.R",
-  "analysis/plot_moderated_hit_network_no_pcmeA_unique.R",
-  "analysis/plot_moderated_hit_bipartite_heatmap.R",
-  "analysis/plot_significance_summary.R"
+  "analysis/campylobacter_manuscript/plot_growth_parameter_estimates.R",
+  "analysis/campylobacter_manuscript/plot_response_heatmap_comparison.R",
+  "analysis/campylobacter_manuscript/plot_moderated_hit_network_no_pcmeA_unique.R",
+  "analysis/campylobacter_manuscript/plot_moderated_hit_bipartite_heatmap.R",
+  "analysis/campylobacter_manuscript/plot_significance_summary.R"
 )
 
 for (script in scripts) {

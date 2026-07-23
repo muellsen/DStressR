@@ -9,7 +9,7 @@ membership_file <- file.path(comparison_results_dir("pair_level"), "pair_level_h
 if (!file.exists(membership_file)) {
   stop(
     "Missing pair-level hit membership table: ", membership_file,
-    "\nRun analysis/compare_pair_level_pvalues.R first.",
+    "\nRun analysis/campylobacter_manuscript/compare_pair_level_pvalues.R first.",
     call. = FALSE
   )
 }

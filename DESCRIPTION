@@ -28,14 +28,11 @@ Suggests:
     ggrepel,
     ggplot2,
     knitr,
+    MASS,
     nortest,
-    permApprox,
     rmarkdown,
     testthat (>= 3.0.0)
-Enhances:
-    DGrowthR
-Remotes:
-    bio-datascience/DGrowthR,
-    stefpeschel/permApprox
+LazyData: true
+LazyDataCompression: xz
 Config/testthat/edition: 3
 VignetteBuilder: knitr
