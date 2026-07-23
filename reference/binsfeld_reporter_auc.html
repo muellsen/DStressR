@@ -3,11 +3,15 @@
 prepared as an AUC-level long table for DStressR examples and tests. The
 rows are promoter/strain/replicate/well observations from the PLOS Biology
 S3 Data supplement. compound collapses the water control wells
-(Water_1, Water_2) to Water; the original label remains in drug."><meta property="og:description" content="A public E. coli reporter-screen data set from Binsfeld et al. (2025),
+(Water_1, Water_2) to Water; the original label remains in drug.
+dose_level is derived from concentration_index so that larger values
+correspond to higher compound concentration."><meta property="og:description" content="A public E. coli reporter-screen data set from Binsfeld et al. (2025),
 prepared as an AUC-level long table for DStressR examples and tests. The
 rows are promoter/strain/replicate/well observations from the PLOS Biology
 S3 Data supplement. compound collapses the water control wells
-(Water_1, Water_2) to Water; the original label remains in drug."></head><body>
+(Water_1, Water_2) to Water; the original label remains in drug.
+dose_level is derived from concentration_index so that larger values
+correspond to higher compound concentration."></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -29,6 +33,7 @@ S3 Data supplement. compound collapses the water control wells
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Get started</h6></li>
+    <li><a class="dropdown-item" href="../articles/ecoli-promoter-screen.html">E. coli promoter-compound screen</a></li>
     <li><a class="dropdown-item" href="../articles/median-polish-workflow.html">Original median-polish workflow</a></li>
     <li><a class="dropdown-item" href="../articles/salmonella-empty-vector-workflow.html">Salmonella Empty Vector workflow</a></li>
   </ul></li>
@@ -60,7 +65,9 @@ S3 Data supplement. compound collapses the water control wells
 prepared as an AUC-level long table for DStressR examples and tests. The
 rows are promoter/strain/replicate/well observations from the PLOS Biology
 S3 Data supplement. <code>compound</code> collapses the water control wells
-(<code>Water_1</code>, <code>Water_2</code>) to <code>Water</code>; the original label remains in <code>drug</code>.</p>
+(<code>Water_1</code>, <code>Water_2</code>) to <code>Water</code>; the original label remains in <code>drug</code>.
+<code>dose_level</code> is derived from <code>concentration_index</code> so that larger values
+correspond to higher compound concentration.</p>
     </div>
 
     <div class="section level2">
@@ -70,7 +77,7 @@ S3 Data supplement. <code>compound</code> collapses the water control wells
 
     <div class="section level2">
     <h2 id="format">Format<a class="anchor" aria-label="anchor" href="#format"></a></h2>
-    <p>A data frame with 24,576 rows and 12 columns:</p><dl><dt>strain</dt>
+    <p>A data frame with 24,576 rows and 13 columns:</p><dl><dt>strain</dt>
 <dd><p>Reporter host strain.</p></dd>
 
 <dt>promoter</dt>
@@ -90,6 +97,10 @@ S3 Data supplement. <code>compound</code> collapses the water control wells
 
 <dt>concentration_index</dt>
 <dd><p>Dose-series index from the source table.</p></dd>
+
+<dt>dose_level</dt>
+<dd><p>Dose-oriented serial dilution level; larger values
+correspond to higher concentration.</p></dd>
 
 <dt>concentration_ug_ml</dt>
 <dd><p>Compound concentration in micrograms per ml.</p></dd>

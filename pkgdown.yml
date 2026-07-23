@@ -3,9 +3,10 @@ pkgdown: 2.2.1
 pkgdown_sha: ~
 articles:
   DStressR: DStressR.html
+  ecoli-promoter-screen: ecoli-promoter-screen.html
   median-polish-workflow: median-polish-workflow.html
   salmonella-empty-vector-workflow: salmonella-empty-vector-workflow.html
-last_built: 2026-07-23T08:37Z
+last_built: 2026-07-23T10:32Z
 urls:
   reference: https://muellsen.github.io/DStressR/reference
   article: https://muellsen.github.io/DStressR/articles

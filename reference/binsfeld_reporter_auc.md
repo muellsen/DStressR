@@ -5,6 +5,8 @@ prepared as an AUC-level long table for DStressR examples and tests. The
 rows are promoter/strain/replicate/well observations from the PLOS
 Biology S3 Data supplement. `compound` collapses the water control wells
 (`Water_1`, `Water_2`) to `Water`; the original label remains in `drug`.
+`dose_level` is derived from `concentration_index` so that larger values
+correspond to higher compound concentration.
 
 ## Usage
 
@@ -14,7 +16,7 @@ binsfeld_reporter_auc
 
 ## Format
 
-A data frame with 24,576 rows and 12 columns:
+A data frame with 24,576 rows and 13 columns:
 
 - strain:
 
@@ -43,6 +45,11 @@ A data frame with 24,576 rows and 12 columns:
 - concentration_index:
 
   Dose-series index from the source table.
+
+- dose_level:
+
+  Dose-oriented serial dilution level; larger values correspond to
+  higher concentration.
 
 - concentration_ug_ml:
 
