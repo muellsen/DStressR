@@ -51,8 +51,8 @@ covariates while estimating promoter-specific growth exponents unless
 
 \item{growth_covariates}{Optional technical covariate column names used only
 while estimating promoter-specific growth exponents from control wells. If
-\code{NULL}, DStressR uses the supplied \code{batch}, \code{plate}, and
-\code{replicate} columns for backwards compatibility.}
+\code{NULL}, DStressR uses the supplied \code{batch}, \code{plate}, and \code{replicate}
+columns for backwards compatibility.}
 
 \item{numeric_covariates}{Optional subset of technical covariate column names
 that should remain numeric in model matrices. Other optional covariates are

@@ -27,9 +27,10 @@ table for the compatibility presets.}
 \item{technical}{Character vector of batch, plate, replicate, or other
 technical-factor columns to include.}
 
-\item{empirical_bayes}{If \code{TRUE}, lightly shrinks standard errors toward a
-common prior variance. This maps to \code{testing = "moderated_t"} for the
-model path; \code{FALSE} maps to \code{testing = "student_t"}.}
+\item{empirical_bayes}{If \code{TRUE}, moderates standard errors toward an
+empirical prior variance with prior degrees of freedom estimated from the
+observed variance distribution. This maps to \code{testing = "moderated_t"} for
+the model path; \code{FALSE} maps to \code{testing = "student_t"}.}
 
 \item{empty_vector_promoter}{Optional promoter/control strain used as an
 empty-vector reporter in the model-based path. When supplied, its

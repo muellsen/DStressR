@@ -169,7 +169,7 @@ comparison$three_method_class <- apply(
   comparison[, c("binsfeld_hit", "modeled_hit", "standard_hit")],
   1,
   function(x) {
-    names <- c("Binsfeld", "DStressR modeled", "DStressR alpha=1")[as.logical(x)]
+    names <- c("Binsfeld", "DStressR without EV control", "DStressR alpha=1 sensitivity")[as.logical(x)]
     if (length(names) == 0) {
       "None"
     } else {
@@ -194,13 +194,13 @@ significant_union <- comparison[comparison$three_method_class != "None", c(
   "standard_effect", "standard_pvalue", "standard_padj_by_promoter", "standard_hit_class"
 )]
 class_levels <- c(
-  "Binsfeld + DStressR modeled + DStressR alpha=1",
-  "Binsfeld + DStressR modeled",
-  "Binsfeld + DStressR alpha=1",
-  "DStressR modeled + DStressR alpha=1",
+  "Binsfeld + DStressR without EV control + DStressR alpha=1 sensitivity",
+  "Binsfeld + DStressR without EV control",
+  "Binsfeld + DStressR alpha=1 sensitivity",
+  "DStressR without EV control + DStressR alpha=1 sensitivity",
   "Binsfeld",
-  "DStressR modeled",
-  "DStressR alpha=1"
+  "DStressR without EV control",
+  "DStressR alpha=1 sensitivity"
 )
 significant_union <- significant_union[order(
   factor(significant_union$three_method_class, levels = class_levels),
@@ -246,15 +246,15 @@ count_summary <- data.frame(
   Metric = c(
     "Promoter-compound pairs tested",
     "Binsfeld-style significant pairs",
-    "DStressR modeled-response significant pairs",
-    "DStressR alpha=1 significant pairs",
+    "DStressR without EV control significant pairs",
+    "DStressR alpha=1 sensitivity significant pairs",
     "All three",
-    "Binsfeld + modeled only",
-    "Binsfeld + alpha=1 only",
-    "Modeled + alpha=1 only",
+    "Binsfeld + DStressR without EV control only",
+    "Binsfeld + alpha=1 sensitivity only",
+    "DStressR without EV control + alpha=1 sensitivity only",
     "Binsfeld only",
-    "Modeled only",
-    "Alpha=1 only",
+    "DStressR without EV control only",
+    "Alpha=1 sensitivity only",
     "Union significant by at least one method",
     "None"
   ),
@@ -287,7 +287,7 @@ circle_points <- do.call(rbind, lapply(seq_len(3), function(i) {
   centers <- data.frame(
     x = c(0, 1.25, 0.62),
     y = c(0.3, 0.3, -0.78),
-    method = c("Binsfeld", "DStressR modeled", "DStressR alpha=1")
+    method = c("Binsfeld", "DStressR without EV control", "DStressR alpha=1 sensitivity")
   )
   theta <- seq(0, 2 * pi, length.out = 361)
   data.frame(
@@ -312,20 +312,20 @@ venn <- ggplot2$ggplot(circle_points, ggplot2$aes(x, y, fill = method, color = m
   ggplot2$annotate("text", x = 0.62, y = -2.03, label = paste0("Alpha=1\n", set_counts[["standard"]], " hits"), size = 3.8, fontface = "bold") +
   ggplot2$scale_fill_manual(values = c(
     "Binsfeld" = "#2563eb",
-    "DStressR modeled" = "#dc2626",
-    "DStressR alpha=1" = "#059669"
+    "DStressR without EV control" = "#dc2626",
+    "DStressR alpha=1 sensitivity" = "#059669"
   )) +
   ggplot2$scale_color_manual(values = c(
     "Binsfeld" = "#1d4ed8",
-    "DStressR modeled" = "#b91c1c",
-    "DStressR alpha=1" = "#047857"
+    "DStressR without EV control" = "#b91c1c",
+    "DStressR alpha=1 sensitivity" = "#047857"
   )) +
   ggplot2$coord_equal(xlim = c(-1.2, 2.45), ylim = c(-2.25, 1.7), expand = FALSE) +
   ggplot2$theme_void(base_size = 11) +
   ggplot2$theme(legend.position = "none", plot.title = ggplot2$element_text(face = "bold")) +
   ggplot2$labs(
     title = "Three-method WT reporter-screen hit overlap",
-    subtitle = "Promoter-compound pairs called by Binsfeld-style, DStressR modeled-response, or DStressR alpha=1 analyses"
+    subtitle = "Promoter-compound pairs called by Binsfeld-style, DStressR without EV control, or fixed alpha=1 sensitivity analyses"
   )
 
 pvalue_long <- rbind(
@@ -344,28 +344,28 @@ pvalue_long <- rbind(
     stringsAsFactors = FALSE
   ),
   data.frame(
-    method = "DStressR modeled response",
+    method = "DStressR without EV control",
     pvalue_type = "Raw p-value",
     pvalue = comparison$modeled_pvalue,
     hit = comparison$modeled_hit,
     stringsAsFactors = FALSE
   ),
   data.frame(
-    method = "DStressR modeled response",
+    method = "DStressR without EV control",
     pvalue_type = "Promoter-wise BH adjusted",
     pvalue = comparison$modeled_padj_by_promoter,
     hit = comparison$modeled_hit,
     stringsAsFactors = FALSE
   ),
   data.frame(
-    method = "DStressR alpha=1 response",
+    method = "DStressR alpha=1 sensitivity",
     pvalue_type = "Raw p-value",
     pvalue = comparison$standard_pvalue,
     hit = comparison$standard_hit,
     stringsAsFactors = FALSE
   ),
   data.frame(
-    method = "DStressR alpha=1 response",
+    method = "DStressR alpha=1 sensitivity",
     pvalue_type = "Promoter-wise BH adjusted",
     pvalue = comparison$standard_padj_by_promoter,
     hit = comparison$standard_hit,
@@ -374,8 +374,8 @@ pvalue_long <- rbind(
 )
 pvalue_long$method <- factor(pvalue_long$method, levels = c(
   "Binsfeld Wilcoxon/Z-score",
-  "DStressR modeled response",
-  "DStressR alpha=1 response"
+  "DStressR without EV control",
+  "DStressR alpha=1 sensitivity"
 ))
 pvalue_long$pvalue_type <- factor(pvalue_long$pvalue_type, levels = c(
   "Raw p-value",
@@ -402,8 +402,8 @@ pvalue_hist <- ggplot2$ggplot(pvalue_long, ggplot2$aes(pvalue)) +
   ggplot2$scale_x_continuous(limits = c(0, 1), expand = c(0.01, 0.01)) +
   ggplot2$scale_fill_manual(values = c(
     "Binsfeld Wilcoxon/Z-score" = "#2563eb",
-    "DStressR modeled response" = "#dc2626",
-    "DStressR alpha=1 response" = "#059669"
+    "DStressR without EV control" = "#dc2626",
+    "DStressR alpha=1 sensitivity" = "#059669"
   )) +
   ggplot2$theme_light(base_size = 10) +
   ggplot2$theme(
@@ -426,13 +426,13 @@ effect_long <- rbind(
     stringsAsFactors = FALSE
   ),
   data.frame(
-    method = "DStressR modeled specific effect",
+    method = "DStressR without EV control specific effect",
     value = comparison$modeled_effect,
     hit = comparison$modeled_hit,
     stringsAsFactors = FALSE
   ),
   data.frame(
-    method = "DStressR alpha=1 specific effect",
+    method = "DStressR alpha=1 sensitivity specific effect",
     value = comparison$standard_effect,
     hit = comparison$standard_hit,
     stringsAsFactors = FALSE
@@ -440,8 +440,8 @@ effect_long <- rbind(
 )
 effect_long$method <- factor(effect_long$method, levels = c(
   "Binsfeld mean Z-score",
-  "DStressR modeled specific effect",
-  "DStressR alpha=1 specific effect"
+  "DStressR without EV control specific effect",
+  "DStressR alpha=1 sensitivity specific effect"
 ))
 effect_hist <- ggplot2$ggplot(effect_long, ggplot2$aes(value)) +
   ggplot2$geom_histogram(
@@ -462,8 +462,8 @@ effect_hist <- ggplot2$ggplot(effect_long, ggplot2$aes(value)) +
   ggplot2$facet_wrap(ggplot2$vars(method), scales = "free_x", ncol = 1) +
   ggplot2$scale_fill_manual(values = c(
     "Binsfeld mean Z-score" = "#2563eb",
-    "DStressR modeled specific effect" = "#dc2626",
-    "DStressR alpha=1 specific effect" = "#059669"
+    "DStressR without EV control specific effect" = "#dc2626",
+    "DStressR alpha=1 sensitivity specific effect" = "#059669"
   )) +
   ggplot2$theme_light(base_size = 10) +
   ggplot2$theme(
@@ -484,14 +484,14 @@ comparison$neglog10_standard <- safe_neglog10(comparison$standard_pvalue)
 
 effect_reference <- rbind(
   data.frame(
-    comparison = "DStressR modeled response",
+    comparison = "DStressR without EV control",
     binsfeld_mean_z = comparison$mean_z,
     destress_effect = comparison$modeled_effect,
     hit_class = comparison$three_method_class,
     stringsAsFactors = FALSE
   ),
   data.frame(
-    comparison = "DStressR alpha=1 response",
+    comparison = "DStressR alpha=1 sensitivity",
     binsfeld_mean_z = comparison$mean_z,
     destress_effect = comparison$standard_effect,
     hit_class = comparison$three_method_class,
@@ -499,20 +499,20 @@ effect_reference <- rbind(
   )
 )
 effect_reference$comparison <- factor(effect_reference$comparison, levels = c(
-  "DStressR modeled response",
-  "DStressR alpha=1 response"
+  "DStressR without EV control",
+  "DStressR alpha=1 sensitivity"
 ))
 
 pvalue_reference <- rbind(
   data.frame(
-    comparison = "DStressR modeled response",
+    comparison = "DStressR without EV control",
     binsfeld_neglog10_pvalue = comparison$neglog10_binsfeld,
     destress_neglog10_pvalue = comparison$neglog10_modeled,
     hit_class = comparison$three_method_class,
     stringsAsFactors = FALSE
   ),
   data.frame(
-    comparison = "DStressR alpha=1 response",
+    comparison = "DStressR alpha=1 sensitivity",
     binsfeld_neglog10_pvalue = comparison$neglog10_binsfeld,
     destress_neglog10_pvalue = comparison$neglog10_standard,
     hit_class = comparison$three_method_class,
@@ -520,8 +520,8 @@ pvalue_reference <- rbind(
   )
 )
 pvalue_reference$comparison <- factor(pvalue_reference$comparison, levels = c(
-  "DStressR modeled response",
-  "DStressR alpha=1 response"
+  "DStressR without EV control",
+  "DStressR alpha=1 sensitivity"
 ))
 
 volcano_data <- rbind(
@@ -533,7 +533,7 @@ volcano_data <- rbind(
     stringsAsFactors = FALSE
   ),
   data.frame(
-    method = "DStressR modeled response",
+    method = "DStressR without EV control",
     effect = comparison$modeled_effect,
     neglog10_pvalue = comparison$neglog10_modeled,
     hit = comparison$modeled_hit,
@@ -542,7 +542,7 @@ volcano_data <- rbind(
 )
 volcano_data$method <- factor(volcano_data$method, levels = c(
   "Binsfeld-style",
-  "DStressR modeled response"
+  "DStressR without EV control"
 ))
 volcano_data$status <- ifelse(volcano_data$hit, "Hit", "Not called")
 
@@ -562,7 +562,7 @@ volcano_plot <- ggplot2$ggplot(
     legend.position = "bottom"
   ) +
   ggplot2$labs(
-    title = "Volcano plots for Binsfeld-style and modeled-response DStressR analyses",
+    title = "Volcano plots for Binsfeld-style and DStressR without EV control analyses",
     x = "Effect score",
     y = "-log10 raw p-value",
     color = "Call"
@@ -571,12 +571,12 @@ volcano_plot <- ggplot2$ggplot(
 reference_colors <- c(
   "None" = "#d1d5db",
   "Binsfeld" = "#2563eb",
-  "DStressR modeled" = "#dc2626",
-  "DStressR alpha=1" = "#059669",
-  "Binsfeld + DStressR modeled" = "#7c3aed",
-  "Binsfeld + DStressR alpha=1" = "#0891b2",
-  "DStressR modeled + DStressR alpha=1" = "#ea580c",
-  "Binsfeld + DStressR modeled + DStressR alpha=1" = "#111827"
+  "DStressR without EV control" = "#dc2626",
+  "DStressR alpha=1 sensitivity" = "#059669",
+  "Binsfeld + DStressR without EV control" = "#7c3aed",
+  "Binsfeld + DStressR alpha=1 sensitivity" = "#0891b2",
+  "DStressR without EV control + DStressR alpha=1 sensitivity" = "#ea580c",
+  "Binsfeld + DStressR without EV control + DStressR alpha=1 sensitivity" = "#111827"
 )
 
 response_scatter <- ggplot2$ggplot(
@@ -596,7 +596,7 @@ response_scatter <- ggplot2$ggplot(
   ) +
   ggplot2$labs(
     title = "Binsfeld-referenced effect comparison",
-    subtitle = "Each panel compares the Binsfeld-style mean Z-score with one DStressR response model",
+    subtitle = "Each panel compares the Binsfeld-style mean Z-score with one DStressR workflow or sensitivity response",
     x = "Binsfeld-style mean Z-score",
     y = "DStressR specific effect",
     color = "Hit class"
@@ -617,7 +617,7 @@ pvalue_scatter <- ggplot2$ggplot(
   ) +
   ggplot2$labs(
     title = "Binsfeld-referenced raw p-value comparison",
-    subtitle = "Each panel compares the Binsfeld-style Wilcoxon p-value with one DStressR response model",
+    subtitle = "Each panel compares the Binsfeld-style Wilcoxon p-value with one DStressR workflow or sensitivity response",
     x = "-log10 Binsfeld-style raw p-value",
     y = "-log10 DStressR raw p-value",
     color = "Hit class"
@@ -647,9 +647,9 @@ for (col in intersect(c("a_raw", "a_raw_se", "alpha_raw", "alpha_raw_se", "alpha
 
 pairwise_summary <- data.frame(
   Comparison = c(
-    "Binsfeld vs DStressR modeled",
-    "Binsfeld vs DStressR alpha=1",
-    "DStressR modeled vs DStressR alpha=1"
+    "Binsfeld vs DStressR without EV control",
+    "Binsfeld vs DStressR alpha=1 sensitivity",
+    "DStressR without EV control vs DStressR alpha=1 sensitivity"
   ),
   First = c(
     sum(comparison$binsfeld_hit & !comparison$modeled_hit),
@@ -845,7 +845,7 @@ code { background: #f3f4f6; padding: 1px 4px; border-radius: 3px; }
 <div class="meta">Self-contained local report generated ', html_escape(created), ' from the DStressR repository.</div>
 
 <div class="callout">
-<strong>Headline result.</strong> The reproduced Binsfeld-style WT analysis calls ', set_counts[["binsfeld"]], ' hits, DStressR with the default modeled response calls ', set_counts[["modeled"]], ' hits, and DStressR with fixed alpha=1 response calls ', set_counts[["standard"]], ' hits. The three-way intersection contains ', region_counts[["all_three"]], ' promoter-compound pairs.
+<strong>Headline result.</strong> The reproduced Binsfeld-style WT analysis calls ', set_counts[["binsfeld"]], ' hits, DStressR without EV control calls ', set_counts[["modeled"]], ' hits, and the fixed alpha=1 sensitivity analysis calls ', set_counts[["standard"]], ' hits. The three-way intersection contains ', region_counts[["all_three"]], ' promoter-compound pairs.
 </div>
 
 <h2>Data and Analysis Scope</h2>
@@ -854,8 +854,8 @@ code { background: #f3f4f6; padding: 1px 4px; border-radius: 3px; }
 <h2>Methods Compared</h2>
 <ul>
 <li><strong>Binsfeld-style rule:</strong> Wilcoxon tests comparing WT Z-score replicates/concentrations against water controls, promoter-wise BH adjustment, and hits at adjusted p-value &lt; 0.05 with absolute mean Z-score &gt; 1.</li>
-<li><strong>DStressR modeled response:</strong> <code>log2(lux_auc) - alpha_g * log2(od_auc)</code>, with promoter-specific <code>alpha_g</code> estimated from water controls.</li>
-<li><strong>DStressR alpha=1 response:</strong> fixed <code>log2(lux_auc) - log2(od_auc)</code>, otherwise using the same DStressR model settings as the modeled-response run.</li>
+<li><strong>DStressR without EV control:</strong> <code>log2(lux_auc) - alpha_g * log2(od_auc)</code>, with promoter-specific <code>alpha_g</code> estimated from water controls.</li>
+<li><strong>DStressR alpha=1 sensitivity:</strong> fixed <code>log2(lux_auc) - log2(od_auc)</code>, otherwise using the same DStressR model settings as the workflow without EV control.</li>
 </ul>
 
 <h3>Estimated Growth-Response Exponents</h3>',
@@ -885,10 +885,10 @@ html_table(
 <div class="figure"><img alt="Three-method hit overlap Venn diagram" src="', img_uri(file.path(out_dir, "three_method_hit_overlap_venn.png")), '"><div class="caption">Figure 1. Exact promoter-compound hit overlap across the three hit sets.</div></div>
 <div class="figure"><img alt="Three-method p-value histograms" src="', img_uri(file.path(out_dir, "three_method_pvalue_histograms.png")), '"><div class="caption">Figure 2. Raw and promoter-wise BH-adjusted p-value distributions. Colored bars are method-specific hits.</div></div>
 <div class="figure"><img alt="Three-method effect histograms" src="', img_uri(file.path(out_dir, "three_method_effect_histograms.png")), '"><div class="caption">Figure 3. Effect-score distributions for the Binsfeld-style mean Z-score and the two DStressR specific-effect estimates.</div></div>
-<div class="figure"><img alt="Binsfeld and modeled-response DStressR volcano plots" src="', img_uri(file.path(out_dir, "binsfeld_modeled_volcano_plots.png")), '"><div class="caption">Figure 4. Volcano plots for the Binsfeld-style analysis and the default modeled-response DStressR analysis.</div></div>
+<div class="figure"><img alt="Binsfeld and DStressR without EV control volcano plots" src="', img_uri(file.path(out_dir, "binsfeld_modeled_volcano_plots.png")), '"><div class="caption">Figure 4. Volcano plots for the Binsfeld-style analysis and DStressR without EV control.</div></div>
 <div class="grid">
-<div class="figure"><img alt="Binsfeld-referenced DStressR effect scatter" src="', img_uri(file.path(out_dir, "binsfeld_reference_effect_scatter.png")), '"><div class="caption">Figure 5. Binsfeld-style mean Z-score as reference, with DStressR modeled-response and alpha=1 specific effects shown in separate panels.</div></div>
-<div class="figure"><img alt="Binsfeld-referenced DStressR p-value scatter" src="', img_uri(file.path(out_dir, "binsfeld_reference_pvalue_scatter.png")), '"><div class="caption">Figure 6. Binsfeld-style raw Wilcoxon p-value as reference, with DStressR modeled-response and alpha=1 raw p-values shown in separate panels.</div></div>
+<div class="figure"><img alt="Binsfeld-referenced DStressR effect scatter" src="', img_uri(file.path(out_dir, "binsfeld_reference_effect_scatter.png")), '"><div class="caption">Figure 5. Binsfeld-style mean Z-score as reference, with DStressR without EV control and alpha=1 sensitivity specific effects shown in separate panels.</div></div>
+<div class="figure"><img alt="Binsfeld-referenced DStressR p-value scatter" src="', img_uri(file.path(out_dir, "binsfeld_reference_pvalue_scatter.png")), '"><div class="caption">Figure 6. Binsfeld-style raw Wilcoxon p-value as reference, with DStressR without EV control and alpha=1 sensitivity raw p-values shown in separate panels.</div></div>
 </div>
 
 <h2>Appendix: Union of Significant Pairings</h2>

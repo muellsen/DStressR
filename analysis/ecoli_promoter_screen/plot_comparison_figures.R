@@ -210,7 +210,7 @@ venn <- ggplot2$ggplot(circle_points, ggplot2$aes(x, y, fill = method, color = m
   ggplot2$theme(legend.position = "none", plot.title = ggplot2$element_text(face = "bold")) +
   ggplot2$labs(
     title = "WT reporter-screen hit overlap",
-    subtitle = "Promoter-compound pairs; original Wilcoxon/Z-score rule vs DStressR model"
+    subtitle = "Promoter-compound pairs; original Wilcoxon/Z-score rule vs DStressR without EV control"
   )
 
 pvalue_df <- rbind(
@@ -223,7 +223,7 @@ pvalue_df <- rbind(
     stringsAsFactors = FALSE
   ),
   data.frame(
-    method = "DStressR default modeled response",
+    method = "DStressR without EV control",
     promoter = destress$promoter,
     raw_pvalue = destress$specific_pvalue,
     adjusted_pvalue = destress$specific_padj_by_promoter,
@@ -251,7 +251,7 @@ pvalue_long <- rbind(
 )
 pvalue_long$method <- factor(pvalue_long$method, levels = c(
   "Binsfeld Wilcoxon/Z-score",
-  "DStressR default modeled response"
+  "DStressR without EV control"
 ))
 pvalue_long$pvalue_type <- factor(pvalue_long$pvalue_type, levels = c(
   "Raw p-value",
@@ -279,7 +279,7 @@ pvalue_hist <- ggplot2$ggplot(pvalue_long, ggplot2$aes(pvalue)) +
   ggplot2$scale_x_continuous(limits = c(0, 1), expand = c(0.01, 0.01)) +
   ggplot2$scale_fill_manual(values = c(
     "Binsfeld Wilcoxon/Z-score" = "#2563eb",
-    "DStressR default modeled response" = "#dc2626"
+    "DStressR without EV control" = "#dc2626"
   )) +
   ggplot2$theme_light(base_size = 10) +
   ggplot2$theme(
