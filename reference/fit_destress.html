@@ -92,9 +92,10 @@ technical-factor columns to include.</p></dd>
 
 
 <dt id="arg-empirical-bayes">empirical_bayes<a class="anchor" aria-label="anchor" href="#arg-empirical-bayes"></a></dt>
-<dd><p>If <code>TRUE</code>, lightly shrinks standard errors toward a
-common prior variance. This maps to <code>testing = "moderated_t"</code> for the
-model path; <code>FALSE</code> maps to <code>testing = "student_t"</code>.</p></dd>
+<dd><p>If <code>TRUE</code>, moderates standard errors toward an
+empirical prior variance with prior degrees of freedom estimated from the
+observed variance distribution. This maps to <code>testing = "moderated_t"</code> for
+the model path; <code>FALSE</code> maps to <code>testing = "student_t"</code>.</p></dd>
 
 
 <dt id="arg-empty-vector-promoter">empty_vector_promoter<a class="anchor" aria-label="anchor" href="#arg-empty-vector-promoter"></a></dt>

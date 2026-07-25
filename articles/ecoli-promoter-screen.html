@@ -188,19 +188,18 @@ repository root, run:</p>
 <ul>
 <li>the reconstructed Binsfeld-style Wilcoxon/Z-score reference
 rule</li>
-<li>DStressR with the default modeled response</li>
-<li>DStressR with the default modeled response and EVC-Huber
-calibration</li>
+<li>DStressR without EV control</li>
+<li>DStressR with EV control</li>
 </ul>
 <p>The current wild-type comparison gives:</p>
 <pre class="text"><code>Reference WT hits: 53
-DStressR default modeled-response WT hits: 80
-DStressR EVC-Huber WT hits: 92
+DStressR without EV control WT hits: 80
+DStressR with EV control WT hits: 92
 All three analyses: 35
 Reference-only hits: 16
-DStressR modeled-only hits: 9
-DStressR EVC-Huber-only hits: 19
-Modeled + EVC-Huber only: 36
+DStressR-without-EV only hits: 9
+DStressR-with-EV only hits: 19
+Both DStressR workflows only: 36
 Union significant by at least one primary analysis: 117</code></pre>
 <p>Additional scripts in <code>analysis/ecoli_promoter_screen/</code>
 recreate the two-method report, volcano plots, heatmaps, Venn diagrams,

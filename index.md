@@ -139,12 +139,11 @@ The public sources are the PLOS article
 <https://doi.org/10.1371/journal.pbio.3003260> and the Zenodo archive
 <https://doi.org/10.5281/zenodo.15600688>. The reproducibility script
 `analysis/ecoli_promoter_screen/compare_reporter_hits.R` rebuilds the
-Binsfeld-style Wilcoxon/Z-score hit calls and compares them with the
-default DStressR modeled-response analyses. In the current WT analysis,
-the reconstructed reference rule calls 53 hits, the default DStressR
-modeled response calls 80 hits, and the EVC-Huber DStressR workflow
-calls 92 hits. The EVC-Huber workflow overlaps with 37 of the 53
-reference hits.
+Binsfeld-style Wilcoxon/Z-score hit calls and compares them with the two
+default DStressR workflows. In the current WT analysis, the
+reconstructed reference rule calls 53 hits, DStressR without EV control
+calls 80 hits, and DStressR with EV control calls 92 hits. The workflow
+with EV control overlaps with 37 of the 53 reference hits.
 
 Equivalently, using staged options directly:
 

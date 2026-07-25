@@ -16,7 +16,7 @@ binsfeld_reporter_auc
 
 ## Format
 
-A data frame with 24,576 rows and 13 columns:
+A data frame with 24,576 rows and 12 columns:
 
 - strain:
 

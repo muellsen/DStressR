@@ -39,9 +39,10 @@ fit_destress(
 
 - empirical_bayes:
 
-  If `TRUE`, lightly shrinks standard errors toward a common prior
-  variance. This maps to `testing = "moderated_t"` for the model path;
-  `FALSE` maps to `testing = "student_t"`.
+  If `TRUE`, moderates standard errors toward an empirical prior
+  variance with prior degrees of freedom estimated from the observed
+  variance distribution. This maps to `testing = "moderated_t"` for the
+  model path; `FALSE` maps to `testing = "student_t"`.
 
 - empty_vector_promoter:
 

@@ -123,20 +123,20 @@ Rscript analysis/ecoli_promoter_screen/run_evc_calibrated_analysis.R
 The workflow compares three hit sets:
 
 - the reconstructed Binsfeld-style Wilcoxon/Z-score reference rule
-- DStressR with the default modeled response
-- DStressR with the default modeled response and EVC-Huber calibration
+- DStressR without EV control
+- DStressR with EV control
 
 The current wild-type comparison gives:
 
 ``` text
 Reference WT hits: 53
-DStressR default modeled-response WT hits: 80
-DStressR EVC-Huber WT hits: 92
+DStressR without EV control WT hits: 80
+DStressR with EV control WT hits: 92
 All three analyses: 35
 Reference-only hits: 16
-DStressR modeled-only hits: 9
-DStressR EVC-Huber-only hits: 19
-Modeled + EVC-Huber only: 36
+DStressR-without-EV only hits: 9
+DStressR-with-EV only hits: 19
+Both DStressR workflows only: 36
 Union significant by at least one primary analysis: 117
 ```
 
