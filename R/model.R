@@ -121,14 +121,82 @@ representative_rows <- function(assay, technical) {
   template
 }
 
-eb_shrink <- function(se, residual_sd, df) {
-  var_raw <- se^2
-  prior_var <- stats::median(var_raw[is.finite(var_raw) & var_raw > 0], na.rm = TRUE)
-  if (!is.finite(prior_var)) {
-    return(se)
+trigamma_inverse <- function(y) {
+  if (!is.finite(y) || y <= 0) {
+    return(Inf)
   }
-  weight <- df / (df + 4)
-  sqrt(weight * var_raw + (1 - weight) * prior_var)
+
+  lo <- .Machine$double.eps
+  hi <- 1
+  while (psigamma(hi, deriv = 1) > y && hi < 1e12) {
+    hi <- hi * 2
+  }
+  if (hi >= 1e12) {
+    return(Inf)
+  }
+
+  for (i in seq_len(80)) {
+    mid <- (lo + hi) / 2
+    if (psigamma(mid, deriv = 1) > y) {
+      lo <- mid
+    } else {
+      hi <- mid
+    }
+  }
+  hi
+}
+
+estimate_eb_prior_variance <- function(var_raw, df, max_prior_df = 1e6) {
+  ok <- is.finite(var_raw) & var_raw > 0
+  if (sum(ok) < 2 || !is.finite(df) || df <= 0) {
+    return(list(var = NA_real_, df = 0))
+  }
+
+  log_var <- log(var_raw[ok])
+  log_var_var <- stats::var(log_var)
+  if (!is.finite(log_var_var)) {
+    return(list(var = stats::median(var_raw[ok], na.rm = TRUE), df = 0))
+  }
+
+  sampling_var <- psigamma(df / 2, deriv = 1)
+  excess_var <- log_var_var - sampling_var
+  prior_df <- if (is.finite(excess_var) && excess_var > 0) {
+    2 * trigamma_inverse(excess_var)
+  } else {
+    max_prior_df
+  }
+  prior_df <- min(prior_df, max_prior_df)
+
+  if (!is.finite(prior_df) || prior_df <= 0) {
+    return(list(var = stats::median(var_raw[ok], na.rm = TRUE), df = 0))
+  }
+
+  log_prior_var <- mean(log_var) -
+    digamma(df / 2) + log(df / 2) +
+    digamma(prior_df / 2) - log(prior_df / 2)
+  prior_var <- exp(log_prior_var)
+  if (!is.finite(prior_var) || prior_var <= 0) {
+    prior_var <- stats::median(var_raw[ok], na.rm = TRUE)
+  }
+  list(var = prior_var, df = prior_df)
+}
+
+eb_moderate_se <- function(se, df) {
+  var_raw <- se^2
+  prior <- estimate_eb_prior_variance(var_raw, df)
+  if (!is.finite(prior$var) || !is.finite(prior$df) || prior$df <= 0) {
+    return(list(se = se, df = df, prior_var = prior$var, prior_df = prior$df))
+  }
+
+  moderated_var <- (df * var_raw + prior$df * prior$var) / (df + prior$df)
+  moderated_se <- sqrt(moderated_var)
+  moderated_se[!is.finite(se)] <- se[!is.finite(se)]
+  list(
+    se = moderated_se,
+    df = df + prior$df,
+    prior_var = prior$var,
+    prior_df = prior$df
+  )
 }
 
 wald_t_test <- function(estimate, se, df) {
@@ -441,9 +509,9 @@ promoter_effect_results <- function(fit, compounds = NULL, promoters = NULL) {
   out$additive_total_se <- NA_real_
   df <- min(out$residual_df, na.rm = TRUE)
   if (isTRUE(fit$empirical_bayes)) {
-    sigma <- stats::median(out$sigma, na.rm = TRUE)
-    out$total_se <- eb_shrink(out$total_se, sigma, df)
-    total_test <- wald_t_test(out$total_effect, out$total_se, df)
+    moderated <- eb_moderate_se(out$total_se, df)
+    out$total_se <- moderated$se
+    total_test <- wald_t_test(out$total_effect, out$total_se, moderated$df)
     out$total_statistic <- total_test$statistic
     out$total_pvalue <- total_test$pvalue
   }
@@ -514,11 +582,13 @@ promoter_effect_results <- function(fit, compounds = NULL, promoters = NULL) {
     (out$sum_total_var - out$total_var) / m^2
   out$specific_se <- sqrt(out$specific_var)
   out$specific_se[!is.finite(out$specific_se) | m <= 1] <- NA_real_
+  specific_df <- df
   if (isTRUE(fit$empirical_bayes)) {
-    sigma <- stats::median(out$sigma, na.rm = TRUE)
-    out$specific_se <- eb_shrink(out$specific_se, sigma, df)
+    moderated <- eb_moderate_se(out$specific_se, df)
+    out$specific_se <- moderated$se
+    specific_df <- moderated$df
   }
-  specific_test <- wald_t_test(out$specific_effect, out$specific_se, df)
+  specific_test <- wald_t_test(out$specific_effect, out$specific_se, specific_df)
   out$specific_statistic <- specific_test$statistic
   out$specific_pvalue <- specific_test$pvalue
 
@@ -605,9 +675,9 @@ promoter_lm_results <- function(fit, compounds = NULL, promoters = NULL) {
 
   df <- min(vapply(fit$promoter_fits[promoters], fit_df_residual, numeric(1)), na.rm = TRUE)
   if (isTRUE(fit$empirical_bayes)) {
-    sigma <- stats::median(vapply(fit$promoter_fits[promoters], fit_sigma, numeric(1)), na.rm = TRUE)
-    out$total_se <- eb_shrink(out$total_se, sigma, df)
-    total_test <- wald_t_test(out$total_effect, out$total_se, df)
+    moderated <- eb_moderate_se(out$total_se, df)
+    out$total_se <- moderated$se
+    total_test <- wald_t_test(out$total_effect, out$total_se, moderated$df)
     out$total_statistic <- total_test$statistic
     out$total_pvalue <- total_test$pvalue
   }
@@ -632,10 +702,13 @@ promoter_lm_results <- function(fit, compounds = NULL, promoters = NULL) {
   out$specific_se <- sqrt(out$specific_var)
   out$specific_se[!is.finite(out$specific_se) | m <= 1] <- NA_real_
 
+  specific_df <- df
   if (isTRUE(fit$empirical_bayes)) {
-    out$specific_se <- eb_shrink(out$specific_se, sigma, df)
+    moderated <- eb_moderate_se(out$specific_se, df)
+    out$specific_se <- moderated$se
+    specific_df <- moderated$df
   }
-  specific_test <- wald_t_test(out$specific_effect, out$specific_se, df)
+  specific_test <- wald_t_test(out$specific_effect, out$specific_se, specific_df)
   out$specific_statistic <- specific_test$statistic
   out$specific_pvalue <- specific_test$pvalue
 
@@ -691,9 +764,7 @@ observed_mean_results <- function(fit, compounds = NULL, promoters = NULL) {
   d_key <- paste(as.character(d$.promoter), as.character(d$.compound), sep = "\r")
   within_residual <- d$.adjusted_response - mean_by_cell[d_key]
   residual_df <- sum(is.finite(within_residual)) - nrow(cell_mean)
-  sigma <- sqrt(sum(within_residual^2, na.rm = TRUE) / residual_df)
-  if (!is.finite(sigma) || residual_df <= 0) {
-    sigma <- fit_sigma(fit$total_fit)
+  if (!is.finite(residual_df) || residual_df <= 0) {
     residual_df <- fit_df_residual(fit$total_fit)
   }
 
@@ -742,13 +813,16 @@ observed_mean_results <- function(fit, compounds = NULL, promoters = NULL) {
     (out$sum_total_var - out$total_var) / m^2
   out$specific_se <- sqrt(out$specific_var)
   out$specific_se[!is.finite(out$specific_se) | m <= 1] <- NA_real_
+  specific_df <- residual_df
   if (isTRUE(fit$empirical_bayes)) {
-    out$specific_se <- eb_shrink(out$specific_se, sigma, residual_df)
+    moderated <- eb_moderate_se(out$specific_se, residual_df)
+    out$specific_se <- moderated$se
+    specific_df <- moderated$df
   }
   out$specific_statistic <- out$specific_effect / out$specific_se
   out$specific_pvalue <- 2 * stats::pt(
     abs(out$specific_statistic),
-    df = residual_df,
+    df = specific_df,
     lower.tail = FALSE
   )
   out$total_statistic <- out$total_effect / out$total_se
@@ -954,9 +1028,10 @@ resolve_destress_stages <- function(preset,
 #'   table for the compatibility presets.
 #' @param technical Character vector of batch, plate, replicate, or other
 #'   technical-factor columns to include.
-#' @param empirical_bayes If `TRUE`, lightly shrinks standard errors toward a
-#'   common prior variance. This maps to `testing = "moderated_t"` for the
-#'   model path; `FALSE` maps to `testing = "student_t"`.
+#' @param empirical_bayes If `TRUE`, moderates standard errors toward an
+#'   empirical prior variance with prior degrees of freedom estimated from the
+#'   observed variance distribution. This maps to `testing = "moderated_t"` for
+#'   the model path; `FALSE` maps to `testing = "student_t"`.
 #' @param empty_vector_promoter Optional promoter/control strain used as an
 #'   empty-vector reporter in the model-based path. When supplied, its
 #'   reference-relative compound effect is subtracted from every promoter's
@@ -1250,12 +1325,15 @@ results <- function(fit, compounds = NULL, promoters = NULL) {
   )
   out$specific_effect <- out$total_effect - out$global_effect - out$low_rank_effect
   out$specific_se <- out$total_se
+  specific_df <- fit_df_residual(fit$full_fit)
   if (isTRUE(fit$empirical_bayes)) {
-    out$specific_se <- eb_shrink(out$specific_se, fit_sigma(fit$full_fit), fit_df_residual(fit$full_fit))
+    moderated <- eb_moderate_se(out$specific_se, specific_df)
+    out$specific_se <- moderated$se
+    specific_df <- moderated$df
   }
   out$specific_statistic <- out$specific_effect / out$specific_se
   out$specific_pvalue <- 2 * stats::pt(abs(out$specific_statistic),
-                                       df = fit_df_residual(fit$full_fit),
+                                       df = specific_df,
                                        lower.tail = FALSE)
   out$total_padj_global <- adjust_destress_pvalues(out$total_pvalue, out$promoter, "global")
   out$total_padj_by_promoter <- adjust_destress_pvalues(out$total_pvalue, out$promoter, "by_promoter")

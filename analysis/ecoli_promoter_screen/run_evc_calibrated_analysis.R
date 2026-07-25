@@ -116,7 +116,7 @@ if (file.exists(comparison_file)) {
     comparison[, c("binsfeld_hit", "modeled_hit", "evc_huber_hit")],
     1,
     function(x) {
-      names <- c("Binsfeld reference", "DStressR modeled", "DStressR EVC-Huber")[as.logical(x)]
+      names <- c("Binsfeld reference", "DStressR without EV control", "DStressR with EV control")[as.logical(x)]
       if (length(names) == 0) {
         "None"
       } else {
@@ -170,12 +170,12 @@ if (file.exists(comparison_file)) {
     metric = c(
       "Promoter-compound pairs tested",
       "Reference significant pairs",
-      "DStressR modeled-response significant pairs",
-      "DStressR EVC-Huber significant pairs",
-      "Reference and EVC-Huber overlap",
-      "Modeled and EVC-Huber overlap",
+      "DStressR without EV control significant pairs",
+      "DStressR with EV control significant pairs",
+      "Reference and DStressR with EV control overlap",
+      "DStressR workflows overlap",
       "All three overlap",
-      "EVC-Huber only vs reference/default"
+      "DStressR with EV control only vs reference/without EV"
     ),
     count = c(
       nrow(comparison),
@@ -224,8 +224,8 @@ if (file.exists(comparison_file)) {
   }
   venn_df <- rbind(
     cbind(circle_points(-0.55, 0.25, 0.9), method = "Binsfeld reference"),
-    cbind(circle_points(0.55, 0.25, 0.9), method = "DStressR alpha_g"),
-    cbind(circle_points(0, -0.48, 0.9), method = "DStressR alpha_g + EVC-Huber")
+    cbind(circle_points(0.55, 0.25, 0.9), method = "DStressR without EV control"),
+    cbind(circle_points(0, -0.48, 0.9), method = "DStressR with EV control")
   )
   venn <- ggplot2$ggplot(venn_df, ggplot2$aes(x, y, fill = method, color = method)) +
     ggplot2$geom_polygon(alpha = 0.22, linewidth = 0.75) +
@@ -237,24 +237,21 @@ if (file.exists(comparison_file)) {
     ggplot2$annotate("text", x = 0.42, y = -0.22, label = region_counts[["modeled_evc_huber"]], size = 6, fontface = "bold") +
     ggplot2$annotate("text", x = 0, y = 0.1, label = region_counts[["all_three"]], size = 6.3, fontface = "bold") +
     ggplot2$annotate("text", x = -0.75, y = 1.35, label = paste0("Binsfeld reference\n", set_counts[["binsfeld"]], " hits"), size = 3.7, fontface = "bold") +
-    ggplot2$annotate("text", x = 0.75, y = 1.35, label = paste0("DStressR alpha_g\n", set_counts[["modeled"]], " hits"), size = 3.7, fontface = "bold") +
-    ggplot2$annotate("text", x = 0, y = -1.65, label = paste0("DStressR alpha_g + EVC-Huber\n", set_counts[["evc_huber"]], " hits"), size = 3.7, fontface = "bold") +
+    ggplot2$annotate("text", x = 0.75, y = 1.35, label = paste0("DStressR without EV control\n", set_counts[["modeled"]], " hits"), size = 3.7, fontface = "bold") +
+    ggplot2$annotate("text", x = 0, y = -1.65, label = paste0("DStressR with EV control\n", set_counts[["evc_huber"]], " hits"), size = 3.7, fontface = "bold") +
     ggplot2$scale_fill_manual(values = c(
       "Binsfeld reference" = "#2563eb",
-      "DStressR alpha_g" = "#dc2626",
-      "DStressR alpha_g + EVC-Huber" = "#059669"
+      "DStressR without EV control" = "#dc2626",
+      "DStressR with EV control" = "#059669"
     )) +
     ggplot2$scale_color_manual(values = c(
       "Binsfeld reference" = "#1d4ed8",
-      "DStressR alpha_g" = "#b91c1c",
-      "DStressR alpha_g + EVC-Huber" = "#047857"
+      "DStressR without EV control" = "#b91c1c",
+      "DStressR with EV control" = "#047857"
     )) +
     ggplot2$coord_equal(xlim = c(-1.75, 1.75), ylim = c(-1.85, 1.65), expand = FALSE) +
     ggplot2$theme_void(base_size = 10) +
-    ggplot2$theme(legend.position = "none") +
-    ggplot2$labs(
-      title = "Hit overlap across Binsfeld reference and DStressR response-construction analyses"
-    )
+    ggplot2$theme(legend.position = "none")
 
   volcano_data <- rbind(
     data.frame(
@@ -267,7 +264,7 @@ if (file.exists(comparison_file)) {
       stringsAsFactors = FALSE
     ),
     data.frame(
-      method = "DStressR modeled",
+      method = "DStressR without EV control",
       promoter = comparison$promoter,
       compound = comparison$compound,
       effect = comparison$modeled_effect,
@@ -276,7 +273,7 @@ if (file.exists(comparison_file)) {
       stringsAsFactors = FALSE
     ),
     data.frame(
-      method = "DStressR EVC-Huber",
+      method = "DStressR with EV control",
       promoter = comparison$promoter,
       compound = comparison$compound,
       effect = comparison$evc_huber_effect,
@@ -287,7 +284,7 @@ if (file.exists(comparison_file)) {
   )
   volcano_data$method <- factor(
     volcano_data$method,
-    levels = c("Binsfeld reference", "DStressR modeled", "DStressR EVC-Huber")
+    levels = c("Binsfeld reference", "DStressR without EV control", "DStressR with EV control")
   )
   volcano_data$in_all_three <- comparison$binsfeld_hit & comparison$modeled_hit & comparison$evc_huber_hit
   volcano_data$method_hit_count <- ave(
@@ -299,6 +296,21 @@ if (file.exists(comparison_file)) {
   volcano_data$label <- paste(volcano_data$promoter, volcano_data$compound, sep = "-")
   volcano_data$label_hjust <- ifelse(volcano_data$effect > 0, 1.05, -0.05)
   volcano_data$rank_score <- volcano_data$neglog10_pvalue + 0.15 * abs(volcano_data$effect)
+  volcano_y_max <- ceiling(max(
+    volcano_data$neglog10_pvalue[is.finite(volcano_data$neglog10_pvalue)],
+    na.rm = TRUE
+  ) / 5) * 5
+  volcano_x_bounds <- do.call(rbind, lapply(split(volcano_data, volcano_data$method), function(d) {
+    xmax <- max(abs(d$effect[is.finite(d$effect)]), na.rm = TRUE)
+    xmax <- ceiling(xmax * 1.12 * 10) / 10
+    data.frame(
+      method = unique(d$method),
+      effect = c(-xmax, xmax),
+      neglog10_pvalue = c(0, volcano_y_max),
+      stringsAsFactors = FALSE
+    )
+  }))
+  volcano_x_bounds$method <- factor(volcano_x_bounds$method, levels = levels(volcano_data$method))
 
   top_volcano_labels <- do.call(rbind, lapply(split(volcano_data, volcano_data$method), function(d) {
     d <- d[d$hit & is.finite(d$effect) & is.finite(d$neglog10_pvalue), , drop = FALSE]
@@ -315,14 +327,14 @@ if (file.exists(comparison_file)) {
       stringsAsFactors = FALSE
     ),
     data.frame(
-      method = "DStressR modeled",
+      method = "DStressR without EV control",
       promoter = comparison$promoter,
       pvalue = comparison$modeled_pvalue,
       hit = comparison$modeled_hit,
       stringsAsFactors = FALSE
     ),
     data.frame(
-      method = "DStressR EVC-Huber",
+      method = "DStressR with EV control",
       promoter = comparison$promoter,
       pvalue = comparison$evc_huber_pvalue,
       hit = comparison$evc_huber_hit,
@@ -331,7 +343,7 @@ if (file.exists(comparison_file)) {
   )
   pvalue_long$method <- factor(
     pvalue_long$method,
-    levels = c("Binsfeld reference", "DStressR modeled", "DStressR EVC-Huber")
+    levels = c("Binsfeld reference", "DStressR without EV control", "DStressR with EV control")
   )
   pvalue_long$status <- ifelse(pvalue_long$hit, "Called hit", "Not called")
   pvalue_long <- pvalue_long[is.finite(pvalue_long$pvalue), , drop = FALSE]
@@ -360,17 +372,14 @@ if (file.exists(comparison_file)) {
     ggplot2$scale_x_continuous(breaks = seq(0, 1, by = 0.25)) +
     ggplot2$coord_cartesian(xlim = c(0, 1)) +
     ggplot2$theme_light(base_size = 10) +
-    ggplot2$theme(
-      panel.grid.minor = ggplot2$element_blank(),
-      plot.title = ggplot2$element_text(face = "bold"),
-      strip.text = ggplot2$element_text(face = "bold")
-    ) +
-    ggplot2$labs(
-      title = "Raw p-value distributions across the three E. coli analyses",
-      subtitle = "Global distributions are shown on top; promoter-specific distributions are shown below. Dark bars mark called hits.",
-      x = "Raw p-value",
-      y = "Promoter-compound pairs"
-    )
+	  ggplot2$theme(
+	    panel.grid.minor = ggplot2$element_blank(),
+	    strip.text = ggplot2$element_text(face = "bold", hjust = 0.5)
+	  ) +
+	  ggplot2$labs(
+	    x = "Raw p-value",
+	    y = "Promoter-compound pairs"
+	  )
 
   reference_volcano <- comparison[, c(
     "promoter", "compound", "mean_z", "binsfeld_padj",
@@ -425,23 +434,25 @@ if (file.exists(comparison_file)) {
     ggplot2$scale_x_continuous(expand = ggplot2$expansion(mult = c(0.08, 0.1))) +
     ggplot2$scale_y_continuous(expand = ggplot2$expansion(mult = c(0.04, 0.16))) +
     ggplot2$theme_light(base_size = 10) +
-    ggplot2$theme(
-      panel.grid.minor = ggplot2$element_blank(),
-      plot.title = ggplot2$element_text(face = "bold"),
-      legend.position = "bottom"
-    ) +
-    ggplot2$labs(
-      title = "Binsfeld reference volcano plot",
-      subtitle = "Reference rule: promoter-wise BH-adjusted Wilcoxon p < 0.05 and absolute mean Z-score > 1",
-      x = "Mean Z-score",
-      y = "-log10 promoter-wise BH adjusted p-value",
-      color = "Promoter"
+	  ggplot2$theme(
+	    panel.grid.minor = ggplot2$element_blank(),
+	    legend.position = "bottom"
+	  ) +
+	  ggplot2$labs(
+	    x = "Mean Z-score",
+	    y = "-log10 promoter-wise BH adjusted p-value",
+	    color = "Promoter"
     )
 
   volcano_plot <- ggplot2$ggplot(
     volcano_data,
     ggplot2$aes(effect, neglog10_pvalue, color = status)
   ) +
+    ggplot2$geom_blank(
+      data = volcano_x_bounds,
+      ggplot2$aes(effect, neglog10_pvalue),
+      inherit.aes = FALSE
+    ) +
     ggplot2$geom_hline(yintercept = -log10(0.05), color = "#9ca3af", linewidth = 0.3, linetype = "dashed") +
     ggplot2$geom_vline(xintercept = 0, color = "#9ca3af", linewidth = 0.3) +
     ggplot2$geom_point(alpha = 0.78, size = 1.45) +
@@ -456,20 +467,19 @@ if (file.exists(comparison_file)) {
     ) +
     ggplot2$facet_wrap(ggplot2$vars(method), scales = "free_x", ncol = 3) +
     ggplot2$scale_color_manual(values = c("Not called" = "#d1d5db", "Hit" = "#111827")) +
-    ggplot2$scale_x_continuous(expand = ggplot2$expansion(mult = c(0.08, 0.12))) +
-    ggplot2$scale_y_continuous(expand = ggplot2$expansion(mult = c(0.04, 0.16))) +
+    ggplot2$scale_x_continuous(expand = ggplot2$expansion(mult = c(0.02, 0.02))) +
+    ggplot2$scale_y_continuous(limits = c(0, volcano_y_max), expand = ggplot2$expansion(mult = c(0.02, 0.08))) +
     ggplot2$theme_light(base_size = 10) +
-    ggplot2$theme(
-      panel.grid.minor = ggplot2$element_blank(),
-      plot.title = ggplot2$element_text(face = "bold"),
-      legend.position = "bottom",
-      plot.margin = ggplot2$margin(8, 12, 8, 8)
-    ) +
-    ggplot2$labs(
-      title = "Binsfeld reference, modeled-response, and EVC-Huber volcano plots",
-      x = "Effect score",
-      y = "-log10 raw p-value",
-      color = "Call"
+	  ggplot2$theme(
+	    panel.grid.minor = ggplot2$element_blank(),
+	    strip.text = ggplot2$element_text(face = "bold", hjust = 0.5),
+	    legend.position = "bottom",
+	    plot.margin = ggplot2$margin(8, 12, 8, 8)
+	  ) +
+	  ggplot2$labs(
+	    x = "Method-specific effect estimate",
+	    y = "-log10 raw p-value",
+	    color = "Call"
     )
 
   intersection_labels <- volcano_data[
@@ -482,10 +492,18 @@ if (file.exists(comparison_file)) {
     ,
     drop = FALSE
   ]
+  intersection_labels <- do.call(rbind, lapply(split(intersection_labels, intersection_labels$method), function(d) {
+    utils::head(d, 12)
+  }))
   intersection_plot <- ggplot2$ggplot(
     volcano_data,
     ggplot2$aes(effect, neglog10_pvalue)
   ) +
+    ggplot2$geom_blank(
+      data = volcano_x_bounds,
+      ggplot2$aes(effect, neglog10_pvalue),
+      inherit.aes = FALSE
+    ) +
     ggplot2$geom_hline(yintercept = -log10(0.05), color = "#9ca3af", linewidth = 0.3, linetype = "dashed") +
     ggplot2$geom_vline(xintercept = 0, color = "#9ca3af", linewidth = 0.3) +
     ggplot2$geom_point(color = "#d1d5db", alpha = 0.55, size = 1.2) +
@@ -505,20 +523,19 @@ if (file.exists(comparison_file)) {
     ) +
     ggplot2$facet_wrap(ggplot2$vars(method), scales = "free_x", ncol = 3) +
     ggplot2$scale_color_manual(values = promoter_colors[names(promoter_colors) != "Not called"]) +
-    ggplot2$scale_x_continuous(expand = ggplot2$expansion(mult = c(0.08, 0.12))) +
-    ggplot2$scale_y_continuous(expand = ggplot2$expansion(mult = c(0.04, 0.18))) +
+    ggplot2$scale_x_continuous(expand = ggplot2$expansion(mult = c(0.02, 0.02))) +
+    ggplot2$scale_y_continuous(limits = c(0, volcano_y_max), expand = ggplot2$expansion(mult = c(0.02, 0.08))) +
     ggplot2$theme_light(base_size = 10) +
-    ggplot2$theme(
-      panel.grid.minor = ggplot2$element_blank(),
-      plot.title = ggplot2$element_text(face = "bold"),
-      legend.position = "bottom",
-      plot.margin = ggplot2$margin(8, 12, 8, 8)
-    ) +
-    ggplot2$labs(
-      title = "Volcano locations of the 35 promoter-compound pairs called by all three analyses",
-      x = "Effect score",
-      y = "-log10 raw p-value",
-      color = "Promoter"
+	  ggplot2$theme(
+	    panel.grid.minor = ggplot2$element_blank(),
+	    strip.text = ggplot2$element_text(face = "bold", hjust = 0.5),
+	    legend.position = "bottom",
+	    plot.margin = ggplot2$margin(8, 12, 8, 8)
+	  ) +
+	  ggplot2$labs(
+	    x = "Method-specific effect estimate",
+	    y = "-log10 raw p-value",
+	    color = "Promoter"
     )
 
   non_intersection <- volcano_data[
@@ -550,10 +567,29 @@ if (file.exists(comparison_file)) {
     non_intersection$panel_label,
     levels = unique(non_intersection$panel_label)
   )
-  non_intersection_plot <- ggplot2$ggplot(
+  non_intersection_x_bounds <- merge(
+    volcano_x_bounds,
+    unique(non_intersection[, c("method", "panel_label"), drop = FALSE]),
+    by = "method",
+    all.y = TRUE,
+    sort = FALSE
+  )
+  volcano_panel_data <- merge(
     volcano_data,
+    unique(non_intersection[, c("method", "panel_label"), drop = FALSE]),
+    by = "method",
+    all.y = TRUE,
+    sort = FALSE
+  )
+  non_intersection_plot <- ggplot2$ggplot(
+    volcano_panel_data,
     ggplot2$aes(effect, neglog10_pvalue)
   ) +
+    ggplot2$geom_blank(
+      data = non_intersection_x_bounds,
+      ggplot2$aes(effect, neglog10_pvalue),
+      inherit.aes = FALSE
+    ) +
     ggplot2$geom_hline(yintercept = -log10(0.05), color = "#9ca3af", linewidth = 0.3, linetype = "dashed") +
     ggplot2$geom_vline(xintercept = 0, color = "#9ca3af", linewidth = 0.3) +
     ggplot2$geom_point(color = "#e5e7eb", alpha = 0.45, size = 1.1) +
@@ -573,21 +609,19 @@ if (file.exists(comparison_file)) {
     ) +
     ggplot2$facet_wrap(ggplot2$vars(panel_label), scales = "free_x", ncol = 3) +
     ggplot2$scale_color_manual(values = promoter_colors[names(promoter_colors) != "Not called"]) +
-    ggplot2$scale_x_continuous(expand = ggplot2$expansion(mult = c(0.08, 0.12))) +
-    ggplot2$scale_y_continuous(expand = ggplot2$expansion(mult = c(0.04, 0.18))) +
+    ggplot2$scale_x_continuous(expand = ggplot2$expansion(mult = c(0.02, 0.02))) +
+    ggplot2$scale_y_continuous(limits = c(0, volcano_y_max), expand = ggplot2$expansion(mult = c(0.02, 0.08))) +
     ggplot2$theme_light(base_size = 10) +
-    ggplot2$theme(
-      panel.grid.minor = ggplot2$element_blank(),
-      plot.title = ggplot2$element_text(face = "bold"),
-      legend.position = "bottom",
-      plot.margin = ggplot2$margin(8, 12, 8, 8)
-    ) +
-    ggplot2$labs(
-      title = "Method-specific hit extensions beyond the 35-pair common core",
-      subtitle = "All non-intersection hits are colored; up to the top 18 per method are annotated.",
-      x = "Effect score",
-      y = "-log10 raw p-value",
-      color = "Promoter"
+	  ggplot2$theme(
+	    panel.grid.minor = ggplot2$element_blank(),
+	    strip.text = ggplot2$element_text(face = "bold", hjust = 0.5),
+	    legend.position = "bottom",
+	    plot.margin = ggplot2$margin(8, 12, 8, 8)
+	  ) +
+	  ggplot2$labs(
+	    x = "Method-specific effect estimate",
+	    y = "-log10 raw p-value",
+	    color = "Promoter"
     )
 
   ggplot2$ggsave(file.path(out_dir, "evc_huber_hit_overlap_venn.png"), venn, width = 7.2, height = 6.8, dpi = 220)
@@ -606,4 +640,4 @@ if (file.exists(comparison_file)) {
   print(summary)
 }
 
-message("Wrote E. coli EVC-Huber analysis to: ", out_dir)
+message("Wrote E. coli DStressR-with-EV analysis to: ", out_dir)

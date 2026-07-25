@@ -5,7 +5,7 @@
 \alias{binsfeld_reporter_auc}
 \title{Binsfeld et al. reporter screen AUC data}
 \format{
-A data frame with 24,576 rows and 13 columns:
+A data frame with 24,576 rows and 12 columns:
 \describe{
 \item{strain}{Reporter host strain.}
 \item{promoter}{Reporter promoter, including \code{EVC}.}

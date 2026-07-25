@@ -93,7 +93,7 @@ comparison$binsfeld_hit <- hit_key(comparison) %in% author_key
 comparison$destress_hit <- hit_key(comparison) %in% destress_key
 
 summary <- data.frame(
-  analysis = c("Binsfeld_Wilcoxon_Z", "DStressR_default_modeled_response", "overlap"),
+  analysis = c("Binsfeld_Wilcoxon_Z", "DStressR_without_EVC_control", "overlap"),
   hits = c(length(author_key), length(destress_key), sum(author_key %in% destress_key)),
   stringsAsFactors = FALSE
 )

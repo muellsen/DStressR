@@ -5,13 +5,13 @@ Authors@R: c(
     person(given = "Christian L.", family = "Müller", role = c("aut", "cre"),
            email = "ch.mueller@lmu.de")
   )
-Author: Christian L. Müller
-Maintainer: Christian L. Müller <ch.mueller@lmu.de>
-Description: Companion workflow to DGrowthR for model-based differential
-    promoter activity analysis in high-throughput chemical genomics screens.
-    DStressR models growth-adjusted luminescence, compound-wide effects,
-    promoter-specific stress responses, empirical-Bayes promoter variance
-    moderation, and technical covariates.
+Description: Model-based differential promoter activity analysis for
+    high-throughput chemical genomics screens. DStressR constructs
+    growth-adjusted luminescence responses, optionally calibrates them with
+    matched empty-vector controls, estimates compound-wide and
+    promoter-specific stress responses, moderates promoter-level uncertainty,
+    adjusts for technical covariates, and ships a public Escherichia coli
+    promoter-compound screen for reproducible examples.
 URL: https://muellsen.github.io/DStressR/, https://github.com/muellsen/DStressR/
 BugReports: https://github.com/muellsen/DStressR/issues
 License: MIT + file LICENSE

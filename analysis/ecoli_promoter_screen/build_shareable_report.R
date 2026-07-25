@@ -169,12 +169,12 @@ code { background: #f3f4f6; padding: 1px 4px; border-radius: 3px; }
 <div class="meta">Self-contained local report generated ', html_escape(created), ' from the DStressR repository.</div>
 
 <div class="callout">
-<strong>Headline result.</strong> The reproduced Binsfeld-style WT analysis calls ', binsfeld_hit_n, ' promoter-compound hits. The default DStressR modeled-response analysis calls ', destress_hit_n, ' hits. The exact promoter-compound overlap is ', overlap_n, ' hits.
+<strong>Headline result.</strong> The reproduced Binsfeld-style WT analysis calls ', binsfeld_hit_n, ' promoter-compound hits. DStressR without EV control calls ', destress_hit_n, ' hits. The exact promoter-compound overlap is ', overlap_n, ' hits.
 </div>
 
 <h2>Data and Analysis Scope</h2>
 <p>This report uses the public <em>E. coli</em> reporter-screen data from Binsfeld et al. The DStressR package ships an AUC-level table, <code>binsfeld_reporter_auc</code>, prepared from the PLOS S3 Data supplement, and an author score/Z-score table, <code>binsfeld_reporter_scores</code>, prepared from the PLOS S4 Data supplement.</p>
-<p>The comparison is limited to WT reporter rows. For the DStressR analysis, rows marked <code>removed == "No"</code> are used, water controls are collapsed to <code>Water</code>, promoter-specific growth-response exponents are estimated from control wells, and the empty-vector reporter is excluded from the default modeled-response testing set.</p>
+<p>The comparison is limited to WT reporter rows. For the DStressR analysis, rows marked <code>removed == "No"</code> are used, water controls are collapsed to <code>Water</code>, promoter-specific growth-response exponents are estimated from control wells, and the empty-vector reporter is excluded from the DStressR-without-EV-control testing set.</p>
 
 <h2>Methods Compared</h2>
 <h3>Reproduced Binsfeld-style rule</h3>
@@ -184,10 +184,10 @@ code { background: #f3f4f6; padding: 1px 4px; border-radius: 3px; }
 <li>Adjust p-values within promoter using Benjamini-Hochberg.</li>
 <li>Call a hit when promoter-wise adjusted p-value &lt; 0.05 and absolute mean Z-score &gt; 1.</li>
 </ul>
-<h3>DStressR model</h3>
+<h3>DStressR without EV control</h3>
 <ul>
 <li>Input: WT AUC rows from <code>binsfeld_reporter_auc</code> with <code>removed == "No"</code>.</li>
-<li>Response: package-default modeled response, <code>log2(lux_auc) - alpha_g * log2(od_auc)</code>, with promoter-specific <code>alpha_g</code> estimated from water controls.</li>
+<li>Response: default growth-modeled response, <code>log2(lux_auc) - alpha_g * log2(od_auc)</code>, with promoter-specific <code>alpha_g</code> estimated from water controls and no EVC calibration.</li>
 <li>Model: DStressR model preset, empirical-Bayes moderation enabled, technical terms for replicate and dose level.</li>
 <li>Call a hit using promoter-specific effect p-values adjusted within promoter at FDR 0.05.</li>
 </ul>

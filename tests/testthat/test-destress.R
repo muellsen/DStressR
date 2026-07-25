@@ -218,6 +218,16 @@ test_that("fit_destress exposes staged model options", {
   expect_equal(res$specific_padj, expected$expected_specific_padj, tolerance = 1e-12)
 })
 
+test_that("empirical-Bayes moderation estimates prior degrees of freedom", {
+  raw_se <- sqrt(c(rep(0.02, 20), rep(0.08, 20), rep(0.20, 20)))
+  moderated <- eb_moderate_se(raw_se, df = 8)
+
+  expect_true(is.finite(moderated$prior_var))
+  expect_gt(moderated$prior_df, 0)
+  expect_gt(moderated$df, 8)
+  expect_false(isTRUE(all.equal(moderated$se, raw_se)))
+})
+
 test_that("fit_destress can fit scalable promoter-specific models", {
   dat <- simulate_screen(seed = 7, n_promoters = 5, n_compounds = 6, n_replicates = 3)
   assay <- prepare_assay(dat, promoter = "promoter", compound = "compound",

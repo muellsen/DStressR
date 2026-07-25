@@ -9,6 +9,10 @@
 ^docs$
 ^pkgdown$
 ^\.github$
+^cran-comments\.md$
+^Rplots\.pdf$
+^scripts$
+^tmp$
 ^DEStress\.Rcheck$
 ^DStressR\.Rcheck$
 ^\.\.Rcheck$
