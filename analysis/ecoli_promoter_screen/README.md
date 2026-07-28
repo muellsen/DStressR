@@ -24,15 +24,15 @@ Rscript analysis/ecoli_promoter_screen/run_evc_calibrated_analysis.R
 This workflow compares:
 
 - the reconstructed reference Wilcoxon/Z-score rule from the original screen;
-- DStressR without EV control;
-- DStressR with EV control.
+- DStressR without EV;
+- DStressR with EV.
 
 Current WT result:
 
 ```text
 Reference WT hits: 53
-DStressR without EV control WT hits: 80
-DStressR with EV control WT hits: 92
+DStressR without EV WT hits: 80
+DStressR with EV WT hits: 92
 All three analyses: 35
 Reference-only hits: 16
 DStressR-without-EV only hits: 9
@@ -41,10 +41,27 @@ Both DStressR workflows only: 36
 Union significant by at least one primary analysis: 117
 ```
 
+Run the full promoter-by-compound interaction-model sensitivity analysis for
+Appendix D.1:
+
+```sh
+Rscript analysis/ecoli_promoter_screen/run_interaction_sensitivity.R
+```
+
+Current WT interaction sensitivity:
+
+```text
+Interaction with EV hits: 56
+Interaction without EV hits: 51
+DStressR with EV hits recovered by interaction with EV: 56
+DStressR without EV hits recovered by interaction without EV: 50
+All five methods overlap: 28
+```
+
 ## Supplemental Comparison Scripts
 
 Rebuild the two-method comparison between the reconstructed reference rule and
-DStressR without EV control:
+DStressR without EV:
 
 ```sh
 Rscript analysis/ecoli_promoter_screen/compare_reporter_hits.R

@@ -11,6 +11,17 @@ if (!requireNamespace("gridExtra", quietly = TRUE)) {
 ggplot2 <- asNamespace("ggplot2")
 gridExtra <- asNamespace("gridExtra")
 
+panel_label <- function(label, size = 18) {
+  grid::textGrob(
+    label,
+    x = grid::unit(0, "npc"),
+    y = grid::unit(0.08, "npc"),
+    hjust = 0,
+    vjust = 0,
+    gp = grid::gpar(fontsize = size, fontface = "bold", col = "#111827")
+  )
+}
+
 load(analysis_path("data", "binsfeld_reporter_data.rda"))
 out_dir <- analysis_output_dir("binsfeld_modeling_steps")
 evc_method_dir <- analysis_output_dir("binsfeld_evc_calibrated")
@@ -150,70 +161,159 @@ evc_slope_plot <- ggplot2$ggplot(
     y = "Reporter promoter"
   )
 
-parameter_theme <- ggplot2$theme_light(base_size = 12) +
-  ggplot2$theme(
-    panel.grid.minor = ggplot2$element_blank(),
-    axis.title.x = ggplot2$element_text(size = 18, margin = ggplot2$margin(t = 8)),
-    axis.title.y = ggplot2$element_text(size = 16),
-    axis.text = ggplot2$element_text(size = 13),
-    plot.title = ggplot2$element_text(face = "bold", hjust = 0.5, size = 14),
-    legend.position = "bottom"
+parameter_panel <- rbind(
+  data.frame(
+    promoter = as.character(growth_long$promoter),
+    estimate = growth_long$estimate,
+    estimate_type = as.character(growth_long$estimate_type),
+    panel = "hat(alpha)[a]",
+    stringsAsFactors = FALSE
+  ),
+  data.frame(
+    promoter = background_calibration$promoter,
+    estimate = background_calibration$slope,
+    estimate_type = "EV calibration slope",
+    panel = "hat(gamma)[1*a]",
+    stringsAsFactors = FALSE
   )
-
-parameter_alpha_plot <- ggplot2$ggplot(
-  growth_long,
-  ggplot2$aes(estimate, promoter, color = estimate_type, shape = estimate_type)
+)
+parameter_panel$promoter <- factor(parameter_panel$promoter, levels = rev(parameter_promoter_order))
+parameter_panel$panel <- factor(
+  parameter_panel$panel,
+  levels = c(
+    "hat(alpha)[a]",
+    "hat(gamma)[1*a]"
+  )
+)
+parameter_panel$estimate_type <- factor(
+  parameter_panel$estimate_type,
+  levels = c("Raw promoter slope", "Shrunken exponent", "EV calibration slope")
+)
+parameter_reference_lines <- data.frame(
+  panel = factor(
+    c(
+      "hat(alpha)[a]",
+      "hat(gamma)[1*a]"
+    ),
+    levels = levels(parameter_panel$panel)
+  ),
+  xintercept = 1,
+  linetype = "Fixed value 1",
+  stringsAsFactors = FALSE
+)
+parameter_global_line <- data.frame(
+  panel = factor("hat(alpha)[a]", levels = levels(parameter_panel$panel)),
+  xintercept = unique(growth_parameters$alpha_global)[1],
+  stringsAsFactors = FALSE
+)
+parameter_legend_boxes <- data.frame(
+  panel = factor(
+    c("hat(alpha)[a]", "hat(alpha)[a]", "hat(gamma)[1*a]"),
+    levels = levels(parameter_panel$panel)
+  ),
+  xmin = c(0.55, 0.55, 0.70),
+  xmax = c(0.985, 0.985, 0.99),
+  ymin = c(7.68, 6.68, 7.68),
+  ymax = c(8.32, 7.32, 8.32),
+  stringsAsFactors = FALSE
+)
+parameter_legend <- data.frame(
+  panel = factor(
+    c("hat(alpha)[a]", "hat(alpha)[a]", "hat(gamma)[1*a]"),
+    levels = levels(parameter_panel$panel)
+  ),
+  x = c(0.58, 0.58, 0.72),
+  y = factor(c("EVC", "acrABp", "EVC"), levels = rev(parameter_promoter_order)),
+  label = c("Raw promoter slope", "Shrunken exponent", "EV calibration"),
+  estimate_type = factor(
+    c("Raw promoter slope", "Shrunken exponent", "EV calibration slope"),
+    levels = levels(parameter_panel$estimate_type)
+  ),
+  stringsAsFactors = FALSE
+)
+parameter_legend_text <- parameter_legend
+parameter_legend_text$x <- parameter_legend_text$x + c(0.045, 0.045, 0.045)
+parameter_plot <- ggplot2$ggplot(
+  parameter_panel,
+  ggplot2$aes(estimate, promoter, shape = estimate_type)
 ) +
   ggplot2$geom_vline(
-    xintercept = unique(growth_parameters$alpha_global)[1],
+    data = parameter_reference_lines,
+    ggplot2$aes(xintercept = xintercept),
+    color = "#9ca3af",
+    linetype = "dashed",
+    linewidth = 0.4
+  ) +
+  ggplot2$geom_vline(
+    data = parameter_global_line,
+    ggplot2$aes(xintercept = xintercept),
     color = "#111827",
     linetype = "dotted",
     linewidth = 0.45
   ) +
-  ggplot2$geom_vline(xintercept = 1, color = "#9ca3af", linetype = "dashed", linewidth = 0.4) +
-  ggplot2$geom_point(size = 3.0, alpha = 0.9, position = ggplot2$position_dodge(width = 0.45)) +
-  ggplot2$scale_color_manual(
+  ggplot2$geom_rect(
+    data = parameter_legend_boxes,
+    ggplot2$aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax),
+    inherit.aes = FALSE,
+    fill = grDevices::adjustcolor("white", alpha.f = 0.88),
+    color = "#d1d5db",
+    linewidth = 0.35
+  ) +
+  ggplot2$geom_point(size = 3.0, alpha = 0.9) +
+  ggplot2$geom_point(
+    data = parameter_legend,
+    ggplot2$aes(x = x, y = y, shape = estimate_type),
+    size = 3.4,
+    inherit.aes = FALSE
+  ) +
+  ggplot2$geom_text(
+    data = parameter_legend_text,
+    ggplot2$aes(x = x, y = y, label = label),
+    hjust = 0,
+    vjust = 0.5,
+    size = 5.0,
+    color = "#111827",
+    inherit.aes = FALSE
+  ) +
+  ggplot2$facet_wrap(
+    ggplot2$vars(panel),
+    ncol = 2,
+    scales = "free_x",
+    labeller = ggplot2$label_parsed,
+    strip.position = "bottom"
+  ) +
+  ggplot2$scale_y_discrete(drop = FALSE) +
+  ggplot2$scale_shape_manual(
     values = c(
-      "Raw promoter slope" = "#2563eb",
-      "Shrunken exponent" = "#dc2626"
+      "Raw promoter slope" = 1,
+      "Shrunken exponent" = 17,
+      "EV calibration slope" = 15
     ),
     drop = FALSE
   ) +
-  parameter_theme +
-  ggplot2$labs(
-    title = "Growth-response exponent",
-    x = expression(hat(alpha)[a]),
-    y = "Reporter promoter",
-    color = NULL,
-    shape = NULL
-  )
-
-parameter_gamma_plot <- ggplot2$ggplot(
-  background_calibration,
-  ggplot2$aes(slope, factor(promoter, levels = rev(parameter_promoter_order)))
-) +
-  ggplot2$geom_vline(xintercept = 1, color = "#9ca3af", linetype = "dashed", linewidth = 0.4) +
-  ggplot2$geom_point(size = 3.0, color = "#059669", alpha = 0.9) +
-  ggplot2$scale_y_discrete(limits = rev(parameter_promoter_order), drop = FALSE) +
-  parameter_theme +
+  ggplot2$theme_light(base_size = 13) +
   ggplot2$theme(
-    axis.title.y = ggplot2$element_blank(),
-    axis.text.y = ggplot2$element_blank(),
-    axis.ticks.y = ggplot2$element_blank(),
+    panel.grid.minor = ggplot2$element_blank(),
+    axis.title.x = ggplot2$element_blank(),
+    axis.title.y = ggplot2$element_text(size = 16),
+    axis.text = ggplot2$element_text(size = 13),
+    strip.background = ggplot2$element_blank(),
+    strip.placement = "outside",
+    strip.text = ggplot2$element_text(face = "bold", hjust = 0.5, size = 16, color = "#111827"),
+    strip.text.x.bottom = ggplot2$element_text(
+      face = "bold",
+      hjust = 0.5,
+      size = 16,
+      color = "#111827",
+      margin = ggplot2$margin(t = 8, b = 3)
+    ),
     legend.position = "none"
   ) +
   ggplot2$labs(
-    title = "EV calibration slope",
-    x = expression(hat(gamma)[1 * a]),
-    y = NULL
+    x = NULL,
+    y = "Reporter promoter",
+    shape = NULL
   )
-
-parameter_plot <- gridExtra$arrangeGrob(
-  parameter_alpha_plot,
-  parameter_gamma_plot,
-  ncol = 2,
-  widths = c(1.05, 1)
-)
 
 response_matrix <- function(assay) {
   tab <- assay[, c("promoter", "compound", ".response")]
@@ -297,7 +397,7 @@ scatter_long <- rbind(
 	    compound = response_scatter_data$compound,
 	    x = response_scatter_data$raw_response,
 	    y = response_scatter_data$modeled_response,
-	    comparison = "DStressR without EV control",
+	    comparison = "DStressR without EV",
 	    stringsAsFactors = FALSE
 	  ),
 	  data.frame(
@@ -305,28 +405,28 @@ scatter_long <- rbind(
 	    compound = response_scatter_data$compound,
 	    x = response_scatter_data$raw_response,
 	    y = response_scatter_data$evc_huber_response,
-	    comparison = "DStressR with EV control",
+	    comparison = "DStressR with EV",
 	    stringsAsFactors = FALSE
 	  )
 	)
 scatter_long$comparison <- factor(
   scatter_long$comparison,
   levels = c(
-    "DStressR without EV control",
-    "DStressR with EV control"
+    "DStressR without EV",
+    "DStressR with EV"
   )
 )
 scatter_limit <- range(c(scatter_long$x, scatter_long$y), finite = TRUE)
 scatter_pad <- diff(scatter_limit) * 0.04
 scatter_limit <- scatter_limit + c(-scatter_pad, scatter_pad)
 promoter_colors <- c(
-  acrABp = "#2563eb",
-  marRABp = "#dc2626",
-  micFp = "#7c3aed",
-  ompFp = "#ea580c",
-  robp = "#059669",
-  soxSp = "#0891b2",
-  tolCp = "#64748b"
+  acrABp = "#0072B2",
+  marRABp = "#D55E00",
+  micFp = "#CC79A7",
+  ompFp = "#E69F00",
+  robp = "#009E73",
+  soxSp = "#56B4E9",
+  tolCp = "#6A3D9A"
 )
 
 response_scatter_plot <- ggplot2$ggplot(
@@ -334,21 +434,36 @@ response_scatter_plot <- ggplot2$ggplot(
   ggplot2$aes(x, y, color = promoter)
 ) +
   ggplot2$geom_abline(slope = 1, intercept = 0, color = "#111827", linewidth = 0.35, linetype = "dashed") +
-  ggplot2$geom_point(size = 1.7, alpha = 0.72) +
+  ggplot2$geom_point(size = 2.0, alpha = 0.78) +
   ggplot2$facet_wrap(ggplot2$vars(comparison), ncol = 2) +
   ggplot2$coord_equal(xlim = scatter_limit, ylim = scatter_limit) +
   ggplot2$scale_color_manual(values = promoter_colors, drop = FALSE) +
-  ggplot2$theme_light(base_size = 10) +
-	  ggplot2$theme(
-	    panel.grid.minor = ggplot2$element_blank(),
-	    strip.text = ggplot2$element_text(face = "bold", hjust = 0.5),
-	    legend.position = "bottom"
-	  ) +
-	  ggplot2$labs(
-	    x = "Raw log2 Lux response",
-	    y = "DStressR response",
-	    color = "Promoter"
-	  )
+  ggplot2$theme_light(base_size = 13) +
+  ggplot2$theme(
+    panel.grid.minor = ggplot2$element_blank(),
+    axis.title = ggplot2$element_text(size = 16),
+    axis.text = ggplot2$element_text(size = 12),
+    strip.text = ggplot2$element_text(face = "bold", hjust = 0.5, size = 14),
+    legend.position = c(0.985, 0.015),
+    legend.justification = c(1, 0),
+    legend.background = ggplot2$element_rect(fill = grDevices::adjustcolor("white", alpha.f = 0.86), color = "#d1d5db"),
+    legend.key = ggplot2$element_rect(fill = grDevices::adjustcolor("white", alpha.f = 0.86), color = NA),
+    legend.margin = ggplot2$margin(4, 6, 4, 6)
+  ) +
+  ggplot2$labs(
+    x = expression("Raw log"[2] * " Lux response"),
+    y = "DStressR response",
+    color = "Promoter"
+  )
+
+response_modeling_figure <- gridExtra$arrangeGrob(
+  gridExtra$arrangeGrob(panel_label("a"), panel_label("b"), ncol = 2),
+  parameter_plot,
+  gridExtra$arrangeGrob(panel_label("c"), panel_label("d"), ncol = 2),
+  response_scatter_plot,
+  ncol = 1,
+  heights = c(0.045, 0.90, 0.045, 1.08)
+)
 
 heat_long <- rbind(
   data.frame(
@@ -380,20 +495,20 @@ response_construction_long <- rbind(
     promoter = response_construction$promoter,
     compound = response_construction$compound,
     response = response_construction$modeled_response,
-    response_type = "DStressR without EV control",
+    response_type = "DStressR without EV",
     stringsAsFactors = FALSE
   ),
   data.frame(
     promoter = response_construction$promoter,
     compound = response_construction$compound,
     response = response_construction$evc_huber_response,
-    response_type = "DStressR with EV control",
+    response_type = "DStressR with EV",
     stringsAsFactors = FALSE
   )
 )
 response_construction_long$response_type <- factor(
   response_construction_long$response_type,
-  levels = c("Raw log2 Lux", "DStressR without EV control", "DStressR with EV control")
+  levels = c("Raw log2 Lux", "DStressR without EV", "DStressR with EV")
 )
 
 response_difference_long <- rbind(
@@ -401,20 +516,20 @@ response_difference_long <- rbind(
     promoter = response_construction$promoter,
     compound = response_construction$compound,
     difference = response_construction$modeled_minus_raw,
-    comparison = "DStressR without EV control minus raw",
+    comparison = "DStressR without EV minus raw",
     stringsAsFactors = FALSE
   ),
   data.frame(
     promoter = response_construction$promoter,
     compound = response_construction$compound,
     difference = response_construction$evc_huber_minus_raw,
-    comparison = "DStressR with EV control minus raw",
+    comparison = "DStressR with EV minus raw",
     stringsAsFactors = FALSE
   )
 )
 response_difference_long$comparison <- factor(
   response_difference_long$comparison,
-  levels = c("DStressR without EV control minus raw", "DStressR with EV control minus raw")
+  levels = c("DStressR without EV minus raw", "DStressR with EV minus raw")
 )
 
 limit <- max(abs(c(heat_long$response, matched$difference)), na.rm = TRUE)
@@ -537,10 +652,12 @@ ggplot2$ggsave(file.path(out_dir, "binsfeld_growth_parameter_estimates.png"), gr
 ggplot2$ggsave(file.path(out_dir, "binsfeld_growth_parameter_estimates.pdf"), growth_plot, width = 7.2, height = 4.8)
 ggplot2$ggsave(file.path(out_dir, "binsfeld_evc_background_calibration_slopes.png"), evc_slope_plot, width = 6.8, height = 4.4, dpi = 220)
 ggplot2$ggsave(file.path(out_dir, "binsfeld_evc_background_calibration_slopes.pdf"), evc_slope_plot, width = 6.8, height = 4.4)
-ggplot2$ggsave(file.path(out_dir, "binsfeld_response_model_parameters.png"), parameter_plot, width = 9.2, height = 4.8, dpi = 220)
-ggplot2$ggsave(file.path(out_dir, "binsfeld_response_model_parameters.pdf"), parameter_plot, width = 9.2, height = 4.8)
+ggplot2$ggsave(file.path(out_dir, "binsfeld_response_model_parameters.png"), parameter_plot, width = 10.0, height = 4.8, dpi = 220)
+ggplot2$ggsave(file.path(out_dir, "binsfeld_response_model_parameters.pdf"), parameter_plot, width = 10.0, height = 4.8)
 ggplot2$ggsave(file.path(out_dir, "binsfeld_response_scale_scatter.png"), response_scatter_plot, width = 10.8, height = 5.4, dpi = 220)
 ggplot2$ggsave(file.path(out_dir, "binsfeld_response_scale_scatter.pdf"), response_scatter_plot, width = 10.8, height = 5.4)
+ggplot2$ggsave(file.path(out_dir, "binsfeld_response_modeling_combined.png"), response_modeling_figure, width = 10.8, height = 10.5, dpi = 220)
+ggplot2$ggsave(file.path(out_dir, "binsfeld_response_modeling_combined.pdf"), response_modeling_figure, width = 10.8, height = 10.5)
 ggplot2$ggsave(file.path(out_dir, "binsfeld_raw_modeled_evc_response_heatmaps.png"), response_construction_heatmap, width = 12.5, height = 9.4, dpi = 220)
 ggplot2$ggsave(file.path(out_dir, "binsfeld_raw_modeled_evc_response_heatmaps.pdf"), response_construction_heatmap, width = 12.5, height = 9.4)
 ggplot2$ggsave(file.path(out_dir, "binsfeld_response_minus_raw_heatmaps.png"), response_difference_heatmap, width = 12.5, height = 6.8, dpi = 220)
