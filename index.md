@@ -137,13 +137,15 @@ the estimation of `alpha_g`.
 
 The public sources are the PLOS article
 <https://doi.org/10.1371/journal.pbio.3003260> and the Zenodo archive
-<https://doi.org/10.5281/zenodo.15600688>. The reproducibility script
-`analysis/ecoli_promoter_screen/compare_reporter_hits.R` rebuilds the
-Binsfeld-style Wilcoxon/Z-score hit calls and compares them with the two
-default DStressR workflows. In the current WT analysis, the
-reconstructed reference rule calls 53 hits, DStressR without EV control
-calls 80 hits, and DStressR with EV control calls 92 hits. The workflow
-with EV control overlaps with 37 of the 53 reference hits.
+<https://doi.org/10.5281/zenodo.15600688>. The primary reproducibility
+script `analysis/ecoli_promoter_screen/run_evc_calibrated_analysis.R`
+rebuilds the Binsfeld-style Wilcoxon/Z-score hit calls and compares them
+with the two default DStressR workflows. In the current WT analysis, the
+reconstructed reference rule calls 53 hits, DStressR without EV calls 80
+hits, and DStressR with EV control calls 92 hits. The workflow with EV
+overlaps with 37 of the 53 reference hits. The optional full
+interaction-model sensitivity analysis is reproduced by
+`analysis/ecoli_promoter_screen/run_interaction_sensitivity.R`.
 
 Equivalently, using staged options directly:
 

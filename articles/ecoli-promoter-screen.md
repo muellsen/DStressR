@@ -123,15 +123,15 @@ Rscript analysis/ecoli_promoter_screen/run_evc_calibrated_analysis.R
 The workflow compares three hit sets:
 
 - the reconstructed Binsfeld-style Wilcoxon/Z-score reference rule
-- DStressR without EV control
-- DStressR with EV control
+- DStressR without EV
+- DStressR with EV
 
 The current wild-type comparison gives:
 
 ``` text
 Reference WT hits: 53
-DStressR without EV control WT hits: 80
-DStressR with EV control WT hits: 92
+DStressR without EV WT hits: 80
+DStressR with EV WT hits: 92
 All three analyses: 35
 Reference-only hits: 16
 DStressR-without-EV only hits: 9
@@ -139,6 +139,16 @@ DStressR-with-EV only hits: 19
 Both DStressR workflows only: 36
 Union significant by at least one primary analysis: 117
 ```
+
+The full interaction-model sensitivity analysis used in the manuscript
+appendix can be reproduced with:
+
+``` sh
+Rscript analysis/ecoli_promoter_screen/run_interaction_sensitivity.R
+```
+
+In the current wild-type analysis, the interaction model calls 56 hits
+with EV calibration and 51 hits without EV calibration.
 
 Additional scripts in `analysis/ecoli_promoter_screen/` recreate the
 two-method report, volcano plots, heatmaps, Venn diagrams, and

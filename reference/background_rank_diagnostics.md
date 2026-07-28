@@ -10,7 +10,7 @@ marginal distribution while breaking shared promoter-loading structure.
 ``` r
 background_rank_diagnostics(
   table,
-  effect = "specific_effect",
+  effect = "total_effect",
   promoter = "promoter",
   compound = "compound",
   rank_max = 10,
@@ -27,7 +27,8 @@ background_rank_diagnostics(
 
 - effect:
 
-  Numeric effect column to decompose, usually `specific_effect`.
+  Numeric effect column to decompose, usually `total_effect` or
+  `background_adjusted_effect`.
 
 - promoter, compound:
 
