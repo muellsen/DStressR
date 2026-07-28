@@ -7,8 +7,27 @@ if (!requireNamespace("ggplot2", quietly = TRUE)) {
 if (!requireNamespace("MASS", quietly = TRUE)) {
   stop("Package `MASS` is required for Huber EVC calibration.", call. = FALSE)
 }
+if (!requireNamespace("gridExtra", quietly = TRUE)) {
+  stop("Package `gridExtra` is required for E. coli multi-panel figures.", call. = FALSE)
+}
+if (!requireNamespace("ggrepel", quietly = TRUE)) {
+  stop("Package `ggrepel` is required for E. coli volcano label placement.", call. = FALSE)
+}
 
 ggplot2 <- asNamespace("ggplot2")
+gridExtra <- asNamespace("gridExtra")
+ggrepel <- asNamespace("ggrepel")
+
+panel_label <- function(label, size = 16) {
+  grid::textGrob(
+    label,
+    x = grid::unit(0, "npc"),
+    y = grid::unit(0.08, "npc"),
+    hjust = 0,
+    vjust = 0,
+    gp = grid::gpar(fontsize = size, fontface = "bold", col = "#111827")
+  )
+}
 
 load(analysis_path("data", "binsfeld_reporter_data.rda"))
 
@@ -116,7 +135,7 @@ if (file.exists(comparison_file)) {
     comparison[, c("binsfeld_hit", "modeled_hit", "evc_huber_hit")],
     1,
     function(x) {
-      names <- c("Binsfeld reference", "DStressR without EV control", "DStressR with EV control")[as.logical(x)]
+      names <- c("Binsfeld reference", "DStressR without EV", "DStressR with EV")[as.logical(x)]
       if (length(names) == 0) {
         "None"
       } else {
@@ -170,12 +189,12 @@ if (file.exists(comparison_file)) {
     metric = c(
       "Promoter-compound pairs tested",
       "Reference significant pairs",
-      "DStressR without EV control significant pairs",
-      "DStressR with EV control significant pairs",
-      "Reference and DStressR with EV control overlap",
+      "DStressR without EV significant pairs",
+      "DStressR with EV significant pairs",
+      "Reference and DStressR with EV overlap",
       "DStressR workflows overlap",
       "All three overlap",
-      "DStressR with EV control only vs reference/without EV"
+      "DStressR with EV only vs reference/without EV"
     ),
     count = c(
       nrow(comparison),
@@ -224,8 +243,8 @@ if (file.exists(comparison_file)) {
   }
   venn_df <- rbind(
     cbind(circle_points(-0.55, 0.25, 0.9), method = "Binsfeld reference"),
-    cbind(circle_points(0.55, 0.25, 0.9), method = "DStressR without EV control"),
-    cbind(circle_points(0, -0.48, 0.9), method = "DStressR with EV control")
+    cbind(circle_points(0.55, 0.25, 0.9), method = "DStressR without EV"),
+    cbind(circle_points(0, -0.48, 0.9), method = "DStressR with EV")
   )
   venn <- ggplot2$ggplot(venn_df, ggplot2$aes(x, y, fill = method, color = method)) +
     ggplot2$geom_polygon(alpha = 0.22, linewidth = 0.75) +
@@ -237,21 +256,49 @@ if (file.exists(comparison_file)) {
     ggplot2$annotate("text", x = 0.42, y = -0.22, label = region_counts[["modeled_evc_huber"]], size = 6, fontface = "bold") +
     ggplot2$annotate("text", x = 0, y = 0.1, label = region_counts[["all_three"]], size = 6.3, fontface = "bold") +
     ggplot2$annotate("text", x = -0.75, y = 1.35, label = paste0("Binsfeld reference\n", set_counts[["binsfeld"]], " hits"), size = 3.7, fontface = "bold") +
-    ggplot2$annotate("text", x = 0.75, y = 1.35, label = paste0("DStressR without EV control\n", set_counts[["modeled"]], " hits"), size = 3.7, fontface = "bold") +
-    ggplot2$annotate("text", x = 0, y = -1.65, label = paste0("DStressR with EV control\n", set_counts[["evc_huber"]], " hits"), size = 3.7, fontface = "bold") +
+    ggplot2$annotate("text", x = 0.75, y = 1.35, label = paste0("DStressR without EV\n", set_counts[["modeled"]], " hits"), size = 3.7, fontface = "bold") +
+    ggplot2$annotate("text", x = 0, y = -1.65, label = paste0("DStressR with EV\n", set_counts[["evc_huber"]], " hits"), size = 3.7, fontface = "bold") +
     ggplot2$scale_fill_manual(values = c(
-      "Binsfeld reference" = "#2563eb",
-      "DStressR without EV control" = "#dc2626",
-      "DStressR with EV control" = "#059669"
+      "Binsfeld reference" = "#6f7f8f",
+      "DStressR without EV" = "#d8b56d",
+      "DStressR with EV" = "#9b6a55"
     )) +
     ggplot2$scale_color_manual(values = c(
-      "Binsfeld reference" = "#1d4ed8",
-      "DStressR without EV control" = "#b91c1c",
-      "DStressR with EV control" = "#047857"
+      "Binsfeld reference" = "#3f5264",
+      "DStressR without EV" = "#9f7625",
+      "DStressR with EV" = "#633b2d"
     )) +
     ggplot2$coord_equal(xlim = c(-1.75, 1.75), ylim = c(-1.85, 1.65), expand = FALSE) +
     ggplot2$theme_void(base_size = 10) +
     ggplot2$theme(legend.position = "none")
+  venn_compact <- ggplot2$ggplot(venn_df, ggplot2$aes(x, y, fill = method, color = method)) +
+    ggplot2$geom_polygon(alpha = 0.22, linewidth = 0.72) +
+    ggplot2$annotate("text", x = -0.86, y = 0.55, label = region_counts[["binsfeld_only"]], size = 5.2, fontface = "bold") +
+    ggplot2$annotate("text", x = 0.86, y = 0.55, label = region_counts[["modeled_only"]], size = 5.2, fontface = "bold") +
+    ggplot2$annotate("text", x = 0, y = -1.05, label = region_counts[["evc_huber_only"]], size = 5.2, fontface = "bold") +
+    ggplot2$annotate("text", x = 0, y = 0.62, label = region_counts[["binsfeld_modeled"]], size = 5.2, fontface = "bold") +
+    ggplot2$annotate("text", x = -0.42, y = -0.22, label = region_counts[["binsfeld_evc_huber"]], size = 5.2, fontface = "bold") +
+    ggplot2$annotate("text", x = 0.42, y = -0.22, label = region_counts[["modeled_evc_huber"]], size = 5.2, fontface = "bold") +
+    ggplot2$annotate("text", x = 0, y = 0.1, label = region_counts[["all_three"]], size = 5.5, fontface = "bold") +
+    ggplot2$annotate("text", x = -1.05, y = 1.35, label = paste0("Binsfeld reference\n", set_counts[["binsfeld"]], " hits"), size = 2.8, fontface = "bold") +
+    ggplot2$annotate("text", x = 1.05, y = 1.35, label = paste0("DStressR without\nEV control\n", set_counts[["modeled"]], " hits"), size = 2.8, fontface = "bold") +
+    ggplot2$annotate("text", x = 0, y = -1.66, label = paste0("DStressR with EV\n", set_counts[["evc_huber"]], " hits"), size = 2.8, fontface = "bold") +
+    ggplot2$scale_fill_manual(values = c(
+      "Binsfeld reference" = "#6f7f8f",
+      "DStressR without EV" = "#d8b56d",
+      "DStressR with EV" = "#9b6a55"
+    )) +
+    ggplot2$scale_color_manual(values = c(
+      "Binsfeld reference" = "#3f5264",
+      "DStressR without EV" = "#9f7625",
+      "DStressR with EV" = "#633b2d"
+    )) +
+    ggplot2$coord_equal(xlim = c(-1.88, 1.88), ylim = c(-1.85, 1.68), expand = FALSE) +
+    ggplot2$theme_void(base_size = 10) +
+    ggplot2$theme(
+      legend.position = "none",
+      plot.margin = ggplot2$margin(2, 2, 2, 2)
+    )
 
   volcano_data <- rbind(
     data.frame(
@@ -264,7 +311,7 @@ if (file.exists(comparison_file)) {
       stringsAsFactors = FALSE
     ),
     data.frame(
-      method = "DStressR without EV control",
+      method = "DStressR without EV",
       promoter = comparison$promoter,
       compound = comparison$compound,
       effect = comparison$modeled_effect,
@@ -273,7 +320,7 @@ if (file.exists(comparison_file)) {
       stringsAsFactors = FALSE
     ),
     data.frame(
-      method = "DStressR with EV control",
+      method = "DStressR with EV",
       promoter = comparison$promoter,
       compound = comparison$compound,
       effect = comparison$evc_huber_effect,
@@ -284,7 +331,7 @@ if (file.exists(comparison_file)) {
   )
   volcano_data$method <- factor(
     volcano_data$method,
-    levels = c("Binsfeld reference", "DStressR without EV control", "DStressR with EV control")
+    levels = c("Binsfeld reference", "DStressR without EV", "DStressR with EV")
   )
   volcano_data$in_all_three <- comparison$binsfeld_hit & comparison$modeled_hit & comparison$evc_huber_hit
   volcano_data$method_hit_count <- ave(
@@ -311,7 +358,6 @@ if (file.exists(comparison_file)) {
     )
   }))
   volcano_x_bounds$method <- factor(volcano_x_bounds$method, levels = levels(volcano_data$method))
-
   top_volcano_labels <- do.call(rbind, lapply(split(volcano_data, volcano_data$method), function(d) {
     d <- d[d$hit & is.finite(d$effect) & is.finite(d$neglog10_pvalue), , drop = FALSE]
     d <- d[order(-d$neglog10_pvalue, -abs(d$effect)), , drop = FALSE]
@@ -327,14 +373,14 @@ if (file.exists(comparison_file)) {
       stringsAsFactors = FALSE
     ),
     data.frame(
-      method = "DStressR without EV control",
+      method = "DStressR without EV",
       promoter = comparison$promoter,
       pvalue = comparison$modeled_pvalue,
       hit = comparison$modeled_hit,
       stringsAsFactors = FALSE
     ),
     data.frame(
-      method = "DStressR with EV control",
+      method = "DStressR with EV",
       promoter = comparison$promoter,
       pvalue = comparison$evc_huber_pvalue,
       hit = comparison$evc_huber_hit,
@@ -343,7 +389,7 @@ if (file.exists(comparison_file)) {
   )
   pvalue_long$method <- factor(
     pvalue_long$method,
-    levels = c("Binsfeld reference", "DStressR without EV control", "DStressR with EV control")
+    levels = c("Binsfeld reference", "DStressR without EV", "DStressR with EV")
   )
   pvalue_long$status <- ifelse(pvalue_long$hit, "Called hit", "Not called")
   pvalue_long <- pvalue_long[is.finite(pvalue_long$pvalue), , drop = FALSE]
@@ -355,16 +401,8 @@ if (file.exists(comparison_file)) {
   pvalue_panel$panel <- factor(pvalue_panel$panel, levels = promoter_levels)
   pvalue_hist <- ggplot2$ggplot(pvalue_panel, ggplot2$aes(pvalue)) +
     ggplot2$geom_histogram(
-      data = pvalue_panel[!pvalue_panel$hit, , drop = FALSE],
       bins = 30,
       fill = "#d1d5db",
-      color = "white",
-      linewidth = 0.2
-    ) +
-    ggplot2$geom_histogram(
-      data = pvalue_panel[pvalue_panel$hit, , drop = FALSE],
-      bins = 30,
-      fill = "#111827",
       color = "white",
       linewidth = 0.2
     ) +
@@ -380,6 +418,26 @@ if (file.exists(comparison_file)) {
 	    x = "Raw p-value",
 	    y = "Promoter-compound pairs"
 	  )
+  pvalue_promoter_panel <- pvalue_panel[pvalue_panel$panel != "All promoters", , drop = FALSE]
+  pvalue_hist_by_promoter <- ggplot2$ggplot(pvalue_promoter_panel, ggplot2$aes(pvalue)) +
+    ggplot2$geom_histogram(
+      bins = 30,
+      fill = "#d1d5db",
+      color = "white",
+      linewidth = 0.2
+    ) +
+    ggplot2$facet_grid(ggplot2$vars(panel), ggplot2$vars(method), scales = "free_y") +
+    ggplot2$scale_x_continuous(breaks = seq(0, 1, by = 0.25)) +
+    ggplot2$coord_cartesian(xlim = c(0, 1)) +
+    ggplot2$theme_light(base_size = 10) +
+    ggplot2$theme(
+      panel.grid.minor = ggplot2$element_blank(),
+      strip.text = ggplot2$element_text(face = "bold", hjust = 0.5)
+    ) +
+    ggplot2$labs(
+      x = "Raw p-value",
+      y = "Promoter-compound pairs"
+    )
 
   reference_volcano <- comparison[, c(
     "promoter", "compound", "mean_z", "binsfeld_padj",
@@ -403,13 +461,13 @@ if (file.exists(comparison_file)) {
   reference_labels <- utils::head(reference_labels, 12)
 
   promoter_colors <- c(
-    acrABp = "#2563eb",
-    marRABp = "#dc2626",
-    micFp = "#059669",
-    ompFp = "#7c3aed",
-    robp = "#d97706",
-    soxSp = "#0891b2",
-    tolCp = "#be123c",
+    acrABp = "#0072B2",
+    marRABp = "#D55E00",
+    micFp = "#CC79A7",
+    ompFp = "#E69F00",
+    robp = "#009E73",
+    soxSp = "#56B4E9",
+    tolCp = "#6A3D9A",
     "Not called" = "#d1d5db"
   )
 
@@ -624,10 +682,310 @@ if (file.exists(comparison_file)) {
 	    color = "Promoter"
     )
 
+  pvalue_hist_all <- ggplot2$ggplot(
+    pvalue_long,
+    ggplot2$aes(pvalue)
+  ) +
+    ggplot2$geom_histogram(
+      bins = 30,
+      fill = "#d1d5db",
+      color = "white",
+      linewidth = 0.2
+    ) +
+    ggplot2$facet_wrap(ggplot2$vars(method), nrow = 1, scales = "free_y") +
+    ggplot2$scale_x_continuous(breaks = seq(0, 1, by = 0.5)) +
+    ggplot2$coord_cartesian(xlim = c(0, 1)) +
+    ggplot2$theme_light(base_size = 11) +
+    ggplot2$theme(
+      panel.grid.minor = ggplot2$element_blank(),
+      strip.text = ggplot2$element_text(face = "bold", hjust = 0.5, size = 10),
+      plot.margin = ggplot2$margin(4, 4, 4, 4)
+    ) +
+    ggplot2$labs(
+      x = "Raw p-value",
+      y = "Pairs"
+    )
+
+  overlap_volcano_labels <- volcano_data[
+    volcano_data$in_all_three & is.finite(volcano_data$effect) & is.finite(volcano_data$neglog10_pvalue),
+    ,
+    drop = FALSE
+  ]
+  overlap_volcano_labels$short_label <- paste(overlap_volcano_labels$promoter, overlap_volcano_labels$compound, sep = "-")
+  overlap_volcano_labels$label_side <- ifelse(overlap_volcano_labels$effect >= 0, 1, -1)
+  overlap_volcano_labels$nudge_x <- ifelse(
+    overlap_volcano_labels$method == "Binsfeld reference",
+    0.32 * overlap_volcano_labels$label_side,
+    0.10 * overlap_volcano_labels$label_side
+  )
+  overlap_volcano_labels$nudge_y <- ifelse(
+    overlap_volcano_labels$method == "Binsfeld reference",
+    pmax(5.5, volcano_y_max * 0.20),
+    pmax(0.45, volcano_y_max * 0.035)
+  )
+  binsfeld_overlap_labels <- overlap_volcano_labels[
+    overlap_volcano_labels$method == "Binsfeld reference",
+    ,
+    drop = FALSE
+  ]
+  dstressr_overlap_labels <- overlap_volcano_labels[
+    overlap_volcano_labels$method != "Binsfeld reference",
+    ,
+    drop = FALSE
+  ]
+
+  volcano_overlap_plot <- ggplot2$ggplot(
+    volcano_data,
+    ggplot2$aes(effect, neglog10_pvalue)
+  ) +
+    ggplot2$geom_blank(
+      data = volcano_x_bounds,
+      ggplot2$aes(effect, neglog10_pvalue),
+      inherit.aes = FALSE
+    ) +
+    ggplot2$geom_hline(yintercept = -log10(0.05), color = "#9ca3af", linewidth = 0.28, linetype = "dashed") +
+    ggplot2$geom_vline(xintercept = 0, color = "#9ca3af", linewidth = 0.28) +
+    ggplot2$geom_point(color = "#d1d5db", alpha = 0.42, size = 0.9) +
+    ggplot2$geom_point(
+      data = volcano_data[volcano_data$in_all_three, , drop = FALSE],
+      ggplot2$aes(color = promoter),
+      alpha = 0.95,
+      size = 1.55
+    ) +
+    ggrepel$geom_text_repel(
+      data = binsfeld_overlap_labels,
+      ggplot2$aes(label = short_label, color = promoter),
+      size = 1.55,
+      min.segment.length = 0,
+      segment.color = "#6b7280",
+      segment.size = 0.16,
+      segment.alpha = 0.78,
+      box.padding = 0.20,
+      point.padding = 0.10,
+      force = 3.2,
+      force_pull = 0.025,
+      max.overlaps = Inf,
+      max.time = 4,
+      max.iter = 12000,
+      nudge_x = binsfeld_overlap_labels$nudge_x,
+      nudge_y = binsfeld_overlap_labels$nudge_y,
+      seed = 3260,
+      show.legend = FALSE
+    ) +
+    ggrepel$geom_text_repel(
+      data = dstressr_overlap_labels,
+      ggplot2$aes(label = short_label, color = promoter),
+      size = 1.55,
+      min.segment.length = 0,
+      segment.color = "#6b7280",
+      segment.size = 0.16,
+      segment.alpha = 0.72,
+      box.padding = 0.16,
+      point.padding = 0.10,
+      force = 1.7,
+      force_pull = 0.20,
+      max.overlaps = Inf,
+      max.time = 3,
+      max.iter = 10000,
+      nudge_x = dstressr_overlap_labels$nudge_x,
+      nudge_y = dstressr_overlap_labels$nudge_y,
+      seed = 3261,
+      show.legend = FALSE
+    ) +
+    ggplot2$facet_wrap(ggplot2$vars(method), scales = "free_x", nrow = 1) +
+    ggplot2$scale_color_manual(values = promoter_colors[names(promoter_colors) != "Not called"]) +
+    ggplot2$scale_x_continuous(expand = ggplot2$expansion(mult = c(0.04, 0.1))) +
+    ggplot2$scale_y_continuous(limits = c(0, volcano_y_max), expand = ggplot2$expansion(mult = c(0.02, 0.12))) +
+    ggplot2$theme_light(base_size = 11) +
+    ggplot2$theme(
+      panel.grid.minor = ggplot2$element_blank(),
+      strip.text = ggplot2$element_text(face = "bold", hjust = 0.5, size = 10),
+      legend.position = "none",
+      plot.margin = ggplot2$margin(4, 4, 4, 4)
+    ) +
+    ggplot2$labs(
+      x = "Method-specific effect estimate",
+      y = "-log10 raw p-value"
+    )
+
+  pvalue_scatter_long <- rbind(
+    data.frame(
+      comparison = "DStressR without EV",
+      promoter = comparison$promoter,
+      compound = comparison$compound,
+      binsfeld_pvalue = comparison$binsfeld_pvalue,
+      destress_pvalue = comparison$modeled_pvalue,
+      binsfeld_neglog10_pvalue = comparison$neglog10_binsfeld,
+      destress_neglog10_pvalue = comparison$neglog10_modeled,
+      binsfeld_hit = comparison$binsfeld_hit,
+      modeled_hit = comparison$modeled_hit,
+      evc_huber_hit = comparison$evc_huber_hit,
+      destress_hit = comparison$modeled_hit,
+      stringsAsFactors = FALSE
+    ),
+    data.frame(
+      comparison = "DStressR with EV",
+      promoter = comparison$promoter,
+      compound = comparison$compound,
+      binsfeld_pvalue = comparison$binsfeld_pvalue,
+      destress_pvalue = comparison$evc_huber_pvalue,
+      binsfeld_neglog10_pvalue = comparison$neglog10_binsfeld,
+      destress_neglog10_pvalue = comparison$neglog10_evc_huber,
+      binsfeld_hit = comparison$binsfeld_hit,
+      modeled_hit = comparison$modeled_hit,
+      evc_huber_hit = comparison$evc_huber_hit,
+      destress_hit = comparison$evc_huber_hit,
+      stringsAsFactors = FALSE
+    )
+  )
+  pvalue_scatter_long$comparison <- factor(
+    pvalue_scatter_long$comparison,
+    levels = c("DStressR without EV", "DStressR with EV")
+  )
+  pvalue_scatter_long$disagreement <- abs(
+    pvalue_scatter_long$destress_neglog10_pvalue - pvalue_scatter_long$binsfeld_neglog10_pvalue
+  )
+  pvalue_scatter_long$binsfeld_only_all <- pvalue_scatter_long$binsfeld_hit &
+    !pvalue_scatter_long$modeled_hit & !pvalue_scatter_long$evc_huber_hit
+  pvalue_scatter_long$dstressr_unique <- ifelse(
+    pvalue_scatter_long$comparison == "DStressR without EV",
+    !pvalue_scatter_long$binsfeld_hit & pvalue_scatter_long$modeled_hit & !pvalue_scatter_long$evc_huber_hit,
+    !pvalue_scatter_long$binsfeld_hit & !pvalue_scatter_long$modeled_hit & pvalue_scatter_long$evc_huber_hit
+  )
+  pvalue_scatter_long$discordant_call <- ifelse(
+    pvalue_scatter_long$binsfeld_only_all,
+    "Binsfeld only",
+    ifelse(pvalue_scatter_long$dstressr_unique, "DStressR unique", "Other")
+  )
+  pvalue_scatter_long$discordant_call <- factor(
+    pvalue_scatter_long$discordant_call,
+    levels = c("Binsfeld only", "DStressR unique", "Other")
+  )
+  pvalue_scatter_long$highlight <- pvalue_scatter_long$discordant_call != "Other"
+  pvalue_scatter_long$label <- paste(pvalue_scatter_long$promoter, pvalue_scatter_long$compound, sep = "-")
+  top_pvalue_scatter_labels <- do.call(rbind, lapply(split(pvalue_scatter_long, pvalue_scatter_long$comparison), function(d) {
+    binsfeld_only_labels <- d[d$binsfeld_only_all & is.finite(d$disagreement), , drop = FALSE]
+    binsfeld_only_labels <- binsfeld_only_labels[
+      order(-binsfeld_only_labels$disagreement),
+      ,
+      drop = FALSE
+    ]
+    binsfeld_only_labels <- utils::head(binsfeld_only_labels, 16)
+    dstressr_unique_labels <- d[d$dstressr_unique & is.finite(d$disagreement), , drop = FALSE]
+    dstressr_unique_labels <- dstressr_unique_labels[
+      order(-dstressr_unique_labels$disagreement),
+      ,
+      drop = FALSE
+    ]
+    rbind(binsfeld_only_labels, dstressr_unique_labels)
+  }))
+  pvalue_scatter_long$label_hjust <- ifelse(
+    pvalue_scatter_long$binsfeld_pvalue < 0.15,
+    -0.02,
+    ifelse(
+      pvalue_scatter_long$destress_pvalue > pvalue_scatter_long$binsfeld_pvalue,
+      1.02,
+      -0.02
+    )
+  )
+  top_pvalue_scatter_labels$label_hjust <- ifelse(
+    top_pvalue_scatter_labels$binsfeld_pvalue < 0.15,
+    -0.02,
+    ifelse(
+      top_pvalue_scatter_labels$destress_pvalue > top_pvalue_scatter_labels$binsfeld_pvalue,
+      1.02,
+      -0.02
+    )
+  )
+  pvalue_scatter_plot <- ggplot2$ggplot() +
+    ggplot2$geom_abline(slope = 1, intercept = 0, color = "#111827", linewidth = 0.3, linetype = "dashed") +
+    ggplot2$geom_point(
+      data = pvalue_scatter_long,
+      ggplot2$aes(binsfeld_pvalue, destress_pvalue),
+      color = "#d1d5db",
+      alpha = 0.56,
+      size = 0.72
+    ) +
+    ggplot2$geom_point(
+      data = pvalue_scatter_long[pvalue_scatter_long$highlight, , drop = FALSE],
+      ggplot2$aes(
+        binsfeld_pvalue,
+        destress_pvalue,
+        color = promoter,
+        shape = discordant_call
+      ),
+      alpha = 0.9,
+      size = 1.45
+    ) +
+    ggrepel$geom_text_repel(
+      data = top_pvalue_scatter_labels,
+      ggplot2$aes(
+        binsfeld_pvalue,
+        destress_pvalue,
+        label = label,
+        hjust = label_hjust,
+        color = promoter
+      ),
+      size = 1.7,
+      min.segment.length = 0,
+      segment.color = "#6b7280",
+      segment.size = 0.13,
+      segment.alpha = 0.65,
+      box.padding = 0.10,
+      point.padding = 0.08,
+      force = 1.6,
+      force_pull = 0.12,
+      max.overlaps = Inf,
+      max.time = 3,
+      max.iter = 8000,
+      seed = 3262,
+      show.legend = FALSE
+    ) +
+    ggplot2$facet_wrap(ggplot2$vars(comparison), nrow = 1) +
+    ggplot2$coord_equal(xlim = c(0, 1), ylim = c(0, 1)) +
+    ggplot2$scale_x_continuous(breaks = seq(0, 1, by = 0.25)) +
+    ggplot2$scale_y_continuous(breaks = seq(0, 1, by = 0.25)) +
+    ggplot2$scale_color_manual(values = promoter_colors[names(promoter_colors) != "Not called"]) +
+    ggplot2$scale_shape_manual(values = c("Binsfeld only" = 17, "DStressR unique" = 16)) +
+    ggplot2$theme_light(base_size = 10) +
+    ggplot2$theme(
+      panel.grid.minor = ggplot2$element_blank(),
+      strip.text = ggplot2$element_text(face = "bold", hjust = 0.5, size = 9),
+      legend.position = "none",
+      plot.margin = ggplot2$margin(4, 4, 4, 4)
+    ) +
+    ggplot2$labs(
+      x = "Binsfeld reference raw p-value",
+      y = "DStressR raw p-value"
+    )
+
+  discovery_figure <- gridExtra$arrangeGrob(
+    gridExtra$arrangeGrob(panel_label("a"), panel_label("b"), panel_label("c"), ncol = 3),
+    pvalue_hist_all,
+    gridExtra$arrangeGrob(panel_label("d"), panel_label("e"), panel_label("f"), ncol = 3),
+    volcano_overlap_plot,
+    gridExtra$arrangeGrob(
+      panel_label("g"),
+      gridExtra$arrangeGrob(panel_label("h"), panel_label("i"), ncol = 2),
+      ncol = 2,
+      widths = c(0.82, 1.18)
+    ),
+    gridExtra$arrangeGrob(
+      venn_compact,
+      pvalue_scatter_plot,
+      ncol = 2,
+      widths = c(0.82, 1.18)
+    ),
+    ncol = 1,
+    heights = c(0.040, 0.85, 0.040, 1.08, 0.040, 1.08)
+  )
+
   ggplot2$ggsave(file.path(out_dir, "evc_huber_hit_overlap_venn.png"), venn, width = 7.2, height = 6.8, dpi = 220)
   ggplot2$ggsave(file.path(out_dir, "evc_huber_hit_overlap_venn.pdf"), venn, width = 7.2, height = 6.8)
   ggplot2$ggsave(file.path(out_dir, "evc_huber_pvalue_histograms.png"), pvalue_hist, width = 11, height = 10.5, dpi = 220)
   ggplot2$ggsave(file.path(out_dir, "evc_huber_pvalue_histograms.pdf"), pvalue_hist, width = 11, height = 10.5)
+  ggplot2$ggsave(file.path(out_dir, "evc_huber_pvalue_histograms_by_promoter.png"), pvalue_hist_by_promoter, width = 11, height = 9.4, dpi = 220)
+  ggplot2$ggsave(file.path(out_dir, "evc_huber_pvalue_histograms_by_promoter.pdf"), pvalue_hist_by_promoter, width = 11, height = 9.4)
   ggplot2$ggsave(file.path(out_dir, "ecoli_reference_volcano_plot.png"), reference_plot, width = 8.2, height = 5.6, dpi = 220)
   ggplot2$ggsave(file.path(out_dir, "ecoli_reference_volcano_plot.pdf"), reference_plot, width = 8.2, height = 5.6)
   ggplot2$ggsave(file.path(out_dir, "evc_huber_volcano_plots.png"), volcano_plot, width = 12, height = 4.8, dpi = 220)
@@ -636,6 +994,12 @@ if (file.exists(comparison_file)) {
   ggplot2$ggsave(file.path(out_dir, "evc_huber_intersection_volcano_plots.pdf"), intersection_plot, width = 12, height = 5.2)
   ggplot2$ggsave(file.path(out_dir, "evc_huber_nonintersection_volcano_plots.png"), non_intersection_plot, width = 12, height = 5.4, dpi = 220)
   ggplot2$ggsave(file.path(out_dir, "evc_huber_nonintersection_volcano_plots.pdf"), non_intersection_plot, width = 12, height = 5.4)
+  ggplot2$ggsave(file.path(out_dir, "evc_huber_pvalue_histograms_all_promoters.png"), pvalue_hist_all, width = 11, height = 2.8, dpi = 220)
+  ggplot2$ggsave(file.path(out_dir, "evc_huber_pvalue_histograms_all_promoters.pdf"), pvalue_hist_all, width = 11, height = 2.8)
+  ggplot2$ggsave(file.path(out_dir, "evc_huber_pvalue_scatter_vs_binsfeld.png"), pvalue_scatter_plot, width = 8.2, height = 4.1, dpi = 220)
+  ggplot2$ggsave(file.path(out_dir, "evc_huber_pvalue_scatter_vs_binsfeld.pdf"), pvalue_scatter_plot, width = 8.2, height = 4.1)
+  ggplot2$ggsave(file.path(out_dir, "evc_huber_discovery_summary_figure.png"), discovery_figure, width = 12.5, height = 10.8, dpi = 220)
+  ggplot2$ggsave(file.path(out_dir, "evc_huber_discovery_summary_figure.pdf"), discovery_figure, width = 12.5, height = 10.8)
 
   print(summary)
 }

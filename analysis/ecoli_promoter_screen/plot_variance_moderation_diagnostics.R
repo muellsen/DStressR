@@ -86,8 +86,8 @@ variance_table <- function(label, use_ev_control) {
 }
 
 diagnostics <- rbind(
-  variance_table("DStressR without EV control", use_ev_control = FALSE),
-  variance_table("DStressR with EV control", use_ev_control = TRUE)
+  variance_table("DStressR without EV", use_ev_control = FALSE),
+  variance_table("DStressR with EV", use_ev_control = TRUE)
 )
 
 diagnostics$rank_by_raw_variance <- ave(
@@ -123,7 +123,7 @@ plot_data <- rbind(
 
 plot_data$workflow <- factor(
   plot_data$workflow,
-  levels = c("DStressR without EV control", "DStressR with EV control")
+  levels = c("DStressR without EV", "DStressR with EV")
 )
 plot_data$variance_type <- factor(
   plot_data$variance_type,
@@ -172,7 +172,7 @@ ggplot2$ggsave(
 
 diagnostics$workflow <- factor(
   diagnostics$workflow,
-  levels = c("DStressR without EV control", "DStressR with EV control")
+  levels = c("DStressR without EV", "DStressR with EV")
 )
 
 mean_variance_plot <- ggplot2$ggplot(
