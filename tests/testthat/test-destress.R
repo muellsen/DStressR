@@ -261,6 +261,38 @@ test_that("fit_destress can fit scalable promoter-specific models", {
   expect_gt(stats::cor(joined$specific_effect[active], joined$truth_specific[active]), 0.7)
 })
 
+test_that("fit_destress interaction model supports numeric technical covariates", {
+  dat <- simulate_screen(seed = 11, n_promoters = 4, n_compounds = 5, n_replicates = 3)
+  dat$dose_level <- rep(c(1, 2, 3), length.out = nrow(dat))
+  dat$LUX.AUC_16 <- dat$LUX.AUC_16 + 0.03 * dat$dose_level
+
+  assay <- prepare_assay(
+    dat,
+    promoter = "promoter",
+    compound = "compound",
+    lux = "LUX.AUC_16",
+    growth = "od_16h.measured",
+    batch = "dose_level",
+    replicate = "replicate",
+    numeric_covariates = "dose_level"
+  )
+
+  fit <- fit_destress(
+    assay,
+    technical = c("replicate", "dose_level"),
+    interaction = TRUE,
+    empirical_bayes = FALSE,
+    adjustment = "by_promoter"
+  )
+  res <- results(fit)
+
+  expect_true(fit$interaction)
+  expect_equal(nrow(res), 4 * 5)
+  expect_true(all(is.finite(res$specific_effect)))
+  expect_true(all(is.finite(res$specific_pvalue)))
+  expect_true(all(res$specific_padj_by_promoter >= 0 & res$specific_padj_by_promoter <= 1))
+})
+
 test_that("fit_destress separates global compound effects from promoter-specific effects", {
   dat <- expand.grid(
     promoter = paste0("P", seq_len(6)),
@@ -333,6 +365,7 @@ test_that("fit_destress can remove a low-rank compound background", {
   factor0 <- rank0[rank0$compound %in% c("C_factor1", "C_factor2"), ]
   factor1 <- rank1[rank1$compound %in% c("C_factor1", "C_factor2"), ]
   expect_gt(stats::sd(factor0$specific_effect), 0.5)
+  expect_lt(max(abs(factor1$rank_adjusted_total_effect)), 1e-8)
   expect_lt(max(abs(factor1$specific_effect)), 1e-8)
   expect_gt(max(abs(factor1$low_rank_effect)), 0.5)
 
@@ -351,7 +384,7 @@ test_that("background_rank_diagnostics detects broad low-rank structure", {
     compound = compounds,
     stringsAsFactors = FALSE
   )
-  tab$specific_effect <- loading[tab$promoter] * score[tab$compound]
+  tab$total_effect <- loading[tab$promoter] * score[tab$compound]
 
   diag <- background_rank_diagnostics(
     tab,

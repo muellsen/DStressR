@@ -40,10 +40,10 @@ For new analyses, prefer \code{background_promoter} in \code{\link[=prepare_assa
 performs explicit response-level background calibration before model
 fitting.}
 
-\item{background_rank}{Non-negative integer. The default \code{0} removes only
-the additive compound-wide mean. Values \code{1} or \code{2} additionally subtract a
-low-rank background term from the promoter-by-compound effect matrix before
-testing promoter-specific residual effects.}
+\item{background_rank}{Non-negative integer. The default \code{0} removes no
+latent background. Values \code{1} or \code{2} additionally subtract a low-rank
+background term from the reference-relative total-effect matrix before
+testing rank-adjusted total and promoter-specific residual effects.}
 
 \item{normalization}{One of \code{"linear_model"}, \code{"median_polish"}, or
 \code{"empty_vector"}. \code{"model"} and \code{"evc"} are accepted aliases.}

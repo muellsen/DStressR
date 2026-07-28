@@ -6,7 +6,7 @@
 \usage{
 background_rank_diagnostics(
   table,
-  effect = "specific_effect",
+  effect = "total_effect",
   promoter = "promoter",
   compound = "compound",
   rank_max = 10,
@@ -17,8 +17,8 @@ background_rank_diagnostics(
 \arguments{
 \item{table}{Data frame with promoter, compound, and effect columns.}
 
-\item{effect}{Numeric effect column to decompose, usually
-\code{specific_effect}.}
+\item{effect}{Numeric effect column to decompose, usually \code{total_effect} or
+\code{background_adjusted_effect}.}
 
 \item{promoter, compound}{Column names identifying promoters and compounds.}
 
