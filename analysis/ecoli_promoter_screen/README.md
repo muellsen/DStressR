@@ -15,6 +15,15 @@ Generate response-construction figures for the manuscript:
 Rscript analysis/ecoli_promoter_screen/plot_modeling_step_figures.R
 ```
 
+Generate compact DStressR diagnostic figures, including the DESeq-style
+compound mean-variance diagnostic and the significant-hit heatmap:
+
+```sh
+Rscript analysis/ecoli_promoter_screen/plot_binsfeld_compound_mean_variance_diagnostic.R
+Rscript analysis/ecoli_promoter_screen/plot_promoter_effect_distributions.R
+Rscript analysis/ecoli_promoter_screen/plot_binsfeld_hit_heatmap.R
+```
+
 Run the primary three-set comparison used in the manuscript:
 
 ```sh
@@ -24,25 +33,24 @@ Rscript analysis/ecoli_promoter_screen/run_evc_calibrated_analysis.R
 This workflow compares:
 
 - the reconstructed reference Wilcoxon/Z-score rule from the original screen;
-- DStressR without EV;
-- DStressR with EV.
+- DStressR without EVC;
+- DStressR with EVC.
 
 Current WT result:
 
 ```text
 Reference WT hits: 53
-DStressR without EV WT hits: 80
-DStressR with EV WT hits: 92
+DStressR without EVC WT hits: 80
+DStressR with EVC WT hits: 92
 All three analyses: 35
 Reference-only hits: 16
-DStressR-without-EV only hits: 9
-DStressR-with-EV only hits: 19
+DStressR-without-EVC only hits: 9
+DStressR-with-EVC only hits: 19
 Both DStressR workflows only: 36
 Union significant by at least one primary analysis: 117
 ```
 
-Run the full promoter-by-compound interaction-model sensitivity analysis for
-Appendix D.1:
+Run the full promoter-by-compound interaction-model analysis for Appendix E:
 
 ```sh
 Rscript analysis/ecoli_promoter_screen/run_interaction_sensitivity.R
@@ -51,17 +59,17 @@ Rscript analysis/ecoli_promoter_screen/run_interaction_sensitivity.R
 Current WT interaction sensitivity:
 
 ```text
-Interaction with EV hits: 56
-Interaction without EV hits: 51
-DStressR with EV hits recovered by interaction with EV: 56
-DStressR without EV hits recovered by interaction without EV: 50
+Interaction with EVC hits: 56
+Interaction without EVC hits: 51
+DStressR with EVC hits recovered by interaction with EVC: 56
+DStressR without EVC hits recovered by interaction without EVC: 50
 All five methods overlap: 28
 ```
 
 ## Supplemental Comparison Scripts
 
 Rebuild the two-method comparison between the reconstructed reference rule and
-DStressR without EV:
+DStressR without EVC:
 
 ```sh
 Rscript analysis/ecoli_promoter_screen/compare_reporter_hits.R

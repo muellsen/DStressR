@@ -3,16 +3,13 @@
 Local check:
 
 ```text
-R CMD check DStressR_0.0.1.tar.gz --no-manual
-Status: 1 NOTE
+_R_CHECK_FORCE_SUGGESTS_=false R CMD check DStressR_0.0.1.tar.gz
+Status: OK
 ```
 
-The local NOTE is due to the optional suggested package `nortest` not being
-installed in the local check library. `nortest` is used only for the optional
-Lilliefors normality test path.
-
-The full manual check requires a local LaTeX installation providing
-`pdflatex`.
+The package builds and checks locally without errors, warnings, or notes. The
+source package excludes repository-only analysis outputs, manuscript files, and
+local VennDiagram log files via `.Rbuildignore`.
 
 ## Package Scope
 

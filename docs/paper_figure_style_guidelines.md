@@ -30,6 +30,10 @@ are intended as reusable guidance for future Codex paper projects.
 
 - Start from the scientific question, not from the plot type. Each panel should
   show a distinct aspect of the analysis.
+- Follow the publication-figure principles used by resources such as
+  `cnsplots`: compact journal-sized panels, explicit figure dimensions,
+  editable vector output, curated color palettes, and low-friction defaults
+  that make the scientifically correct plot also the easiest plot to produce.
 - Keep data regions clean. Avoid decorative labels, large legends, and
   annotation boxes that compete with the data.
 - Use consistent palettes across figures when the same biological classes recur,
@@ -40,6 +44,8 @@ are intended as reusable guidance for future Codex paper projects.
   identity.
 - Use point shapes as well as color when two classes must remain identifiable
   in print.
+- Use mathematical notation from the manuscript for axis labels and legends
+  whenever a plotted quantity corresponds to a defined estimand.
 
 ## Multi-Panel Layouts
 

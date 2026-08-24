@@ -129,6 +129,95 @@ test_that("fit_destress detects simulated specific effects", {
   expect_gt(stats::cor(joined$specific_effect[active], joined$truth_specific[active]), 0.7)
 })
 
+test_that("perturbation diagnostics rank mean effects and variance residuals", {
+  tab <- data.frame(
+    promoter = rep(paste0("P", 1:4), times = 3),
+    compound = rep(c("quiet", "global", "mixed"), each = 4),
+    total_effect = c(
+      0.01, -0.01, 0.02, 0.00,
+      1.00, 0.90, 1.10, 1.00,
+      -1.00, 1.00, -0.80, 0.90
+    )
+  )
+
+  diag <- perturbation_diagnostics(tab)
+
+  expect_true(all(c(
+    "mean_effect", "abs_mean_effect", "effect_variance",
+    "rank_abs_mean_effect", "variance_residual"
+  ) %in% names(diag)))
+  expect_equal(diag$rank_abs_mean_effect[diag$perturbation == "quiet"], 1)
+  expect_equal(diag$rank_abs_mean_effect[diag$perturbation == "global"], 3)
+  expect_gt(
+    diag$effect_variance[diag$perturbation == "mixed"],
+    diag$effect_variance[diag$perturbation == "global"]
+  )
+})
+
+test_that("mean-variance diagnostic plot stores its diagnostic table", {
+  skip_if_not_installed("ggplot2")
+  tab <- data.frame(
+    promoter = rep(paste0("P", 1:4), times = 5),
+    compound = rep(paste0("C", 1:5), each = 4),
+    total_effect = c(
+      0, 0.1, -0.1, 0,
+      0.3, 0.4, 0.2, 0.3,
+      0.8, 0.9, 0.7, 0.8,
+      -1, 1, -1, 1,
+      1.5, 1.6, 1.4, 1.5
+    )
+  )
+
+  p <- plot_mean_variance_diagnostic(tab, label_by = "none")
+
+  expect_s3_class(p, "ggplot")
+  expect_true(is.data.frame(attr(p, "diagnostics")))
+  expect_equal(nrow(attr(p, "diagnostics")), 5)
+})
+
+test_that("variance distribution diagnostics fit positive variance summaries", {
+  set.seed(11)
+  u <- stats::rbeta(80, shape1 = 1.8, shape2 = 4.5)
+  diagnostics <- data.frame(
+    perturbation = paste0("C", seq_along(u)),
+    effect_variance = 0.25 * u / (1 - u)
+  )
+
+  fit <- fit_variance_distribution(
+    diagnostics,
+    seed = 2
+  )
+
+  expect_s3_class(fit, "destress_variance_distribution_fit")
+  expect_true(all(c("beta-prime", "inverse-gamma", "log-normal", "log-t") %in% fit$distribution))
+  expect_true(all(is.finite(fit$AIC)))
+  expect_equal(attr(fit, "variance"), "effect_variance")
+
+  mixture_fit <- fit_variance_distribution(
+    diagnostics,
+    distributions = "two_gaussian",
+    seed = 2
+  )
+  expect_true("two-Gaussian mixture" %in% mixture_fit$distribution)
+})
+
+test_that("variance distribution plot stores fitted distributions", {
+  skip_if_not_installed("ggplot2")
+  set.seed(12)
+  diagnostics <- data.frame(
+    perturbation = paste0("C", seq_len(40)),
+    effect_variance = exp(stats::rnorm(40, mean = -2, sd = 0.6))
+  )
+
+  p <- plot_variance_distribution(
+    diagnostics,
+    distributions = "beta_prime"
+  )
+
+  expect_s3_class(p, "ggplot")
+  expect_s3_class(attr(p, "fit"), "destress_variance_distribution_fit")
+})
+
 test_that("Binsfeld reporter data support DStressR model analysis", {
   data("binsfeld_reporter_auc", package = "DStressR")
   data("binsfeld_reporter_scores", package = "DStressR")
@@ -1029,6 +1118,153 @@ test_that("plot_response_heatmap returns a ggplot with matrix attribute", {
   expect_s3_class(p, "ggplot")
   expect_equal(dim(mat), c(2, 3))
   expect_equal(rownames(mat), c("P1", "P2"))
+})
+
+test_that("plot_response_heatmap uses global promoter order unless clustered", {
+  skip_if_not_installed("ggplot2")
+  tab <- expand.grid(
+    promoter = c("soxSp", "acrABp", "robp"),
+    compound = c("C1", "C2"),
+    stringsAsFactors = FALSE
+  )
+  tab$specific_effect <- seq_len(nrow(tab))
+
+  p <- plot_response_heatmap(
+    tab,
+    top_n_compounds = Inf,
+    cluster_cols = FALSE
+  )
+
+  expect_equal(rownames(attr(p, "response_matrix")), c("acrABp", "robp", "soxSp"))
+})
+
+test_that("summarize_hits returns pair, promoter, and compound summaries", {
+  tab <- expand.grid(
+    promoter = c("P1", "P2"),
+    compound = c("C1", "C2", "C3"),
+    stringsAsFactors = FALSE
+  )
+  tab$compound_name <- c("Drug A", "Drug A", "Drug B", "Drug B", "Drug C", "Drug C")
+  tab$specific_effect <- c(1.4, -0.4, 0.2, -1.3, 1.8, 0.1)
+  tab$specific_padj_by_promoter <- c(0.01, 0.4, 0.7, 0.03, 0.001, 0.9)
+
+  hit_summary <- summarize_hits(tab, compound_label = "compound_name", fdr = 0.05)
+
+  expect_s3_class(hit_summary, "destress_hit_summary")
+  expect_equal(sum(hit_summary$pairs$hit), 3)
+  expect_equal(hit_summary$promoters$n_hits[hit_summary$promoters$promoter == "P1"], 2)
+  expect_equal(hit_summary$compounds$n_hits[hit_summary$compounds$compound_label == "Drug B"], 1)
+})
+
+test_that("plot_hit_heatmap returns a ggplot with hit summaries", {
+  skip_if_not_installed("ggplot2")
+  tab <- expand.grid(
+    promoter = c("P1", "P2"),
+    compound = c("C1", "C2", "C3"),
+    stringsAsFactors = FALSE
+  )
+  tab$compound_name <- c("Drug A", "Drug A", "Drug B", "Drug B", "Drug C", "Drug C")
+  tab$specific_effect <- c(1.4, -0.4, 0.2, -1.3, 1.8, 0.1)
+  tab$specific_padj_by_promoter <- c(0.01, 0.4, 0.7, 0.03, 0.001, 0.9)
+
+  p <- plot_hit_heatmap(
+    tab,
+    compound_label = "compound_name",
+    top_n_compounds = Inf,
+    order_rows = "input",
+    order_cols = "input",
+    show_compound_labels = TRUE
+  )
+
+  expect_s3_class(p, "ggplot")
+  expect_equal(dim(attr(p, "hit_matrix")), c(2, 3))
+  expect_s3_class(attr(p, "hit_summary"), "destress_hit_summary")
+  expect_equal(sum(attr(p, "hit_matrix") != 0), 3)
+})
+
+test_that("plot_hit_heatmap uses global promoter order by default", {
+  skip_if_not_installed("ggplot2")
+  tab <- expand.grid(
+    promoter = c("soxSp", "acrABp", "robp"),
+    compound = c("C1", "C2"),
+    stringsAsFactors = FALSE
+  )
+  tab$specific_effect <- c(1, -1, 0.5, -0.5, 1.2, -1.2)
+  tab$specific_padj_by_promoter <- c(0.01, 0.02, 0.6, 0.7, 0.03, 0.04)
+
+  p <- plot_hit_heatmap(
+    tab,
+    top_n_compounds = Inf,
+    order_cols = "input"
+  )
+
+  expect_equal(rownames(attr(p, "hit_matrix")), c("acrABp", "robp", "soxSp"))
+})
+
+test_that("plot_hit_heatmap drops compounds without hits by default", {
+  skip_if_not_installed("ggplot2")
+  tab <- expand.grid(
+    promoter = c("P1", "P2"),
+    compound = c("C1", "C2", "C3"),
+    stringsAsFactors = FALSE
+  )
+  tab$specific_effect <- c(1, -1, 0.2, -0.2, 1.2, -1.2)
+  tab$specific_padj_by_promoter <- c(0.01, 0.02, 0.8, 0.9, 0.03, 0.04)
+
+  p <- plot_hit_heatmap(tab, top_n_compounds = Inf, order_cols = "input")
+
+  expect_equal(colnames(attr(p, "hit_matrix")), c("C1 [C1]", "C3 [C3]"))
+})
+
+test_that("heatmaps label top compounds by absolute column sum", {
+  skip_if_not_installed("ggplot2")
+  tab <- expand.grid(
+    promoter = c("P1", "P2"),
+    compound = paste0("C", 1:5),
+    stringsAsFactors = FALSE
+  )
+  tab$specific_effect <- 0.1
+  tab$specific_effect[tab$compound == "C5"] <- 10
+
+  p <- plot_response_heatmap(
+    tab,
+    top_n_compounds = Inf,
+    cluster_rows = FALSE,
+    cluster_cols = FALSE,
+    top_compound_labels = 2
+  )
+  built <- ggplot2::ggplot_build(p)
+  axis_labels <- built$layout$panel_params[[1]]$x$get_labels()
+
+  expect_true("C5 [C5]" %in% axis_labels)
+  expect_equal(sum(nzchar(axis_labels)), 2)
+})
+
+test_that("automatic compound labels enforce spacing", {
+  skip_if_not_installed("ggplot2")
+  tab <- expand.grid(
+    promoter = c("P1", "P2"),
+    compound = paste0("C", 1:8),
+    stringsAsFactors = FALSE
+  )
+  tab$specific_effect <- 0.1
+  tab$specific_effect[tab$compound == "C4"] <- 5
+  tab$specific_effect[tab$compound == "C5"] <- 6
+  tab$specific_effect[tab$compound == "C6"] <- 4
+
+  p <- plot_response_heatmap(
+    tab,
+    top_n_compounds = Inf,
+    cluster_rows = FALSE,
+    cluster_cols = FALSE,
+    top_compound_labels = 3,
+    compound_label_min_gap = 2
+  )
+  built <- ggplot2::ggplot_build(p)
+  axis_labels <- built$layout$panel_params[[1]]$x$get_labels()
+
+  expect_true("C5 [C5]" %in% axis_labels)
+  expect_lt(sum(nzchar(axis_labels[4:6])), 3)
 })
 
 test_that("plot_effect_histogram returns pooled and promoter-faceted plots", {

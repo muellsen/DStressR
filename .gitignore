@@ -9,6 +9,8 @@
 
 # Generated analysis outputs and local render/cache artifacts
 analysis/outputs/
+analysis/dryad_global_regulators/raw/
+VennDiagram.*.log
 tmp/
 tmp_report_text.txt
 Rplots.pdf
