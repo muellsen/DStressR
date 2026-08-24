@@ -1,4 +1,4 @@
-![](man/figures/Logo-DStressR.svg)
+![DStressR logo](man/figures/Logo-DStressR.svg?v=20260824)
 
 # DStressR: Differential stress-response modeling for chemical genomics screens
 
