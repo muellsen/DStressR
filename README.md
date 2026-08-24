@@ -10,7 +10,7 @@ bacterial growth curves, while `DStressR` models promoter-activity responses
 after accounting for growth, compound-wide effects, technical covariates, and
 promoter-specific uncertainty.
 
-![](man/figures/dstressr_panel.svg)
+![DStressR statistical workflow: response estimation, effect estimation and diagnostics, and inference.](man/figures/dstressr-workflow.png)
 
 > [!TIP]
 > `DStressR` is intended as the promoter-response counterpart to
