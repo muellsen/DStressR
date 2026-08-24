@@ -10,6 +10,7 @@ if (!requireNamespace("gridExtra", quietly = TRUE)) {
 
 ggplot2 <- asNamespace("ggplot2")
 gridExtra <- asNamespace("gridExtra")
+after_stat <- ggplot2$after_stat
 
 panel_label <- function(label, size = 18) {
   grid::textGrob(
@@ -47,17 +48,6 @@ prepare_binsfeld <- function(growth_exponent) {
   )
 }
 
-wt_auc$raw_log2_lux <- log2(wt_auc$lux_auc + 1e-8)
-raw <- prepare_assay(
-  wt_auc,
-  promoter = "promoter",
-  compound = "compound",
-  control = "Water",
-  response = "raw_log2_lux",
-  batch = "dose_level",
-  replicate = "replicate",
-  numeric_covariates = "dose_level"
-)
 modeled <- prepare_binsfeld("estimate")
 alpha1 <- prepare_binsfeld(1)
 evc_huber <- prepare_assay(
@@ -157,7 +147,7 @@ evc_slope_plot <- ggplot2$ggplot(
     panel.grid.minor = ggplot2$element_blank()
   ) +
   ggplot2$labs(
-    x = "EV calibration slope",
+    x = "EVC calibration slope",
     y = "Reporter promoter"
   )
 
@@ -172,7 +162,7 @@ parameter_panel <- rbind(
   data.frame(
     promoter = background_calibration$promoter,
     estimate = background_calibration$slope,
-    estimate_type = "EV calibration slope",
+    estimate_type = "EVC calibration slope",
     panel = "hat(gamma)[1*a]",
     stringsAsFactors = FALSE
   )
@@ -187,7 +177,7 @@ parameter_panel$panel <- factor(
 )
 parameter_panel$estimate_type <- factor(
   parameter_panel$estimate_type,
-  levels = c("Raw promoter slope", "Shrunken exponent", "EV calibration slope")
+  levels = c("Raw promoter slope", "Shrunken exponent", "EVC calibration slope")
 )
 parameter_reference_lines <- data.frame(
   panel = factor(
@@ -224,9 +214,9 @@ parameter_legend <- data.frame(
   ),
   x = c(0.58, 0.58, 0.72),
   y = factor(c("EVC", "acrABp", "EVC"), levels = rev(parameter_promoter_order)),
-  label = c("Raw promoter slope", "Shrunken exponent", "EV calibration"),
+  label = c("Raw promoter slope", "Shrunken exponent", "EVC calibration"),
   estimate_type = factor(
-    c("Raw promoter slope", "Shrunken exponent", "EV calibration slope"),
+    c("Raw promoter slope", "Shrunken exponent", "EVC calibration slope"),
     levels = levels(parameter_panel$estimate_type)
   ),
   stringsAsFactors = FALSE
@@ -287,7 +277,7 @@ parameter_plot <- ggplot2$ggplot(
     values = c(
       "Raw promoter slope" = 1,
       "Shrunken exponent" = 17,
-      "EV calibration slope" = 15
+      "EVC calibration slope" = 15
     ),
     drop = FALSE
   ) +
@@ -328,12 +318,37 @@ response_matrix <- function(assay) {
 
 modeled_matrix <- response_matrix(modeled)
 alpha1_matrix <- response_matrix(alpha1)
-raw_matrix <- response_matrix(raw)
 evc_huber_matrix <- response_matrix(evc_huber)
 names(modeled_matrix)[names(modeled_matrix) == "delta_response"] <- "modeled_response"
 names(alpha1_matrix)[names(alpha1_matrix) == "delta_response"] <- "alpha1_response"
-names(raw_matrix)[names(raw_matrix) == "delta_response"] <- "raw_response"
 names(evc_huber_matrix)[names(evc_huber_matrix) == "delta_response"] <- "evc_huber_response"
+
+score_keys <- unique(wt_auc[, c("well", "drug", "promoter", "replicate", "compound")])
+binsfeld_scores <- binsfeld_reporter_scores[
+  binsfeld_reporter_scores$strain == "WT" &
+    binsfeld_reporter_scores$statistic == "Scores",
+  ,
+  drop = FALSE
+]
+binsfeld_scores <- merge(
+  binsfeld_scores[, c("well", "drug", "promoter", "replicate", "value")],
+  score_keys,
+  by = c("well", "drug", "promoter", "replicate"),
+  all = FALSE,
+  sort = FALSE
+)
+binsfeld_adjusted_response_matrix <- stats::aggregate(
+  value ~ promoter + compound,
+  binsfeld_scores[
+    binsfeld_scores$compound != "Water" &
+      binsfeld_scores$promoter != "EVC" &
+      is.finite(binsfeld_scores$value),
+    ,
+    drop = FALSE
+  ],
+  mean
+)
+names(binsfeld_adjusted_response_matrix)[3] <- "binsfeld_adjusted_response"
 
 matched <- merge(
   modeled_matrix[, c("promoter", "compound", "modeled_response")],
@@ -347,15 +362,16 @@ matched$difference <- matched$modeled_response - matched$alpha1_response
 response_construction <- Reduce(
   function(x, y) merge(x, y, by = c("promoter", "compound"), all = FALSE, sort = FALSE),
   list(
-    raw_matrix[, c("promoter", "compound", "raw_response")],
+    alpha1_matrix[, c("promoter", "compound", "alpha1_response")],
     modeled_matrix[, c("promoter", "compound", "modeled_response")],
-    evc_huber_matrix[, c("promoter", "compound", "evc_huber_response")]
+    evc_huber_matrix[, c("promoter", "compound", "evc_huber_response")],
+    binsfeld_adjusted_response_matrix[, c("promoter", "compound", "binsfeld_adjusted_response")]
   )
 )
-response_construction$modeled_minus_raw <- response_construction$modeled_response -
-  response_construction$raw_response
-response_construction$evc_huber_minus_raw <- response_construction$evc_huber_response -
-  response_construction$raw_response
+response_construction$modeled_minus_alpha1 <- response_construction$modeled_response -
+  response_construction$alpha1_response
+response_construction$evc_huber_minus_alpha1 <- response_construction$evc_huber_response -
+  response_construction$alpha1_response
 response_scatter_data <- response_construction
 
 union_file <- file.path(evc_method_dir, "evc_huber_comparison_to_binsfeld_and_default.tsv")
@@ -392,33 +408,39 @@ response_construction$compound <- factor(response_construction$compound, levels 
 response_scatter_data$promoter <- factor(response_scatter_data$promoter, levels = promoter_order)
 
 scatter_long <- rbind(
-	  data.frame(
-	    promoter = response_scatter_data$promoter,
-	    compound = response_scatter_data$compound,
-	    x = response_scatter_data$raw_response,
-	    y = response_scatter_data$modeled_response,
-	    comparison = "DStressR without EV",
-	    stringsAsFactors = FALSE
-	  ),
-	  data.frame(
-	    promoter = response_scatter_data$promoter,
-	    compound = response_scatter_data$compound,
-	    x = response_scatter_data$raw_response,
-	    y = response_scatter_data$evc_huber_response,
-	    comparison = "DStressR with EV",
+	data.frame(
+	  promoter = response_scatter_data$promoter,
+	  compound = response_scatter_data$compound,
+	  x = response_scatter_data$binsfeld_adjusted_response,
+	  y = response_scatter_data$modeled_response,
+	  comparison = "DStressR without EVC",
+	  stringsAsFactors = FALSE
+	),
+	data.frame(
+	  promoter = response_scatter_data$promoter,
+	  compound = response_scatter_data$compound,
+	  x = response_scatter_data$binsfeld_adjusted_response,
+	  y = response_scatter_data$evc_huber_response,
+	  comparison = "DStressR with EVC",
 	    stringsAsFactors = FALSE
 	  )
 	)
 scatter_long$comparison <- factor(
   scatter_long$comparison,
   levels = c(
-    "DStressR without EV",
-    "DStressR with EV"
+    "DStressR without EVC",
+    "DStressR with EVC"
   )
 )
 scatter_limit <- range(c(scatter_long$x, scatter_long$y), finite = TRUE)
 scatter_pad <- diff(scatter_limit) * 0.04
 scatter_limit <- scatter_limit + c(-scatter_pad, scatter_pad)
+finite_x <- abs(scatter_long$x[is.finite(scatter_long$x) & scatter_long$x != 0])
+pseudo_log_sigma <- if (length(finite_x) > 0) {
+  max(1, stats::quantile(finite_x, probs = 0.05, names = FALSE, na.rm = TRUE))
+} else {
+  1
+}
 promoter_colors <- c(
   acrABp = "#0072B2",
   marRABp = "#D55E00",
@@ -433,11 +455,13 @@ response_scatter_plot <- ggplot2$ggplot(
   scatter_long,
   ggplot2$aes(x, y, color = promoter)
 ) +
-  ggplot2$geom_abline(slope = 1, intercept = 0, color = "#111827", linewidth = 0.35, linetype = "dashed") +
   ggplot2$geom_point(size = 2.0, alpha = 0.78) +
   ggplot2$facet_wrap(ggplot2$vars(comparison), ncol = 2) +
-  ggplot2$coord_equal(xlim = scatter_limit, ylim = scatter_limit) +
   ggplot2$scale_color_manual(values = promoter_colors, drop = FALSE) +
+  ggplot2$scale_x_continuous(
+    trans = scales::pseudo_log_trans(sigma = pseudo_log_sigma),
+    breaks = c(-30000, -3000, 0, 3000, 30000)
+  ) +
   ggplot2$theme_light(base_size = 13) +
   ggplot2$theme(
     panel.grid.minor = ggplot2$element_blank(),
@@ -451,7 +475,7 @@ response_scatter_plot <- ggplot2$ggplot(
     legend.margin = ggplot2$margin(4, 6, 4, 6)
   ) +
   ggplot2$labs(
-    x = expression("Raw log"[2] * " Lux response"),
+    x = expression("Original response " * bar(s)[aj] * " (shown on a pseudo log-scale)"),
     y = "DStressR response",
     color = "Promoter"
   )
@@ -487,49 +511,186 @@ response_construction_long <- rbind(
   data.frame(
     promoter = response_construction$promoter,
     compound = response_construction$compound,
-    response = response_construction$raw_response,
-    response_type = "Raw log2 Lux",
+    response = response_construction$binsfeld_adjusted_response,
+    response_type = "Published adjusted response",
     stringsAsFactors = FALSE
   ),
   data.frame(
     promoter = response_construction$promoter,
     compound = response_construction$compound,
     response = response_construction$modeled_response,
-    response_type = "DStressR without EV",
+    response_type = "DStressR without EVC",
     stringsAsFactors = FALSE
   ),
   data.frame(
     promoter = response_construction$promoter,
     compound = response_construction$compound,
     response = response_construction$evc_huber_response,
-    response_type = "DStressR with EV",
+    response_type = "DStressR with EVC",
     stringsAsFactors = FALSE
   )
 )
 response_construction_long$response_type <- factor(
   response_construction_long$response_type,
-  levels = c("Raw log2 Lux", "DStressR without EV", "DStressR with EV")
+  levels = c("Published adjusted response", "DStressR without EVC", "DStressR with EVC")
+)
+
+response_distribution_data <- rbind(
+  data.frame(
+    response = response_scatter_data$binsfeld_adjusted_response,
+    response_type = "Original response",
+    stringsAsFactors = FALSE
+  ),
+  data.frame(
+    response = response_scatter_data$modeled_response,
+    response_type = "DStressR without EVC",
+    stringsAsFactors = FALSE
+  ),
+  data.frame(
+    response = response_scatter_data$evc_huber_response,
+    response_type = "DStressR with EVC",
+    stringsAsFactors = FALSE
+  )
+)
+response_distribution_data <- response_distribution_data[
+  is.finite(response_distribution_data$response),
+  ,
+  drop = FALSE
+]
+response_distribution_data$response_type <- factor(
+  response_distribution_data$response_type,
+  levels = c("Original response", "DStressR without EVC", "DStressR with EVC")
+)
+response_distribution_summary <- stats::aggregate(
+  response ~ response_type,
+  response_distribution_data,
+  function(z) {
+    stats::quantile(z, probs = c(0.1, 0.5, 0.9), names = FALSE, na.rm = TRUE)
+  }
+)
+response_distribution_summary <- do.call(
+  data.frame,
+  response_distribution_summary
+)
+names(response_distribution_summary) <- c("response_type", "q10", "median", "q90")
+response_distribution_summary$response_type <- factor(
+  response_distribution_summary$response_type,
+  levels = levels(response_distribution_data$response_type)
+)
+
+distribution_theme <- ggplot2$theme_light(base_size = 11) +
+  ggplot2$theme(
+    panel.grid.minor = ggplot2$element_blank(),
+    panel.grid.major.x = ggplot2$element_blank(),
+    axis.title = ggplot2$element_text(size = 12),
+    axis.text = ggplot2$element_text(size = 10, color = "#374151"),
+    plot.margin = ggplot2$margin(5, 9, 5, 9),
+    legend.position = "none"
+  )
+
+make_response_distribution_plot <- function(data, summary, response_type, fill, x_label, x_scale = NULL) {
+  panel_data <- data[data$response_type == response_type, , drop = FALSE]
+  panel_summary <- summary[summary$response_type == response_type, , drop = FALSE]
+  bin_width <- diff(range(panel_data$response, finite = TRUE)) / 34
+  if (!is.finite(bin_width) || bin_width <= 0) {
+    bin_width <- 1
+  }
+  plot <- ggplot2$ggplot(panel_data, ggplot2$aes(response)) +
+    ggplot2$annotate(
+      "rect",
+      xmin = panel_summary$q10,
+      xmax = panel_summary$q90,
+      ymin = -Inf,
+      ymax = Inf,
+      fill = grDevices::adjustcolor(fill, alpha.f = 0.10),
+      color = NA
+    ) +
+    ggplot2$geom_histogram(
+      ggplot2$aes(y = after_stat(density)),
+      binwidth = bin_width,
+      boundary = 0,
+      fill = grDevices::adjustcolor(fill, alpha.f = 0.42),
+      color = "white",
+      linewidth = 0.25
+    ) +
+    ggplot2$geom_density(color = fill, linewidth = 0.95, adjust = 1.05) +
+    ggplot2$geom_vline(xintercept = 0, color = "#9ca3af", linewidth = 0.35, linetype = "dashed") +
+    ggplot2$geom_vline(xintercept = panel_summary$median, color = "#111827", linewidth = 0.45) +
+    distribution_theme +
+    ggplot2$labs(x = x_label, y = "Density")
+  if (!is.null(x_scale)) {
+    plot <- plot + x_scale
+  }
+  plot
+}
+
+signed_pseudolog <- function(x, sigma) {
+  sign(x) * log10(1 + abs(x) / sigma)
+}
+original_display_data <- response_distribution_data
+original_display_data$response <- signed_pseudolog(original_display_data$response, pseudo_log_sigma)
+original_display_data <- original_display_data[
+  original_display_data$response_type == "Original response",
+  ,
+  drop = FALSE
+]
+original_display_summary <- response_distribution_summary
+original_display_summary$q10 <- signed_pseudolog(original_display_summary$q10, pseudo_log_sigma)
+original_display_summary$median <- signed_pseudolog(original_display_summary$median, pseudo_log_sigma)
+original_display_summary$q90 <- signed_pseudolog(original_display_summary$q90, pseudo_log_sigma)
+original_display_break_values <- c(-30000, -3000, -300, 0, 300, 3000, 30000)
+original_display_scale <- ggplot2$scale_x_continuous(
+  breaks = signed_pseudolog(original_display_break_values, pseudo_log_sigma),
+  labels = c("-3e4", "-3e3", "-300", "0", "300", "3e3", "3e4")
+)
+original_distribution_plot <- make_response_distribution_plot(
+  original_display_data,
+  original_display_summary,
+  "Original response",
+  "#4b5563",
+  expression("Original response " * bar(s)[aj] * " (pseudo-log scale)"),
+  x_scale = original_display_scale
+)
+modeled_distribution_plot <- make_response_distribution_plot(
+  response_distribution_data,
+  response_distribution_summary,
+  "DStressR without EVC",
+  "#2563eb",
+  expression("DStressR response " * widehat(y)[aj])
+)
+evc_distribution_plot <- make_response_distribution_plot(
+  response_distribution_data,
+  response_distribution_summary,
+  "DStressR with EVC",
+  "#059669",
+  expression("DStressR response with EVC " * widehat(y)[aj])
+)
+response_distribution_figure <- gridExtra$arrangeGrob(
+  gridExtra$arrangeGrob(panel_label("a", size = 15), panel_label("b", size = 15), panel_label("c", size = 15), ncol = 3),
+  gridExtra$arrangeGrob(original_distribution_plot, modeled_distribution_plot, evc_distribution_plot, ncol = 3),
+  ncol = 1,
+  heights = c(0.06, 1)
 )
 
 response_difference_long <- rbind(
   data.frame(
     promoter = response_construction$promoter,
     compound = response_construction$compound,
-    difference = response_construction$modeled_minus_raw,
-    comparison = "DStressR without EV minus raw",
+    difference = response_construction$modeled_minus_alpha1,
+    comparison = "DStressR without EVC minus alpha=1",
     stringsAsFactors = FALSE
   ),
   data.frame(
     promoter = response_construction$promoter,
     compound = response_construction$compound,
-    difference = response_construction$evc_huber_minus_raw,
-    comparison = "DStressR with EV minus raw",
+    difference = response_construction$evc_huber_minus_alpha1,
+    comparison = "DStressR with EVC minus alpha=1",
     stringsAsFactors = FALSE
   )
 )
 response_difference_long$comparison <- factor(
   response_difference_long$comparison,
-  levels = c("DStressR without EV minus raw", "DStressR with EV minus raw")
+  levels = c("DStressR without EVC minus raw", "DStressR with EVC minus raw")
 )
 
 limit <- max(abs(c(heat_long$response, matched$difference)), na.rm = TRUE)
@@ -647,6 +808,13 @@ utils::write.table(
   row.names = FALSE,
   quote = FALSE
 )
+utils::write.table(
+  response_distribution_summary,
+  file.path(out_dir, "binsfeld_response_distribution_summary.tsv"),
+  sep = "\t",
+  row.names = FALSE,
+  quote = FALSE
+)
 
 ggplot2$ggsave(file.path(out_dir, "binsfeld_growth_parameter_estimates.png"), growth_plot, width = 7.2, height = 4.8, dpi = 220)
 ggplot2$ggsave(file.path(out_dir, "binsfeld_growth_parameter_estimates.pdf"), growth_plot, width = 7.2, height = 4.8)
@@ -658,6 +826,8 @@ ggplot2$ggsave(file.path(out_dir, "binsfeld_response_scale_scatter.png"), respon
 ggplot2$ggsave(file.path(out_dir, "binsfeld_response_scale_scatter.pdf"), response_scatter_plot, width = 10.8, height = 5.4)
 ggplot2$ggsave(file.path(out_dir, "binsfeld_response_modeling_combined.png"), response_modeling_figure, width = 10.8, height = 10.5, dpi = 220)
 ggplot2$ggsave(file.path(out_dir, "binsfeld_response_modeling_combined.pdf"), response_modeling_figure, width = 10.8, height = 10.5)
+ggplot2$ggsave(file.path(out_dir, "binsfeld_response_distribution_histograms.png"), response_distribution_figure, width = 11.0, height = 3.8, dpi = 300, bg = "white")
+ggplot2$ggsave(file.path(out_dir, "binsfeld_response_distribution_histograms.pdf"), response_distribution_figure, width = 11.0, height = 3.8, bg = "white")
 ggplot2$ggsave(file.path(out_dir, "binsfeld_raw_modeled_evc_response_heatmaps.png"), response_construction_heatmap, width = 12.5, height = 9.4, dpi = 220)
 ggplot2$ggsave(file.path(out_dir, "binsfeld_raw_modeled_evc_response_heatmaps.pdf"), response_construction_heatmap, width = 12.5, height = 9.4)
 ggplot2$ggsave(file.path(out_dir, "binsfeld_response_minus_raw_heatmaps.png"), response_difference_heatmap, width = 12.5, height = 6.8, dpi = 220)

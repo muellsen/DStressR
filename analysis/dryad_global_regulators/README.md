@@ -57,7 +57,7 @@ It is not a direct replacement for a large compound screen:
 - there are only four weak-stress perturbations in the main cross-response
   experiment
 - the relevant reporter subset is four reporters, not the full 16, for the
-  weak-stress specificity/sensitivity experiment
+  weak-stress specificity experiment
 - the paper's analysis is time-resolved fold-change against standard growth,
   not a high-throughput compound-library hit-calling problem
 
@@ -278,14 +278,14 @@ The main outputs are:
 - `dryad_weak_stress_windows_calibrated_alpha_volcano.{png,pdf}`
 - `dryad_weak_stress_windows_alpha1_vs_calibrated_alpha_comparison.tsv`
 
-## Weak-Stress Rank-1 Sensitivity Analysis
+## Weak-Stress Rank-1 Background Adjustment
 
 The calibrated 12 x 4 weak-stress analysis can be rerun with one low-rank
 background component removed from the total-effect matrix before testing
 rank-adjusted total effects:
 
 ```sh
-Rscript analysis/dryad_global_regulators/run_weak_stress_window_rank1_sensitivity.R
+Rscript analysis/dryad_global_regulators/run_weak_stress_window_rank1_adjustment.R
 ```
 
 This script uses the calibrated-alpha weak-stress input and supplied
@@ -293,7 +293,7 @@ promoter-level exponents from the preceding workflow. It fits the same
 moderated DStressR model twice, first with `background_rank = 0` and then with
 `background_rank = 1`. The rank-1 term is estimated from the reporter-window
 by stress total-effect matrix. The unadjusted total effects remain reported,
-and the rank-adjusted total effect is tested as a sensitivity target.
+and the rank-adjusted total effect is tested as an additional effect target.
 
 Current output dimensions:
 
@@ -308,7 +308,7 @@ The main outputs are:
 
 - `dryad_weak_stress_windows_calibrated_alpha_rank1_pair_results.tsv`
 - `dryad_weak_stress_windows_calibrated_alpha_rank1_significant_pairs.tsv`
-- `dryad_weak_stress_windows_calibrated_alpha_rank_sensitivity_summary.tsv`
+- `dryad_weak_stress_windows_calibrated_alpha_rank_adjustment_summary.tsv`
 - `dryad_weak_stress_windows_calibrated_alpha_rank_scree_diagnostics.tsv`
 - `dryad_weak_stress_windows_calibrated_alpha_rank_expected_pairs.tsv`
 - `dryad_weak_stress_windows_calibrated_alpha_rank1_effect_decomposition.{png,pdf}`

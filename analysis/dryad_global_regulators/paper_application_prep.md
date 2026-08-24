@@ -22,7 +22,7 @@ The main new points are:
 - response-scale estimation separated from the testing dataset;
 - use of an auxiliary no-stress reporter panel to estimate growth correction;
 - total-effect inference as a biologically natural endpoint;
-- low-rank background subtraction as a sensitivity/decomposition analysis.
+- low-rank background subtraction as an additional effect decomposition.
 
 ## Proposed Application Subsection
 
@@ -182,7 +182,7 @@ Primary workflows:
 ```sh
 Rscript analysis/dryad_global_regulators/run_weak_stress_window_pipeline.R
 Rscript analysis/dryad_global_regulators/run_weak_stress_window_calibrated_pipeline.R
-Rscript analysis/dryad_global_regulators/run_weak_stress_window_rank1_sensitivity.R
+Rscript analysis/dryad_global_regulators/run_weak_stress_window_rank1_adjustment.R
 Rscript analysis/dryad_global_regulators/plot_weak_stress_three_target_inference.R
 ```
 
@@ -213,7 +213,7 @@ analysis/outputs/dryad_global_regulators/dryad_weak_stress_windows_calibrated_al
 - Decide whether this belongs in the main Application chapter or Appendix as a
   second application.
 - Decide whether the main text should emphasize total effects, with
-  specific/rank-1 effects as a sensitivity analysis.
+  specific and rank-adjusted effects as additional effect targets.
 - Decide whether the rank-1 diagnostic should be a main-text panel or
   supplemental figure.
 - Decide how much of the original Dash biological expectation to discuss

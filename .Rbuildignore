@@ -11,6 +11,7 @@
 ^\.github$
 ^cran-comments\.md$
 ^Rplots\.pdf$
+^VennDiagram\..*\.log$
 ^scripts$
 ^tmp$
 ^DEStress\.Rcheck$
