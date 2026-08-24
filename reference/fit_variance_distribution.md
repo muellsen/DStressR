@@ -1,0 +1,74 @@
+# Fit diagnostic distributions to perturbation-level variances
+
+Fits simple positive-support or log-scale distributions to the variance
+column produced by
+[`perturbation_diagnostics()`](https://muellsen.github.io/DStressR/reference/perturbation_diagnostics.md).
+This is intended for diagnostic use: it can help identify broad
+distributional structure in perturbation-level heterogeneity, but it
+does not change DStressR inference.
+
+## Usage
+
+``` r
+fit_variance_distribution(
+  diagnostics,
+  variance = "effect_variance",
+  distributions = c("beta_prime", "inverse_gamma", "log_normal", "log_t"),
+  min_n = 10,
+  gmm_starts = 50,
+  gmm_min_weight = 0.08,
+  gmm_sigma_floor = NULL,
+  seed = 1
+)
+```
+
+## Arguments
+
+- diagnostics:
+
+  A data frame, usually from
+  [`perturbation_diagnostics()`](https://muellsen.github.io/DStressR/reference/perturbation_diagnostics.md).
+
+- variance:
+
+  Numeric column containing positive variance estimates.
+
+- distributions:
+
+  Character vector of distributions to fit. Supported values are
+  `"beta_prime"`, `"inverse_gamma"`, `"log_normal"`, `"log_t"`, and
+  `"two_gaussian"`.
+
+- min_n:
+
+  Minimum number of finite positive variances required.
+
+- gmm_starts:
+
+  Number of random starts for the two-Gaussian mixture.
+
+- gmm_min_weight:
+
+  Minimum component weight used during mixture fitting.
+
+- gmm_sigma_floor:
+
+  Optional lower bound for component standard deviations on the log10
+  scale. If `NULL`, a data-adaptive floor is used.
+
+- seed:
+
+  Random seed used for mixture starting values.
+
+## Value
+
+A data frame with one row per fitted distribution. The fitted variance
+column is stored as the `"variance"` attribute.
+
+## Details
+
+The beta-prime and inverse-gamma distributions are fitted on the raw
+variance scale and evaluated on the log10 scale. The log-normal and
+log-t distributions are fitted directly to log10 variances. A
+two-Gaussian mixture on log10 variances is available as an explicitly
+requested exploratory option, but is not used by default.

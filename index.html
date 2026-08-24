@@ -65,7 +65,9 @@
   </div>
 </nav><div class="container template-home">
 <div class="row">
-  <main id="main" class="col-md-9"><p><img src="reference/figures/Logo-DStressR.svg"></p>
+  <main id="main" class="col-md-9"><div class="float">
+<img src="reference/figures/Logo-DStressR.svg?v=20260824" alt="DStressR logo"><div class="figcaption">DStressR logo</div>
+</div>
 <div class="section level1">
 <div class="page-header"><h1 id="dstressr-differential-stress-response-modeling-for-chemical-genomics-screens">DStressR: Differential stress-response modeling for chemical genomics screens<a class="anchor" aria-label="anchor" href="#dstressr-differential-stress-response-modeling-for-chemical-genomics-screens"></a>
 </h1></div>
@@ -171,7 +173,7 @@
 <span>  interaction <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>Here <code>growth_covariates = "replicate"</code> keeps the water-control growth-response model separate from the downstream concentration-index adjustment: <code>dose_level</code> is used in the compound-effect model, not in the estimation of <code>alpha_g</code>.</p>
-<p>The public sources are the PLOS article <a href="https://doi.org/10.1371/journal.pbio.3003260" class="external-link uri">https://doi.org/10.1371/journal.pbio.3003260</a> and the Zenodo archive <a href="https://doi.org/10.5281/zenodo.15600688" class="external-link uri">https://doi.org/10.5281/zenodo.15600688</a>. The primary reproducibility script <code>analysis/ecoli_promoter_screen/run_evc_calibrated_analysis.R</code> rebuilds the Binsfeld-style Wilcoxon/Z-score hit calls and compares them with the two default DStressR workflows. In the current WT analysis, the reconstructed reference rule calls 53 hits, DStressR without EV calls 80 hits, and DStressR with EV control calls 92 hits. The workflow with EV overlaps with 37 of the 53 reference hits. The optional full interaction-model sensitivity analysis is reproduced by <code>analysis/ecoli_promoter_screen/run_interaction_sensitivity.R</code>.</p>
+<p>The public sources are the PLOS article <a href="https://doi.org/10.1371/journal.pbio.3003260" class="external-link uri">https://doi.org/10.1371/journal.pbio.3003260</a> and the Zenodo archive <a href="https://doi.org/10.5281/zenodo.15600688" class="external-link uri">https://doi.org/10.5281/zenodo.15600688</a>. The primary reproducibility script <code>analysis/ecoli_promoter_screen/run_evc_calibrated_analysis.R</code> rebuilds the Binsfeld-style Wilcoxon/Z-score hit calls and compares them with the two default DStressR workflows. In the current WT analysis, the reconstructed reference rule calls 53 hits, DStressR without EVC calls 80 hits, and DStressR with EVC calls 92 hits. The workflow with EVC overlaps with 37 of the 53 reference hits. The optional full interaction-model analysis is reproduced by <code>analysis/ecoli_promoter_screen/run_interaction_sensitivity.R</code>.</p>
 <p>Equivalently, using staged options directly:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/fit_destress.html">fit_destress</a></span><span class="op">(</span></span>
@@ -290,9 +292,9 @@
 <p>The compatibility wrapper <code><a href="reference/fit_workflow.html">fit_workflow()</a></code> and the lower-level functions <code><a href="reference/fit_median_polish.html">fit_median_polish()</a></code> and <code><a href="reference/fit_empty_vector_control.html">fit_empty_vector_control()</a></code> remain available for existing scripts. New analyses should prefer <code><a href="reference/fit_destress.html">fit_destress()</a></code> so that the selected statistical path is explicit in the code.</p>
 </div>
 <div class="section level2">
-<h2 id="standard-plots">Standard plots<a class="anchor" aria-label="anchor" href="#standard-plots"></a>
+<h2 id="diagnostic-and-summary-plots">Diagnostic and Summary Plots<a class="anchor" aria-label="anchor" href="#diagnostic-and-summary-plots"></a>
 </h2>
-<p><code>DStressR</code> includes standard output plots for common screening summaries, including volcano plots, promoter-compound response heatmaps, clustered heatmaps, effect histograms, and empirical-Bayes variance diagnostics.</p>
+<p><code>DStressR</code> includes output plots for common screening summaries, including volcano plots, promoter-compound response heatmaps, clustered heatmaps, effect histograms, and empirical-Bayes variance diagnostics.</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="reference/plot_volcano.html">plot_volcano</a></span><span class="op">(</span></span>
 <span>  <span class="va">tab</span>,</span>

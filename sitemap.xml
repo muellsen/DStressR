@@ -23,18 +23,24 @@
 <url><loc>https://muellsen.github.io/DStressR/reference/fit_effect_mixture.html</loc></url>
 <url><loc>https://muellsen.github.io/DStressR/reference/fit_empty_vector_control.html</loc></url>
 <url><loc>https://muellsen.github.io/DStressR/reference/fit_median_polish.html</loc></url>
+<url><loc>https://muellsen.github.io/DStressR/reference/fit_variance_distribution.html</loc></url>
 <url><loc>https://muellsen.github.io/DStressR/reference/fit_workflow.html</loc></url>
 <url><loc>https://muellsen.github.io/DStressR/reference/index.html</loc></url>
 <url><loc>https://muellsen.github.io/DStressR/reference/model_matrix_report.html</loc></url>
 <url><loc>https://muellsen.github.io/DStressR/reference/model_parameters.html</loc></url>
+<url><loc>https://muellsen.github.io/DStressR/reference/perturbation_diagnostics.html</loc></url>
 <url><loc>https://muellsen.github.io/DStressR/reference/plot_effect_histogram.html</loc></url>
+<url><loc>https://muellsen.github.io/DStressR/reference/plot_hit_heatmap.html</loc></url>
+<url><loc>https://muellsen.github.io/DStressR/reference/plot_mean_variance_diagnostic.html</loc></url>
 <url><loc>https://muellsen.github.io/DStressR/reference/plot_response_cluster_blocks.html</loc></url>
 <url><loc>https://muellsen.github.io/DStressR/reference/plot_response_clustered_heatmap.html</loc></url>
 <url><loc>https://muellsen.github.io/DStressR/reference/plot_response_heatmap.html</loc></url>
+<url><loc>https://muellsen.github.io/DStressR/reference/plot_variance_distribution.html</loc></url>
 <url><loc>https://muellsen.github.io/DStressR/reference/plot_volcano.html</loc></url>
 <url><loc>https://muellsen.github.io/DStressR/reference/prepare_assay.html</loc></url>
 <url><loc>https://muellsen.github.io/DStressR/reference/read_campylobacter_expression.html</loc></url>
 <url><loc>https://muellsen.github.io/DStressR/reference/results.html</loc></url>
 <url><loc>https://muellsen.github.io/DStressR/reference/simulate_screen.html</loc></url>
+<url><loc>https://muellsen.github.io/DStressR/reference/summarize_hits.html</loc></url>
 </urlset>
 

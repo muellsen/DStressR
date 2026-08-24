@@ -1,25 +1,29 @@
-# Heatmap of a DStressR promoter-by-compound response matrix
+# Heatmap of significant DStressR hits
 
-Creates a standard heatmap for normalized promoter-compound responses.
-The default `value` is `specific_effect`, matching
-[`results()`](https://muellsen.github.io/DStressR/reference/results.md),
-but workflow tables can use columns such as
-`destress_eb_effect_centered`.
+Shows a promoter-by-compound effect matrix with significant pairs
+highlighted by color and non-significant pairs shown as a light
+background. This plot is a compact companion to
+[`plot_response_heatmap()`](https://muellsen.github.io/DStressR/reference/plot_response_heatmap.md)
+for inspecting the discovered hit structure.
 
 ## Usage
 
 ``` r
-plot_response_heatmap(
+plot_hit_heatmap(
   table,
-  value = "specific_effect",
+  effect = "specific_effect",
+  padj = "specific_padj_by_promoter",
   promoter = "promoter",
   compound = "compound",
   compound_label = compound,
   show_compound_ids = TRUE,
   top_n_compounds = 160,
+  fdr = 0.05,
+  lfc = 0,
+  drop_empty_compounds = TRUE,
   promoter_order = NULL,
-  cluster_rows = FALSE,
-  cluster_cols = TRUE,
+  order_rows = c("global", "cluster", "input", "frequency"),
+  order_cols = c("frequency", "cluster", "input"),
   clip_quantile = 0.98,
   color_limit = NULL,
   show_compound_labels = NULL,
@@ -27,11 +31,11 @@ plot_response_heatmap(
   compound_label_score = NULL,
   compound_label_min_gap = NULL,
   compound_label_angle = 45,
-  title = "DStressR promoter-by-compound matrix",
+  title = "DStressR significant-hit matrix",
   subtitle = NULL,
   xlab = "Compounds",
   ylab = "Promoters",
-  legend_title = value,
+  legend_title = effect,
   low = "#2166AC",
   mid = "white",
   high = "#B2182B"
@@ -44,9 +48,13 @@ plot_response_heatmap(
 
   A data frame with one row per promoter-compound pair.
 
-- value:
+- effect:
 
-  Numeric response/effect column to show in the heatmap.
+  Effect-size column shown by color for significant hits.
+
+- padj:
+
+  Adjusted p-value column used for hit calls.
 
 - promoter, compound:
 
@@ -62,24 +70,40 @@ plot_response_heatmap(
 
 - top_n_compounds:
 
-  If finite, show only the top compounds by mean absolute response. Use
-  `Inf` to show all compounds.
+  If finite, show only compounds with the strongest hit evidence, ranked
+  by hit count and effect size. Use `Inf` to show all compounds.
+
+- fdr:
+
+  FDR threshold for hit highlighting.
+
+- lfc:
+
+  Minimum absolute effect size for hit highlighting.
+
+- drop_empty_compounds:
+
+  If `TRUE`, remove compounds with no significant hits from the
+  displayed matrix.
 
 - promoter_order:
 
-  Optional global promoter order used when `cluster_rows = FALSE`. If
+  Optional global promoter order used when `order_rows = "global"`. If
   omitted, the option `DStressR.promoter_order` is used when set;
   otherwise known DStressR paper promoters are shown in their manuscript
   order and remaining promoters are sorted alphabetically.
 
-- cluster_rows, cluster_cols:
+- order_rows, order_cols:
 
-  If `TRUE`, hierarchically cluster promoters and/or compounds.
+  Ordering strategy for promoters and compounds. Use `"global"` for the
+  package-wide promoter order, `"input"` to preserve the input/factor
+  order, `"frequency"` to order by number of hits, or `"cluster"` for
+  hierarchical clustering of the hit matrix.
 
 - clip_quantile:
 
-  Quantile of absolute response values used to clip the color scale. Set
-  to `1` to use the observed maximum.
+  Quantile of absolute significant effects used to clip the color scale.
+  Set to `1` to use the observed maximum.
 
 - color_limit:
 
@@ -122,13 +146,13 @@ plot_response_heatmap(
 
 - legend_title:
 
-  Colorbar title. Defaults to the selected `value` column.
+  Colorbar title. Defaults to the selected `effect` column.
 
 - low, mid, high:
 
-  Colors for negative, zero, and positive responses.
+  Colors for negative, zero, and positive hit effects.
 
 ## Value
 
-A `ggplot` object. The plotted matrix is available as
-`attr(plot, "response_matrix")`.
+A `ggplot` object with attributes `hit_matrix`, `hit_summary`,
+`plotted_pairs`, and `color_limit`.

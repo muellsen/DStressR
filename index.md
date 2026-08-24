@@ -1,6 +1,8 @@
 # DStressR: Differential stress-response modeling for chemical genomics screens
 
-![](reference/figures/Logo-DStressR.svg)
+![DStressR logo](reference/figures/Logo-DStressR.svg?v=20260824)
+
+DStressR logo
 
 This repository hosts the `DStressR` R package and companion analysis
 workflow for high-throughput bacterial chemical genomics screens.
@@ -146,10 +148,10 @@ The public sources are the PLOS article
 script `analysis/ecoli_promoter_screen/run_evc_calibrated_analysis.R`
 rebuilds the Binsfeld-style Wilcoxon/Z-score hit calls and compares them
 with the two default DStressR workflows. In the current WT analysis, the
-reconstructed reference rule calls 53 hits, DStressR without EV calls 80
-hits, and DStressR with EV control calls 92 hits. The workflow with EV
+reconstructed reference rule calls 53 hits, DStressR without EVC calls
+80 hits, and DStressR with EVC calls 92 hits. The workflow with EVC
 overlaps with 37 of the 53 reference hits. The optional full
-interaction-model sensitivity analysis is reproduced by
+interaction-model analysis is reproduced by
 `analysis/ecoli_promoter_screen/run_interaction_sensitivity.R`.
 
 Equivalently, using staged options directly:
@@ -334,12 +336,11 @@ remain available for existing scripts. New analyses should prefer
 [`fit_destress()`](https://muellsen.github.io/DStressR/reference/fit_destress.md)
 so that the selected statistical path is explicit in the code.
 
-## Standard plots
+## Diagnostic and Summary Plots
 
-`DStressR` includes standard output plots for common screening
-summaries, including volcano plots, promoter-compound response heatmaps,
-clustered heatmaps, effect histograms, and empirical-Bayes variance
-diagnostics.
+`DStressR` includes output plots for common screening summaries,
+including volcano plots, promoter-compound response heatmaps, clustered
+heatmaps, effect histograms, and empirical-Bayes variance diagnostics.
 
 ``` r
 

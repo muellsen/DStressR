@@ -1,6 +1,8 @@
 # DStressR: Differential stress-response modeling for chemical genomics screens
 
-![](reference/figures/Logo-DStressR.svg)
+![DStressR logo](reference/figures/Logo-DStressR.svg?v=20260824)
+
+DStressR logo
 
 This repository hosts the `DStressR` R package and companion analysis
 workflow for high-throughput bacterial chemical genomics screens.
@@ -146,10 +148,10 @@ The public sources are the PLOS article
 script `analysis/ecoli_promoter_screen/run_evc_calibrated_analysis.R`
 rebuilds the Binsfeld-style Wilcoxon/Z-score hit calls and compares them
 with the two default DStressR workflows. In the current WT analysis, the
-reconstructed reference rule calls 53 hits, DStressR without EV calls 80
-hits, and DStressR with EV control calls 92 hits. The workflow with EV
+reconstructed reference rule calls 53 hits, DStressR without EVC calls
+80 hits, and DStressR with EVC calls 92 hits. The workflow with EVC
 overlaps with 37 of the 53 reference hits. The optional full
-interaction-model sensitivity analysis is reproduced by
+interaction-model analysis is reproduced by
 `analysis/ecoli_promoter_screen/run_interaction_sensitivity.R`.
 
 Equivalently, using staged options directly:
@@ -334,12 +336,11 @@ remain available for existing scripts. New analyses should prefer
 [`fit_destress()`](https://muellsen.github.io/DStressR/reference/fit_destress.md)
 so that the selected statistical path is explicit in the code.
 
-## Standard plots
+## Diagnostic and Summary Plots
 
-`DStressR` includes standard output plots for common screening
-summaries, including volcano plots, promoter-compound response heatmaps,
-clustered heatmaps, effect histograms, and empirical-Bayes variance
-diagnostics.
+`DStressR` includes output plots for common screening summaries,
+including volcano plots, promoter-compound response heatmaps, clustered
+heatmaps, effect histograms, and empirical-Bayes variance diagnostics.
 
 ``` r
 
@@ -614,14 +615,22 @@ result tables and manuscript figures stay local.
   : Reproduce Empty Vector Control normalization
 - [`fit_median_polish()`](https://muellsen.github.io/DStressR/reference/fit_median_polish.md)
   : Reproduce the legacy median-polish workflow
+- [`fit_variance_distribution()`](https://muellsen.github.io/DStressR/reference/fit_variance_distribution.md)
+  : Fit diagnostic distributions to perturbation-level variances
 - [`fit_workflow()`](https://muellsen.github.io/DStressR/reference/fit_workflow.md)
   : Fit a named DStressR workflow
 - [`model_matrix_report()`](https://muellsen.github.io/DStressR/reference/model_matrix_report.md)
   : Summarize model dimensions
 - [`model_parameters()`](https://muellsen.github.io/DStressR/reference/model_parameters.md)
   : Extract estimated model parameters
+- [`perturbation_diagnostics()`](https://muellsen.github.io/DStressR/reference/perturbation_diagnostics.md)
+  : Perturbation-level response diagnostics
 - [`plot_effect_histogram()`](https://muellsen.github.io/DStressR/reference/plot_effect_histogram.md)
   : Histogram of DStressR promoter-compound effects
+- [`plot_hit_heatmap()`](https://muellsen.github.io/DStressR/reference/plot_hit_heatmap.md)
+  : Heatmap of significant DStressR hits
+- [`plot_mean_variance_diagnostic()`](https://muellsen.github.io/DStressR/reference/plot_mean_variance_diagnostic.md)
+  : Plot perturbation-level mean-variance diagnostics
 - [`plot_response_cluster_blocks()`](https://muellsen.github.io/DStressR/reference/plot_response_cluster_blocks.md)
   : Clustered block map of a DStressR promoter-by-compound response
   matrix
@@ -629,6 +638,8 @@ result tables and manuscript figures stay local.
   : Clustered heatmap with promoter and compound dendrograms
 - [`plot_response_heatmap()`](https://muellsen.github.io/DStressR/reference/plot_response_heatmap.md)
   : Heatmap of a DStressR promoter-by-compound response matrix
+- [`plot_variance_distribution()`](https://muellsen.github.io/DStressR/reference/plot_variance_distribution.md)
+  : Plot diagnostic distributions for perturbation-level variances
 - [`plot_volcano()`](https://muellsen.github.io/DStressR/reference/plot_volcano.md)
   : Volcano plot for DStressR promoter-compound hits
 - [`prepare_assay()`](https://muellsen.github.io/DStressR/reference/prepare_assay.md)
@@ -639,6 +650,8 @@ result tables and manuscript figures stay local.
   : Extract model results
 - [`simulate_screen()`](https://muellsen.github.io/DStressR/reference/simulate_screen.md)
   : Simulate a chemical-genomics screen
+- [`summarize_hits()`](https://muellsen.github.io/DStressR/reference/summarize_hits.md)
+  : Summarize significant promoter-compound hits
 
 # Articles
 
