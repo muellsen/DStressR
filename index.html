@@ -70,7 +70,9 @@
 <div class="page-header"><h1 id="dstressr-differential-stress-response-modeling-for-chemical-genomics-screens">DStressR: Differential stress-response modeling for chemical genomics screens<a class="anchor" aria-label="anchor" href="#dstressr-differential-stress-response-modeling-for-chemical-genomics-screens"></a>
 </h1></div>
 <p>This repository hosts the <code>DStressR</code> R package and companion analysis workflow for high-throughput bacterial chemical genomics screens. <code>DStressR</code> is designed to go hand in hand with <a href="https://bio-datascience.github.io/DGrowthR/" class="external-link"><code>DGrowthR</code></a>: <code>DGrowthR</code> models bacterial growth curves, while <code>DStressR</code> models promoter-activity responses after accounting for growth, compound-wide effects, technical covariates, and promoter-specific uncertainty.</p>
-<p><img src="reference/figures/dstressr_panel.svg"></p>
+<div class="float">
+<img src="reference/figures/dstressr-workflow.png" alt="DStressR statistical workflow: response estimation, effect estimation and diagnostics, and inference."><div class="figcaption">DStressR statistical workflow: response estimation, effect estimation and diagnostics, and inference.</div>
+</div>
 <blockquote>
 <p>[!TIP] <code>DStressR</code> is intended as the promoter-response counterpart to <a href="https://bio-datascience.github.io/DGrowthR/" class="external-link"><code>DGrowthR</code></a>. The current default hit-determination workflow is based on the original exported luminescence and growth summaries; DGrowthR-derived growth parameters can be handed over explicitly for sensitivity analyses.</p>
 </blockquote>

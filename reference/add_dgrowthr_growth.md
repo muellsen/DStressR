@@ -27,8 +27,7 @@ add_dgrowthr_growth(
 
 - object:
 
-  A DGrowthR object after
-  [`DGrowthR::estimate_growth_parameters()`](https://bio-datascience.github.io/DGrowthR/reference/estimate_growth_parameters.html).
+  A DGrowthR object after `DGrowthR::estimate_growth_parameters()`.
 
 - by:
 
@@ -70,6 +69,6 @@ bridge available for future comparisons.
 
 This helper joins `object@growth_parameters` from a fitted DGrowthR
 object onto a promoter/luminescence assay table. Run
-[`DGrowthR::estimate_growth_parameters()`](https://bio-datascience.github.io/DGrowthR/reference/estimate_growth_parameters.html)
-first, optionally with `od_auc_at_t` if you want time-specific columns
-such as `OD_16` or `AUC_16`.
+`DGrowthR::estimate_growth_parameters()` first, optionally with
+`od_auc_at_t` if you want time-specific columns such as `OD_16` or
+`AUC_16`.
