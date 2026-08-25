@@ -23,7 +23,7 @@ panel_label <- function(label, size = 18) {
   )
 }
 
-load(analysis_path("data", "binsfeld_reporter_data.rda"))
+load_binsfeld_paper_data()
 out_dir <- analysis_output_dir("binsfeld_modeling_steps")
 evc_method_dir <- analysis_output_dir("binsfeld_evc_calibrated")
 
@@ -35,8 +35,8 @@ wt_auc <- binsfeld_reporter_auc[
 prepare_binsfeld <- function(growth_exponent) {
   prepare_assay(
     wt_auc,
-    promoter = "promoter",
-    compound = "compound",
+    reporter = "promoter",
+    perturbation = "compound",
     control = "Water",
     lux = "lux_auc",
     growth = "od_auc",
@@ -52,8 +52,8 @@ modeled <- prepare_binsfeld("estimate")
 alpha1 <- prepare_binsfeld(1)
 evc_huber <- prepare_assay(
   wt_auc,
-  promoter = "promoter",
-  compound = "compound",
+  reporter = "promoter",
+  perturbation = "compound",
   control = "Water",
   lux = "lux_auc",
   growth = "od_auc",
@@ -62,7 +62,7 @@ evc_huber <- prepare_assay(
   replicate = "replicate",
   growth_covariates = "replicate",
   numeric_covariates = "dose_level",
-  background_promoter = "EVC",
+  background_reporter = "EVC",
   background_method = "huber",
   background_by = c("compound", "dose_level", "replicate")
 )
@@ -76,29 +76,29 @@ utils::write.table(
   quote = FALSE
 )
 
-promoter_order <- c("acrABp", "marRABp", "micFp", "ompFp", "robp", "soxSp", "tolCp")
-parameter_promoter_order <- c("EVC", promoter_order)
+reporter_order <- c("acrABp", "marRABp", "micFp", "ompFp", "robp", "soxSp", "tolCp")
+parameter_reporter_order <- c("EVC", reporter_order)
 plot_growth_parameters <- growth_parameters[
-  growth_parameters$promoter %in% parameter_promoter_order,
+  growth_parameters$reporter %in% parameter_reporter_order,
   ,
   drop = FALSE
 ]
 
 growth_long <- rbind(
   data.frame(
-    promoter = plot_growth_parameters$promoter,
+    promoter = plot_growth_parameters$reporter,
     estimate = plot_growth_parameters$alpha_raw,
     estimate_type = "Raw promoter slope",
     stringsAsFactors = FALSE
   ),
   data.frame(
-    promoter = plot_growth_parameters$promoter,
+    promoter = plot_growth_parameters$reporter,
     estimate = plot_growth_parameters$alpha_shrunk,
     estimate_type = "Shrunken exponent",
     stringsAsFactors = FALSE
   )
 )
-growth_long$promoter <- factor(growth_long$promoter, levels = rev(parameter_promoter_order))
+growth_long$promoter <- factor(growth_long$promoter, levels = rev(parameter_reporter_order))
 
 growth_plot <- ggplot2$ggplot(
   growth_long,
@@ -138,7 +138,7 @@ if (!is.null(background_calibration)) {
 
 evc_slope_plot <- ggplot2$ggplot(
   background_calibration,
-  ggplot2$aes(slope, factor(promoter, levels = rev(parameter_promoter_order)))
+  ggplot2$aes(slope, factor(reporter, levels = rev(parameter_reporter_order)))
 ) +
   ggplot2$geom_vline(xintercept = 1, color = "#9ca3af", linetype = "dashed", linewidth = 0.4) +
   ggplot2$geom_point(size = 2.8, color = "#059669", alpha = 0.9) +
@@ -160,14 +160,14 @@ parameter_panel <- rbind(
     stringsAsFactors = FALSE
   ),
   data.frame(
-    promoter = background_calibration$promoter,
+    promoter = background_calibration$reporter,
     estimate = background_calibration$slope,
     estimate_type = "EVC calibration slope",
     panel = "hat(gamma)[1*a]",
     stringsAsFactors = FALSE
   )
 )
-parameter_panel$promoter <- factor(parameter_panel$promoter, levels = rev(parameter_promoter_order))
+parameter_panel$promoter <- factor(parameter_panel$promoter, levels = rev(parameter_reporter_order))
 parameter_panel$panel <- factor(
   parameter_panel$panel,
   levels = c(
@@ -213,7 +213,7 @@ parameter_legend <- data.frame(
     levels = levels(parameter_panel$panel)
   ),
   x = c(0.58, 0.58, 0.72),
-  y = factor(c("EVC", "acrABp", "EVC"), levels = rev(parameter_promoter_order)),
+  y = factor(c("EVC", "acrABp", "EVC"), levels = rev(parameter_reporter_order)),
   label = c("Raw promoter slope", "Shrunken exponent", "EVC calibration"),
   estimate_type = factor(
     c("Raw promoter slope", "Shrunken exponent", "EVC calibration slope"),
@@ -401,11 +401,11 @@ if (length(compound_cols) > 2) {
   mat[is.na(mat)] <- 0
   compound_order <- sub("^modeled_response[.]", "", colnames(mat)[stats::hclust(stats::dist(t(mat)))$order])
 }
-matched$promoter <- factor(matched$promoter, levels = promoter_order)
+matched$promoter <- factor(matched$promoter, levels = reporter_order)
 matched$compound <- factor(matched$compound, levels = compound_order)
-response_construction$promoter <- factor(response_construction$promoter, levels = promoter_order)
+response_construction$promoter <- factor(response_construction$promoter, levels = reporter_order)
 response_construction$compound <- factor(response_construction$compound, levels = compound_order)
-response_scatter_data$promoter <- factor(response_scatter_data$promoter, levels = promoter_order)
+response_scatter_data$promoter <- factor(response_scatter_data$promoter, levels = reporter_order)
 
 scatter_long <- rbind(
 	data.frame(

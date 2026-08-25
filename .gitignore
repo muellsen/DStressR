@@ -15,6 +15,21 @@ tmp/
 tmp_report_text.txt
 Rplots.pdf
 
-# Local manuscript draft and proprietary/supporting paper artifacts
-paper/
+# Manuscript policy:
+# keep the DStressR package manuscript source/reproducibility files trackable,
+# while ignoring local renders, caches, legacy drafts, and non-canonical paper tracks.
+paper/*
+!paper/README.md
+!paper/references.bib
+!paper/figures/
+paper/figures/*
+!paper/figures/Figure2-cropped.pdf
+!paper/figures/stressregnet-overview-final-v10.png
+!paper/dstressr_package_manuscript/
+paper/dstressr_package_manuscript/*
+!paper/dstressr_package_manuscript/README.md
+!paper/dstressr_package_manuscript/manuscript.qmd
+!paper/dstressr_package_manuscript/audit_2026-08-07.md
+
+# Proprietary/supporting paper assets remain local unless explicitly promoted.
 assets/

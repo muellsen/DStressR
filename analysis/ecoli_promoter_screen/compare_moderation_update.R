@@ -1,7 +1,7 @@
 source(file.path("analysis", "_helpers.R"))
 load_destress_package()
 
-load(analysis_path("data", "binsfeld_reporter_data.rda"))
+load_binsfeld_paper_data()
 
 out_dir <- analysis_output_dir("binsfeld_variance_diagnostics")
 
@@ -18,8 +18,8 @@ fit_current <- function(use_ev_control) {
   }
   args <- list(
     data = assay_data,
-    promoter = "promoter",
-    compound = "compound",
+    reporter = "promoter",
+    perturbation = "compound",
     control = "Water",
     lux = "lux_auc",
     growth = "od_auc",
@@ -30,7 +30,7 @@ fit_current <- function(use_ev_control) {
     numeric_covariates = "dose_level"
   )
   if (isTRUE(use_ev_control)) {
-    args$background_promoter <- "EVC"
+    args$background_reporter <- "EVC"
     args$background_method <- "huber"
     args$background_by <- c("compound", "dose_level", "replicate")
   }
@@ -39,7 +39,7 @@ fit_current <- function(use_ev_control) {
     assay,
     technical = c("replicate", "dose_level"),
     empirical_bayes = TRUE,
-    adjustment = "by_promoter",
+    adjustment = "by_reporter",
     interaction = FALSE
   )
   res <- results(fit)
@@ -47,7 +47,7 @@ fit_current <- function(use_ev_control) {
     res,
     fdr = 0.05,
     effect = "specific_effect",
-    padj = "specific_padj_by_promoter"
+    padj = "specific_padj_by_reporter"
   )
   res$hit <- calls$hit != "Not DE"
   res$hit_class <- calls$hit
@@ -92,7 +92,7 @@ comparison_table <- function(current, old_ids, label) {
       compound = character(),
       specific_effect = numeric(),
       specific_pvalue = numeric(),
-      specific_padj_by_promoter = numeric(),
+      specific_padj_by_reporter = numeric(),
       hit_class = character(),
       stringsAsFactors = FALSE
     ))
@@ -101,7 +101,7 @@ comparison_table <- function(current, old_ids, label) {
   changed$workflow <- label
   changed[, c(
     "workflow", "status", "promoter", "compound", "specific_effect",
-    "specific_pvalue", "specific_padj_by_promoter", "hit_class"
+    "specific_pvalue", "specific_padj_by_reporter", "hit_class"
   ), drop = FALSE]
 }
 
@@ -132,7 +132,7 @@ summary <- data.frame(
 pvalue_summary <- function(current, old_effect_col, old_p_col, old_q_col, label) {
   old <- old_comparison[, c("pair_id", old_effect_col, old_p_col, old_q_col), drop = FALSE]
   names(old) <- c("pair_id", "old_effect", "old_pvalue", "old_qvalue")
-  cur <- current[, c("pair_id", "specific_effect", "specific_pvalue", "specific_padj_by_promoter"), drop = FALSE]
+  cur <- current[, c("pair_id", "specific_effect", "specific_pvalue", "specific_padj_by_reporter"), drop = FALSE]
   names(cur) <- c("pair_id", "current_effect", "current_pvalue", "current_qvalue")
   merged <- merge(old, cur, by = "pair_id", all = FALSE, sort = FALSE)
   data.frame(
@@ -158,14 +158,14 @@ pvalue_summary_table <- rbind(
     current_no_ev,
     "modeled_effect",
     "modeled_pvalue",
-    "modeled_padj_by_promoter",
+    "modeled_padj_by_reporter",
     "DStressR without EV control"
   ),
   pvalue_summary(
     current_ev,
     "evc_huber_effect",
     "evc_huber_pvalue",
-    "evc_huber_padj_by_promoter",
+    "evc_huber_padj_by_reporter",
     "DStressR with EV control"
   )
 )

@@ -8,9 +8,10 @@ tables are not.
 ## Campylobacter Default DStressR Model
 
 `export_campy_default_model_template.R` is the public template for the
-Campylobacter manuscript analysis. It expects the proprietary expression table
-to be available locally through `DSTRESSR_DATA_ROOT` or the local path
-conventions in `analysis/_helpers.R`.
+Campylobacter downstream analysis workflow. It is retained for future/local
+analysis work and is not part of the current DStressR package manuscript. The
+script expects the proprietary expression table to be available locally through
+`DSTRESSR_DATA_ROOT` or the local path conventions in `analysis/_helpers.R`.
 
 The script fits the current default model-based analysis:
 

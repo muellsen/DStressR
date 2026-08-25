@@ -219,15 +219,15 @@ screen$promoter <- factor(screen$promoter, levels = c("Fur", "MarA", "SoxS", "Le
 screen$compound <- factor(screen$compound, levels = c("Standard", "Iron", "Kanamycin", "Tetracycline", "H2O2"))
 
 background_labels <- c("EVC", "empty_vector", "emptyvector", "no_promoter")
-background_promoter <- intersect(background_labels, unique(as.character(screen$promoter)))[1]
-if (is.na(background_promoter)) {
-  background_promoter <- NULL
+background_reporter <- intersect(background_labels, unique(as.character(screen$promoter)))[1]
+if (is.na(background_reporter)) {
+  background_reporter <- NULL
 }
 
 assay_args <- list(
   data = screen,
-  promoter = "promoter",
-  compound = "compound",
+  reporter = "promoter",
+  perturbation = "compound",
   control = "Standard",
   lux = "gfp_auc",
   growth = "od_auc",
@@ -236,8 +236,8 @@ assay_args <- list(
   batch = "sheet",
   growth_covariates = "replicate"
 )
-if (!is.null(background_promoter)) {
-  assay_args$background_promoter <- background_promoter
+if (!is.null(background_reporter)) {
+  assay_args$background_reporter <- background_reporter
   assay_args$background_method <- "huber"
   assay_args$background_by <- c("compound", "replicate", "sheet")
 }
@@ -247,7 +247,7 @@ fit <- fit_destress(
   assay,
   technical = c("replicate", "sheet"),
   empirical_bayes = TRUE,
-  adjustment = "by_promoter",
+  adjustment = "by_reporter",
   interaction = FALSE
 )
 
@@ -256,7 +256,7 @@ hit_table <- call_hits(
   res,
   fdr = 0.05,
   effect = "specific_effect",
-  padj = "specific_padj_by_promoter"
+  padj = "specific_padj_by_reporter"
 )
 res$hit_class <- hit_table$hit
 res$hit <- res$hit_class != "Not DE"
@@ -307,7 +307,7 @@ summary <- data.frame(
     "promoters",
     "conditions_including_reference",
     "reference_condition",
-    "background_promoter",
+    "background_reporter",
     "well_summaries",
     "tested_pairs",
     "significant_pairs"
@@ -316,7 +316,7 @@ summary <- data.frame(
     length(unique(screen$promoter)),
     length(unique(screen$compound)),
     "Standard",
-    if (is.null(background_promoter)) "none detected" else background_promoter,
+    if (is.null(background_reporter)) "none detected" else background_reporter,
     nrow(screen),
     nrow(res),
     sum(res$hit, na.rm = TRUE)
@@ -345,7 +345,7 @@ ggplot2::ggsave(file.path(out_dir, "dryad_default_pvalue_histogram.pdf"), p_hist
 p_volcano <- plot_volcano(
   res,
   effect = "specific_effect",
-  padj = "specific_padj_by_promoter",
+  padj = "specific_padj_by_reporter",
   title = "Dryad global-regulator reporters: default DStressR volcano",
   label_by = "pair",
   top_n = 12
@@ -393,7 +393,7 @@ fit_alpha1 <- fit_destress(
   assay_alpha1,
   technical = c("replicate", "sheet"),
   empirical_bayes = TRUE,
-  adjustment = "by_promoter",
+  adjustment = "by_reporter",
   interaction = FALSE
 )
 res_alpha1 <- results(fit_alpha1)
@@ -401,7 +401,7 @@ hit_table_alpha1 <- call_hits(
   res_alpha1,
   fdr = 0.05,
   effect = "specific_effect",
-  padj = "specific_padj_by_promoter"
+  padj = "specific_padj_by_reporter"
 )
 res_alpha1$hit_class <- hit_table_alpha1$hit
 res_alpha1$hit <- res_alpha1$hit_class != "Not DE"
@@ -436,7 +436,7 @@ summary_alpha1 <- data.frame(
     "promoters",
     "conditions_including_reference",
     "reference_condition",
-    "background_promoter",
+    "background_reporter",
     "growth_exponent",
     "well_summaries",
     "tested_pairs",
@@ -446,7 +446,7 @@ summary_alpha1 <- data.frame(
     length(unique(screen$promoter)),
     length(unique(screen$compound)),
     "Standard",
-    if (is.null(background_promoter)) "none detected" else background_promoter,
+    if (is.null(background_reporter)) "none detected" else background_reporter,
     "fixed alpha = 1",
     nrow(screen),
     nrow(res_alpha1),
@@ -476,7 +476,7 @@ ggplot2::ggsave(file.path(out_dir, "dryad_alpha1_pvalue_histogram.pdf"), p_hist_
 p_volcano_alpha1 <- plot_volcano(
   res_alpha1,
   effect = "specific_effect",
-  padj = "specific_padj_by_promoter",
+  padj = "specific_padj_by_reporter",
   title = "Dryad global-regulator reporters: DStressR volcano with alpha = 1",
   label_by = "pair",
   top_n = 12
@@ -489,8 +489,8 @@ ggplot2::ggsave(file.path(out_dir, "dryad_alpha1_effect_heatmap.png"), p_heatmap
 ggplot2::ggsave(file.path(out_dir, "dryad_alpha1_effect_heatmap.pdf"), p_heatmap_alpha1, width = 7, height = 4.5)
 
 comparison <- merge(
-  res[, c("promoter", "compound", "specific_effect", "specific_pvalue", "specific_padj_by_promoter", "hit")],
-  res_alpha1[, c("promoter", "compound", "specific_effect", "specific_pvalue", "specific_padj_by_promoter", "hit")],
+  res[, c("promoter", "compound", "specific_effect", "specific_pvalue", "specific_padj_by_reporter", "hit")],
+  res_alpha1[, c("promoter", "compound", "specific_effect", "specific_pvalue", "specific_padj_by_reporter", "hit")],
   by = c("promoter", "compound"),
   suffixes = c("_estimated_alpha", "_alpha1"),
   all = TRUE,

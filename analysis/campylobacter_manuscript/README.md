@@ -1,7 +1,9 @@
-# Campylobacter Manuscript Analysis
+# Campylobacter Downstream Analysis
 
-This is the previous downstream manuscript comparison workflow. It is kept
-separate from the CRAN package and from the public Binsfeld example data.
+This is the previous downstream Campylobacter comparison workflow. It is kept
+separate from the CRAN package, from the public Binsfeld example data, and from
+the current DStressR package manuscript. The folder is retained for future
+analysis manuscripts and for local comparison work.
 
 ## Input Contract
 
@@ -15,7 +17,7 @@ Each method must provide one TSV with one row per promoter-compound pair and
 the columns:
 
 ```text
-promoter  compound  effect  pvalue  padj_global  padj_by_promoter
+promoter  compound  effect  pvalue  padj_global  padj_by_reporter
 ```
 
 The current comparison scripts look for:
@@ -35,7 +37,7 @@ global effect across promoters (`specific_*` columns from `results()`), not the
 raw promoter-wise compound-vs-control total effect (`total_*`).
 
 Set `DSTRESSR_COMPARISON_ADJUSTMENT=global` or
-`DSTRESSR_COMPARISON_ADJUSTMENT=by_promoter` before running comparison scripts
+`DSTRESSR_COMPARISON_ADJUSTMENT=by_reporter` before running comparison scripts
 to choose the adjusted p-value family used for hit calls. The default is
 `global`.
 

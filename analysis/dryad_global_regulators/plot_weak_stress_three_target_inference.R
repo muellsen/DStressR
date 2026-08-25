@@ -9,6 +9,7 @@ if (length(missing_packages)) {
 
 ggplot2 <- asNamespace("ggplot2")
 gridExtra <- asNamespace("gridExtra")
+grid <- asNamespace("grid")
 out_dir <- analysis_output_dir("dryad_global_regulators")
 
 default_path <- file.path(out_dir, "dryad_weak_stress_windows_calibrated_alpha_pair_results.tsv")
@@ -37,21 +38,21 @@ targets <- rbind(
     "Total effect",
     "total_effect",
     "total_pvalue",
-    "total_padj_by_promoter"
+    "total_padj_by_reporter"
   ),
   make_target(
     default,
     "Default specific effect",
     "specific_effect",
     "specific_pvalue",
-    "specific_padj_by_promoter"
+    "specific_padj_by_reporter"
   ),
   make_target(
     rank1,
     "Rank-adjusted total effect",
     "rank_adjusted_total_effect",
     "rank_adjusted_total_pvalue",
-    "rank_adjusted_total_padj_by_promoter"
+    "rank_adjusted_total_padj_by_reporter"
   )
 )
 targets$target <- factor(
@@ -226,11 +227,30 @@ ggplot2::ggsave(
   height = 4.6
 )
 
+panel_label_row <- function(labels) {
+  do.call(
+    gridExtra::arrangeGrob,
+    c(
+      lapply(labels, function(label) {
+        grid::textGrob(
+          label,
+          x = grid::unit(0.02, "npc"),
+          just = "left",
+          gp = grid::gpar(fontface = "bold", fontsize = 11)
+        )
+      }),
+      nrow = 1
+    )
+  )
+}
+
 p_combined <- gridExtra::arrangeGrob(
+  panel_label_row(c("a", "b", "c")),
   p_hist,
+  panel_label_row(c("d", "e", "f")),
   p_volcano,
   ncol = 1,
-  heights = c(0.42, 0.58)
+  heights = c(0.04, 0.40, 0.04, 0.52)
 )
 ggplot2::ggsave(
   file.path(out_dir, "dryad_weak_stress_windows_calibrated_alpha_three_target_inference_combined.png"),

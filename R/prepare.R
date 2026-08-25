@@ -1,54 +1,54 @@
 #' Prepare a chemical-genomics assay table
 #'
-#' Computes a growth-adjusted log2 promoter-activity response from luminescence
-#' and growth measurements. By default, promoter-specific growth exponents are
+#' Computes a growth-adjusted log2 reporter-activity response from luminescence
+#' and growth measurements. By default, reporter-specific growth exponents are
 #' estimated from control wells with available technical-factor adjustment and
 #' shrunk toward a global control-well slope.
 #' Set `growth_exponent = 1` to reproduce the current workflow's log2(LUX / OD)
 #' response.
 #'
-#' @param data A data frame with one row per promoter-compound-replicate well.
-#' @param promoter,compound Column names identifying promoter and compound.
-#' @param control Label in `compound` for the negative control, usually DMSO.
+#' @param data A data frame with one row per reporter-perturbation-replicate well.
+#' @param reporter,perturbation Column names identifying reporter and perturbation.
+#' @param control Label in `perturbation` for the negative control, usually DMSO.
 #' @param lux,growth Column names for luminescence and growth summaries.
 #' @param growth_exponent Fixed coefficient for growth normalization, a named
-#'   vector keyed by promoter, or `"estimate"` to estimate promoter-specific
+#'   vector keyed by reporter, or `"estimate"` to estimate reporter-specific
 #'   exponents from controls.
-#' @param control_values Values in `compound` used as controls for growth
+#' @param control_values Values in `perturbation` used as controls for growth
 #'   exponent estimation. Defaults to `control`.
 #' @param response Optional existing response column. If supplied, `lux` and
 #'   `growth` are not used to compute the response.
 #' @param batch,plate,replicate Optional technical-factor column names.
 #'   When `growth_exponent = "estimate"`, these columns are also used as
-#'   covariates while estimating promoter-specific growth exponents unless
+#'   covariates while estimating reporter-specific growth exponents unless
 #'   `growth_covariates` is supplied.
 #' @param growth_covariates Optional technical covariate column names used only
-#'   while estimating promoter-specific growth exponents from control wells. If
+#'   while estimating reporter-specific growth exponents from control wells. If
 #'   `NULL`, DStressR uses the supplied `batch`, `plate`, and `replicate`
 #'   columns for backwards compatibility.
 #' @param numeric_covariates Optional subset of technical covariate column names
 #'   that should remain numeric in model matrices. Other optional covariates are
 #'   converted to factors.
-#' @param background_promoter Optional reporter promoter used as a background
+#' @param background_reporter Optional background reporter used as a background
 #'   reference, e.g. an Empty Vector Control. When supplied, the default
 #'   background method is `"huber"`. The background reporter is matched to other
-#'   promoters by `background_by`, the response is calibrated, and the
+#'   reporters by `background_by`, the response is calibrated, and the
 #'   background reporter is excluded from model-based testing.
 #' @param background_method One of `"none"`, `"subtract"`, `"lm"`, or
 #'   `"huber"`. If omitted, DStressR uses `"none"` when no
-#'   `background_promoter` is supplied and `"huber"` when one is supplied.
+#'   `background_reporter` is supplied and `"huber"` when one is supplied.
 #'   `"subtract"` subtracts the matched background response. `"lm"` and
-#'   `"huber"` replace each non-background promoter response by residuals from
-#'   a promoter-wise calibration against the matched background.
+#'   `"huber"` replace each non-background reporter response by residuals from
+#'   a reporter-wise calibration against the matched background.
 #' @param background_by Columns used to match each observation to the
-#'   background reporter. Defaults to `compound` plus the supplied technical
+#'   background reporter. Defaults to `perturbation` plus the supplied technical
 #'   columns.
 #' @param pseudocount Added before log2 transformation.
 #' @return A `destress_assay` data frame.
 #' @export
 prepare_assay <- function(data,
-                          promoter = "promoter",
-                          compound = "compound",
+                          reporter = "reporter",
+                          perturbation = "perturbation",
                           control = "DMSO",
                           lux = "lux",
                           growth = "growth",
@@ -60,12 +60,12 @@ prepare_assay <- function(data,
                           replicate = NULL,
                           growth_covariates = NULL,
                           numeric_covariates = NULL,
-                          background_promoter = NULL,
+                          background_reporter = NULL,
                           background_method = c("none", "subtract", "lm", "huber"),
                           background_by = NULL,
                           pseudocount = 1e-8) {
   stopifnot(is.data.frame(data))
-  required <- c(promoter, compound)
+  required <- c(reporter, perturbation)
   if (!is.null(response)) {
     required <- c(required, response)
   } else {
@@ -84,12 +84,12 @@ prepare_assay <- function(data,
   }
 
   out <- data
-  out$.promoter <- factor(out[[promoter]])
-  out$.compound <- factor(out[[compound]])
-  if (!control %in% levels(out$.compound)) {
-    stop("Control compound '", control, "' was not found in `", compound, "`.", call. = FALSE)
+  out$.reporter <- factor(out[[reporter]])
+  out$.perturbation <- factor(out[[perturbation]])
+  if (!control %in% levels(out$.perturbation)) {
+    stop("Control perturbation '", control, "' was not found in `", perturbation, "`.", call. = FALSE)
   }
-  out$.compound <- stats::relevel(out$.compound, ref = control)
+  out$.perturbation <- stats::relevel(out$.perturbation, ref = control)
 
   if (!is.null(response)) {
     out$.response <- as.numeric(out[[response]])
@@ -108,8 +108,8 @@ prepare_assay <- function(data,
       }
       growth_fit <- estimate_growth_exponents(
         out,
-        promoter = promoter,
-        compound = compound,
+        reporter = reporter,
+        perturbation = perturbation,
         lux = lux,
         growth = growth,
         covariates = growth_covariates,
@@ -117,16 +117,16 @@ prepare_assay <- function(data,
         controls = control_values,
         pseudocount = pseudocount
       )
-      alpha <- growth_fit$alpha_shrunk[match(as.character(out[[promoter]]), growth_fit$promoter)]
+      alpha <- growth_fit$alpha_shrunk[match(as.character(out[[reporter]]), growth_fit$reporter)]
     } else if (length(growth_exponent) == 1) {
       growth_fit <- NULL
       alpha <- rep(as.numeric(growth_exponent), nrow(out))
     } else {
       growth_fit <- NULL
       if (is.null(names(growth_exponent))) {
-        stop("Vector `growth_exponent` must be named by promoter.", call. = FALSE)
+        stop("Vector `growth_exponent` must be named by reporter.", call. = FALSE)
       }
-      alpha <- as.numeric(growth_exponent[as.character(out[[promoter]])])
+      alpha <- as.numeric(growth_exponent[as.character(out[[reporter]])])
     }
     if (any(!is.finite(alpha))) {
       stop("Could not assign a finite growth exponent to every row.", call. = FALSE)
@@ -145,40 +145,40 @@ prepare_assay <- function(data,
   }
 
   if (missing(background_method)) {
-    background_method <- if (is.null(background_promoter)) "none" else "huber"
+    background_method <- if (is.null(background_reporter)) "none" else "huber"
   }
   background_method <- normalize_background_method(background_method)
   background_fit <- NULL
-  if (!is.null(background_promoter) && !identical(background_method, "none")) {
-    background_promoter <- as.character(background_promoter)
-    if (length(background_promoter) != 1 || is.na(background_promoter) || !nzchar(background_promoter)) {
-      stop("`background_promoter` must be one promoter label.", call. = FALSE)
+  if (!is.null(background_reporter) && !identical(background_method, "none")) {
+    background_reporter <- as.character(background_reporter)
+    if (length(background_reporter) != 1 || is.na(background_reporter) || !nzchar(background_reporter)) {
+      stop("`background_reporter` must be one reporter label.", call. = FALSE)
     }
-    if (!background_promoter %in% levels(out$.promoter)) {
-      stop("Background promoter '", background_promoter, "' was not found in `", promoter, "`.", call. = FALSE)
+    if (!background_reporter %in% levels(out$.reporter)) {
+      stop("Background reporter '", background_reporter, "' was not found in `", reporter, "`.", call. = FALSE)
     }
     if (is.null(background_by)) {
-      background_by <- unique(c(compound, batch, plate, replicate))
+      background_by <- unique(c(perturbation, batch, plate, replicate))
       background_by <- background_by[!is.na(background_by) & nzchar(background_by)]
     }
     background <- calibrate_background_response(
       out,
-      promoter = promoter,
-      background_promoter = background_promoter,
+      reporter = reporter,
+      background_reporter = background_reporter,
       method = background_method,
       by = background_by
     )
     out <- background$data
     background_fit <- background$fit
   } else {
-    background_promoter <- NULL
+    background_reporter <- NULL
     background_method <- "none"
     background_by <- character()
   }
 
   attr(out, "destress") <- list(
-    promoter = promoter,
-    compound = compound,
+    reporter = reporter,
+    perturbation = perturbation,
     control = control,
     lux = lux,
     growth = growth,
@@ -191,7 +191,7 @@ prepare_assay <- function(data,
     numeric_covariates = numeric_covariates,
     growth_exponent = growth_exponent,
     growth_exponent_fit = if (exists("growth_fit")) growth_fit else NULL,
-    background_promoter = background_promoter,
+    background_reporter = background_reporter,
     background_method = background_method,
     background_by = background_by,
     background_fit = background_fit
@@ -213,13 +213,13 @@ calibration_key <- function(data, by) {
 }
 
 calibrate_background_response <- function(data,
-                                          promoter,
-                                          background_promoter,
+                                          reporter,
+                                          background_reporter,
                                           method,
                                           by) {
-  bg <- data[as.character(data[[promoter]]) == background_promoter, , drop = FALSE]
+  bg <- data[as.character(data[[reporter]]) == background_reporter, , drop = FALSE]
   if (nrow(bg) == 0) {
-    stop("No rows found for `background_promoter = \"", background_promoter, "\"`.", call. = FALSE)
+    stop("No rows found for `background_reporter = \"", background_reporter, "\"`.", call. = FALSE)
   }
 
   bg_key <- calibration_key(bg, by)
@@ -234,10 +234,10 @@ calibrate_background_response <- function(data,
   lookup <- stats::setNames(bg_mean$.background_response, bg_mean$.background_key)
   data$.background_response <- as.numeric(lookup[data$.background_key])
   data$.response_uncalibrated <- data$.response
-  is_background <- as.character(data[[promoter]]) == background_promoter
+  is_background <- as.character(data[[reporter]]) == background_reporter
 
   fit_rows <- data.frame(
-    promoter = character(),
+    reporter = character(),
     method = character(),
     n = integer(),
     intercept = numeric(),
@@ -249,7 +249,7 @@ calibrate_background_response <- function(data,
     data$.response[!is_background] <- data$.response[!is_background] -
       data$.background_response[!is_background]
     fit_rows <- data.frame(
-      promoter = setdiff(unique(as.character(data[[promoter]])), background_promoter),
+      reporter = setdiff(unique(as.character(data[[reporter]])), background_reporter),
       method = "subtract",
       n = NA_integer_,
       intercept = 0,
@@ -260,11 +260,11 @@ calibrate_background_response <- function(data,
     if (identical(method, "huber") && !requireNamespace("MASS", quietly = TRUE)) {
       stop("Package `MASS` is required for `background_method = \"huber\"`.", call. = FALSE)
     }
-    for (p in setdiff(unique(as.character(data[[promoter]])), background_promoter)) {
-      idx <- as.character(data[[promoter]]) == p
+    for (p in setdiff(unique(as.character(data[[reporter]])), background_reporter)) {
+      idx <- as.character(data[[reporter]]) == p
       complete <- idx & is.finite(data$.response) & is.finite(data$.background_response)
       if (sum(complete) < 3) {
-        stop("Need at least three matched background observations for promoter '", p, "'.", call. = FALSE)
+        stop("Need at least three matched background observations for reporter '", p, "'.", call. = FALSE)
       }
       d <- data.frame(
         response = data$.response[complete],
@@ -283,7 +283,7 @@ calibrate_background_response <- function(data,
       fit_rows <- rbind(
         fit_rows,
         data.frame(
-          promoter = p,
+          reporter = p,
           method = method,
           n = sum(complete),
           intercept = unname(coef[[1]]),
@@ -295,7 +295,7 @@ calibrate_background_response <- function(data,
   }
 
   data$.background_key <- NULL
-  list(data = data, fit = fit_rows[order(fit_rows$promoter), , drop = FALSE])
+  list(data = data, fit = fit_rows[order(fit_rows$reporter), , drop = FALSE])
 }
 
 #' Read exported Campylobacter expression data

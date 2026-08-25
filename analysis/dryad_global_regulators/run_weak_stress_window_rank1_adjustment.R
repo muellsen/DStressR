@@ -52,8 +52,8 @@ screen$compound <- factor(screen$compound, levels = c("Standard", compound_level
 
 assay <- prepare_assay(
   screen,
-  promoter = "pseudo_reporter",
-  compound = "compound",
+  reporter = "pseudo_reporter",
+  perturbation = "compound",
   control = "Standard",
   lux = "gfp_auc",
   growth = "od_auc",
@@ -65,7 +65,7 @@ fit_rank0 <- fit_destress(
   assay,
   technical = "replicate",
   empirical_bayes = TRUE,
-  adjustment = "by_promoter",
+  adjustment = "by_reporter",
   interaction = FALSE,
   background_rank = 0
 )
@@ -73,17 +73,19 @@ fit_rank1 <- fit_destress(
   assay,
   technical = "replicate",
   empirical_bayes = TRUE,
-  adjustment = "by_promoter",
+  adjustment = "by_reporter",
   interaction = FALSE,
   background_rank = 1
 )
 
 annotate_results <- function(res, rank) {
+  res$promoter <- res$reporter
+  res$compound <- res$perturbation
   parts <- do.call(rbind, strsplit(as.character(res$promoter), " \\| "))
   res$base_promoter <- parts[, 1]
   res$window <- parts[, 2]
   hit_effect <- if (rank > 0) "rank_adjusted_total_effect" else "specific_effect"
-  hit_padj <- if (rank > 0) "rank_adjusted_total_padj_by_promoter" else "specific_padj_by_promoter"
+  hit_padj <- if (rank > 0) "rank_adjusted_total_padj_by_reporter" else "specific_padj_by_reporter"
   hit_pvalue <- if (rank > 0) "rank_adjusted_total_pvalue" else "specific_pvalue"
   hit_table <- call_hits(
     res,
@@ -107,8 +109,8 @@ rank_results <- rbind(res_rank0, res_rank1)
 rank_diagnostics <- background_rank_diagnostics(
   res_rank0,
   effect = "total_effect",
-  promoter = "promoter",
-  compound = "compound",
+  reporter = "promoter",
+  perturbation = "compound",
   rank_max = 4,
   permutations = 999,
   seed = 1
@@ -340,11 +342,11 @@ ggplot2::ggsave(
 p_volcano <- plot_volcano(
   res_rank1,
   effect = "rank_adjusted_total_effect",
-  padj = "rank_adjusted_total_padj_by_promoter",
+  padj = "rank_adjusted_total_padj_by_reporter",
   title = NULL,
   label_by = "pair",
   top_n = 15,
-  top_promoters = 8,
+  top_reporters = 8,
   xlab = "Estimated rank-adjusted total effect",
   ylab = "-log10 adjusted p-value"
 )

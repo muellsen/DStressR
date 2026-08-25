@@ -30,28 +30,28 @@ permutation_tail_pvalue <- function(effect, perm_effects, B, alternative) {
   }
 }
 
-#' Empirical p-values from replicate-averaged compound effects and DMSO nulls
+#' Empirical p-values from replicate-averaged perturbation effects and DMSO nulls
 #'
 #' Computes empirical p-values by first averaging replicate-level values for
-#' each promoter-compound-stratum combination, then comparing each averaged
-#' non-control compound value to the corresponding distribution of averaged DMSO
-#' control values from the same promoter and stratum, such as library plate.
+#' each reporter-perturbation-stratum combination, then comparing each averaged
+#' non-control perturbation value to the corresponding distribution of averaged DMSO
+#' control values from the same reporter and stratum, such as library plate.
 #' Optionally, it also computes Monte Carlo permutation p-values by repeatedly
 #' drawing replicate-sized DMSO sets from the same matched null stratum.
 #'
 #' @param table Replicate-level data frame.
 #' @param value Numeric value column to test, for example a DStressR adjusted
 #'   effect such as `destress_eb_effect_centered`.
-#' @param promoter,compound Columns identifying promoters and compounds.
-#' @param control Character vector of control compound IDs, usually DMSO wells.
+#' @param reporter,perturbation Columns identifying reporters and perturbations.
+#' @param control Character vector of control perturbation IDs, usually DMSO wells.
 #' @param replicate Optional replicate column. The function does not require
 #'   replicate labels for averaging, but the argument documents the intended
 #'   replicate-level input and is checked when supplied.
 #' @param strata Optional columns defining matched null strata. Use
-#'   `strata = "libplate"` to compare compounds only to DMSO wells from the
+#'   `strata = "libplate"` to compare perturbations only to DMSO wells from the
 #'   same library plate.
 #' @param min_replicates Minimum finite replicate values required for an
-#'   averaged compound or DMSO control value.
+#'   averaged perturbation or DMSO control value.
 #' @param min_null Minimum number of averaged DMSO controls required to compute
 #'   an empirical p-value.
 #' @param permutation If `TRUE`, compute an additional permutation p-value by
@@ -60,14 +60,14 @@ permutation_tail_pvalue <- function(effect, perm_effects, B, alternative) {
 #' @param seed Optional random seed for reproducible permutation p-values.
 #' @param alternative One of `"two.sided"`, `"greater"`, or `"less"`.
 #' @param padj_method Multiple-testing correction method passed to
-#'   [stats::p.adjust()], applied within promoter.
-#' @return A data frame with one row per non-control promoter-compound-stratum
-#'   average, including empirical p-values and promoter-wise adjusted p-values.
+#'   [stats::p.adjust()], applied within reporter.
+#' @return A data frame with one row per non-control reporter-perturbation-stratum
+#'   average, including empirical p-values and reporter-wise adjusted p-values.
 #' @export
 empirical_replicate_pvalues <- function(table,
                                         value,
-                                        promoter = "promoter",
-                                        compound = "compound",
+                                        reporter = "reporter",
+                                        perturbation = "perturbation",
                                         control,
                                         replicate = NULL,
                                         strata = NULL,
@@ -80,7 +80,7 @@ empirical_replicate_pvalues <- function(table,
                                         padj_method = "BH") {
   stopifnot(is.data.frame(table))
   alternative <- match.arg(alternative)
-  required <- c(value, promoter, compound, strata)
+  required <- c(value, reporter, perturbation, strata)
   if (!is.null(replicate)) {
     required <- c(required, replicate)
   }
@@ -89,7 +89,7 @@ empirical_replicate_pvalues <- function(table,
     stop("Missing required columns: ", paste(missing_cols, collapse = ", "), call. = FALSE)
   }
   if (missing(control)) {
-    stop("Provide `control`, the control compound IDs used as empirical nulls.", call. = FALSE)
+    stop("Provide `control`, the control perturbation IDs used as empirical nulls.", call. = FALSE)
   }
 
   d <- table
@@ -98,8 +98,8 @@ empirical_replicate_pvalues <- function(table,
   if (nrow(d) == 0) {
     stop("No finite values available for empirical p-value computation.", call. = FALSE)
   }
-  d[[promoter]] <- as.character(d[[promoter]])
-  d[[compound]] <- as.character(d[[compound]])
+  d[[reporter]] <- as.character(d[[reporter]])
+  d[[perturbation]] <- as.character(d[[perturbation]])
   for (col in strata) {
     d[[col]] <- as.character(d[[col]])
   }
@@ -107,7 +107,7 @@ empirical_replicate_pvalues <- function(table,
     set.seed(seed)
   }
 
-  average_cols <- unique(c(promoter, strata, compound))
+  average_cols <- unique(c(reporter, strata, perturbation))
   avg <- stats::aggregate(
     .empirical_value ~ .,
     d[, c(average_cols, ".empirical_value"), drop = FALSE],
@@ -123,7 +123,7 @@ empirical_replicate_pvalues <- function(table,
   names(n_df)[names(n_df) == ".empirical_value"] <- "n_replicates"
   avg <- merge(avg, n_df, by = average_cols, all.x = TRUE, sort = FALSE)
   avg <- avg[avg$n_replicates >= min_replicates, , drop = FALSE]
-  avg$is_control <- avg[[compound]] %in% control
+  avg$is_control <- avg[[perturbation]] %in% control
 
   control_avg <- avg[avg$is_control, , drop = FALSE]
   test_avg <- avg[!avg$is_control, , drop = FALSE]
@@ -134,14 +134,14 @@ empirical_replicate_pvalues <- function(table,
     stop("No averaged non-control rows available after filtering.", call. = FALSE)
   }
 
-  null_cols <- unique(c(promoter, strata))
+  null_cols <- unique(c(reporter, strata))
   d$.null_key <- make_key(d, null_cols)
   control_avg$.null_key <- make_key(control_avg, null_cols)
   test_avg$.null_key <- make_key(test_avg, null_cols)
   null_split <- split(control_avg$mean_value, control_avg$.null_key)
   raw_control_split <- split(
-    d$.empirical_value[d[[compound]] %in% control],
-    d$.null_key[d[[compound]] %in% control]
+    d$.empirical_value[d[[perturbation]] %in% control],
+    d$.null_key[d[[perturbation]] %in% control]
   )
 
   test_avg$null_n <- NA_integer_
@@ -198,16 +198,16 @@ empirical_replicate_pvalues <- function(table,
     }
   }
 
-  test_avg$empirical_padj_by_promoter <- NA_real_
-  test_avg$permutation_padj_by_promoter <- NA_real_
-  for (idx in split(seq_len(nrow(test_avg)), test_avg[[promoter]])) {
+  test_avg$empirical_padj_by_reporter <- NA_real_
+  test_avg$permutation_padj_by_reporter <- NA_real_
+  for (idx in split(seq_len(nrow(test_avg)), test_avg[[reporter]])) {
     ok <- idx[is.finite(test_avg$empirical_pvalue[idx])]
-    test_avg$empirical_padj_by_promoter[ok] <- stats::p.adjust(
+    test_avg$empirical_padj_by_reporter[ok] <- stats::p.adjust(
       test_avg$empirical_pvalue[ok],
       method = padj_method
     )
     ok_perm <- idx[is.finite(test_avg$permutation_pvalue[idx])]
-    test_avg$permutation_padj_by_promoter[ok_perm] <- stats::p.adjust(
+    test_avg$permutation_padj_by_reporter[ok_perm] <- stats::p.adjust(
       test_avg$permutation_pvalue[ok_perm],
       method = padj_method
     )

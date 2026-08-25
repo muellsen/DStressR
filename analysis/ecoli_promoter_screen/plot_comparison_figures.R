@@ -7,7 +7,7 @@ if (!requireNamespace("ggplot2", quietly = TRUE)) {
 
 ggplot2 <- asNamespace("ggplot2")
 
-load(analysis_path("data", "binsfeld_reporter_data.rda"))
+load_binsfeld_paper_data()
 out_dir <- analysis_output_dir("binsfeld")
 
 hit_key <- function(x) paste(x$promoter, x$compound, sep = "::")
@@ -21,8 +21,8 @@ wt_auc_model <- wt_auc[wt_auc$promoter != "EVC", ]
 
 assay <- prepare_assay(
   wt_auc_model,
-  promoter = "promoter",
-  compound = "compound",
+  reporter = "promoter",
+  perturbation = "compound",
   control = "Water",
   lux = "lux_auc",
   growth = "od_auc",
@@ -38,7 +38,7 @@ fit <- fit_destress(
   preset = "model",
   technical = c("replicate", "dose_level"),
   empirical_bayes = TRUE,
-  adjustment = "by_promoter",
+  adjustment = "by_reporter",
   interaction = FALSE
 )
 
@@ -59,7 +59,7 @@ destress$destress_hit_class <- call_hits(
   destress,
   fdr = 0.05,
   effect = "specific_effect",
-  padj = "specific_padj_by_promoter"
+  padj = "specific_padj_by_reporter"
 )$hit
 destress$destress_hit <- destress$destress_hit_class != "Not DE"
 destress$pair_id <- hit_key(destress)
@@ -109,7 +109,7 @@ comparison <- merge(
   )],
   destress[, c(
     "promoter", "compound", "pair_id", "specific_effect", "specific_pvalue",
-    "specific_padj_by_promoter", "destress_hit", "destress_hit_class"
+    "specific_padj_by_reporter", "destress_hit", "destress_hit_class"
   )],
   by = c("promoter", "compound", "pair_id"),
   all = TRUE,
@@ -136,7 +136,7 @@ utils::write.table(
 significant_union <- comparison[comparison$overlap_class != "Neither", c(
   "promoter", "compound", "overlap_class", "mean_z", "binsfeld_pvalue",
   "binsfeld_padj", "binsfeld_direction", "specific_effect", "specific_pvalue",
-  "specific_padj_by_promoter", "destress_hit_class"
+  "specific_padj_by_reporter", "destress_hit_class"
 )]
 significant_union <- significant_union[order(
   factor(significant_union$overlap_class, levels = c("Both", "Binsfeld only", "DStressR only")),
@@ -226,7 +226,7 @@ pvalue_df <- rbind(
     method = "DStressR without EV control",
     promoter = destress$promoter,
     raw_pvalue = destress$specific_pvalue,
-    adjusted_pvalue = destress$specific_padj_by_promoter,
+    adjusted_pvalue = destress$specific_padj_by_reporter,
     hit = destress$destress_hit,
     stringsAsFactors = FALSE
   )

@@ -187,8 +187,8 @@ calib$window <- factor(calib$window, levels = window_definitions$window)
 
 alpha_fit <- estimate_growth_exponents(
   calib,
-  promoter = "promoter",
-  compound = "compound",
+  reporter = "promoter",
+  perturbation = "compound",
   lux = "gfp_auc",
   growth = "od_auc",
   covariates = "window",
@@ -200,15 +200,15 @@ alpha_fit <- estimate_growth_exponents(
 calib$pseudo_reporter <- paste(calib$promoter, calib$window, sep = " | ")
 alpha_window_fit <- estimate_growth_exponents(
   calib,
-  promoter = "pseudo_reporter",
-  compound = "compound",
+  reporter = "pseudo_reporter",
+  perturbation = "compound",
   lux = "gfp_auc",
   growth = "od_auc",
   controls = "Calibration",
   min_control_n = 3,
   shrink = TRUE
 )
-alpha_window_parts <- do.call(rbind, strsplit(alpha_window_fit$promoter, " \\| "))
+alpha_window_parts <- do.call(rbind, strsplit(alpha_window_fit$reporter, " \\| "))
 alpha_window_fit$base_promoter <- alpha_window_parts[, 1]
 alpha_window_fit$window <- alpha_window_parts[, 2]
 alpha_window_fit$window <- factor(alpha_window_fit$window, levels = window_definitions$window)
@@ -237,7 +237,7 @@ utils::write.table(
 
 alpha_promoter_long <- rbind(
   data.frame(
-    promoter = alpha_fit$promoter,
+    promoter = alpha_fit$reporter,
     panel = "Raw growth exponent",
     estimate = alpha_fit$alpha_raw,
     se = alpha_fit$alpha_raw_se,
@@ -245,7 +245,7 @@ alpha_promoter_long <- rbind(
     stringsAsFactors = FALSE
   ),
   data.frame(
-    promoter = alpha_fit$promoter,
+    promoter = alpha_fit$reporter,
     panel = "Shrunken growth exponent",
     estimate = alpha_fit$alpha_shrunk,
     se = alpha_fit$alpha_shrunk_se,
@@ -257,7 +257,7 @@ alpha_promoter_long$panel <- factor(
   alpha_promoter_long$panel,
   levels = c("Raw growth exponent", "Shrunken growth exponent")
 )
-promoter_alpha_order <- alpha_fit[order(alpha_fit$alpha_shrunk), "promoter"]
+promoter_alpha_order <- alpha_fit[order(alpha_fit$alpha_shrunk), "reporter"]
 alpha_promoter_long$promoter <- factor(alpha_promoter_long$promoter, levels = promoter_alpha_order)
 alpha_global <- unique(alpha_fit$alpha_global)
 alpha_global <- alpha_global[is.finite(alpha_global)][1]
@@ -312,9 +312,9 @@ alpha_window_long <- rbind(
   )
 )
 alpha_window_long$estimate_type <- factor(alpha_window_long$estimate_type, levels = c("Raw", "Shrunken"))
-promoter_order <- stats::aggregate(alpha_shrunk ~ base_promoter, alpha_window_fit, median)
-promoter_order <- promoter_order[order(promoter_order$alpha_shrunk), "base_promoter"]
-alpha_window_long$base_promoter <- factor(alpha_window_long$base_promoter, levels = promoter_order)
+reporter_order <- stats::aggregate(alpha_shrunk ~ base_promoter, alpha_window_fit, median)
+reporter_order <- reporter_order[order(reporter_order$alpha_shrunk), "base_promoter"]
+alpha_window_long$base_promoter <- factor(alpha_window_long$base_promoter, levels = reporter_order)
 alpha_limit <- max(abs(alpha_window_long$alpha), na.rm = TRUE)
 
 p_alpha_heatmap <- ggplot2::ggplot(
@@ -346,7 +346,7 @@ ggplot2::ggsave(file.path(out_dir, "dryad_growth_transition_matching_windows_alp
 ggplot2::ggsave(file.path(out_dir, "dryad_growth_transition_matching_windows_alpha_heatmap.pdf"), p_alpha_heatmap, width = 7.5, height = 7)
 
 alpha_curve <- alpha_window_fit
-alpha_curve$base_promoter <- factor(alpha_curve$base_promoter, levels = promoter_order)
+alpha_curve$base_promoter <- factor(alpha_curve$base_promoter, levels = reporter_order)
 p_alpha_curves <- ggplot2::ggplot(alpha_curve, ggplot2::aes(window, alpha_raw, group = base_promoter)) +
   ggplot2::geom_hline(yintercept = 1, linetype = "dashed", color = "grey55", linewidth = 0.25) +
   ggplot2::geom_errorbar(
@@ -374,7 +374,7 @@ p_alpha_curves <- ggplot2::ggplot(alpha_curve, ggplot2::aes(window, alpha_raw, g
 ggplot2::ggsave(file.path(out_dir, "dryad_growth_transition_matching_windows_alpha_curves.png"), p_alpha_curves, width = 8, height = 8, dpi = 300)
 ggplot2::ggsave(file.path(out_dir, "dryad_growth_transition_matching_windows_alpha_curves.pdf"), p_alpha_curves, width = 8, height = 8)
 
-base_alpha <- stats::setNames(alpha_fit$alpha_shrunk, alpha_fit$promoter)
+base_alpha <- stats::setNames(alpha_fit$alpha_shrunk, alpha_fit$reporter)
 stress_alpha <- unlist(
   lapply(promoter_levels, function(promoter) {
     stats::setNames(rep(base_alpha[[promoter]], nrow(window_definitions)), paste(promoter, window_definitions$window, sep = " | "))
@@ -393,8 +393,8 @@ screen$compound <- factor(screen$compound, levels = c("Standard", "Iron", "Tetra
 
 assay <- prepare_assay(
   screen,
-  promoter = "pseudo_reporter",
-  compound = "compound",
+  reporter = "pseudo_reporter",
+  perturbation = "compound",
   control = "Standard",
   lux = "gfp_auc",
   growth = "od_auc",
@@ -405,11 +405,13 @@ fit <- fit_destress(
   assay,
   technical = "replicate",
   empirical_bayes = TRUE,
-  adjustment = "by_promoter",
+  adjustment = "by_reporter",
   interaction = FALSE
 )
 
 res <- results(fit)
+res$promoter <- res$reporter
+res$compound <- res$perturbation
 parts <- do.call(rbind, strsplit(as.character(res$promoter), " \\| "))
 res$base_promoter <- parts[, 1]
 res$window <- parts[, 2]
@@ -419,7 +421,7 @@ hit_table <- call_hits(
   res,
   fdr = 0.05,
   effect = "specific_effect",
-  padj = "specific_padj_by_promoter"
+  padj = "specific_padj_by_reporter"
 )
 res$hit_class <- hit_table$hit
 res$hit <- res$hit_class != "Not DE"
@@ -542,11 +544,11 @@ ggplot2::ggsave(file.path(out_dir, "dryad_weak_stress_windows_calibrated_alpha_p
 p_volcano <- plot_volcano(
   res,
   effect = "specific_effect",
-  padj = "specific_padj_by_promoter",
+  padj = "specific_padj_by_reporter",
   title = NULL,
   label_by = "pair",
   top_n = 15,
-  top_promoters = 8,
+  top_reporters = 8,
   xlab = "Estimated specific effect",
   ylab = "-log10 adjusted p-value"
 )
@@ -555,9 +557,9 @@ ggplot2::ggsave(file.path(out_dir, "dryad_weak_stress_windows_calibrated_alpha_v
 
 comparison <- merge(
   utils::read.delim(file.path(out_dir, "dryad_weak_stress_windows_alpha1_pair_results.tsv"))[
-    , c("promoter", "compound", "total_effect", "specific_effect", "specific_pvalue", "specific_padj_by_promoter", "hit")
+    , c("promoter", "compound", "total_effect", "specific_effect", "specific_pvalue", "specific_padj_by_reporter", "hit")
   ],
-  res[, c("promoter", "compound", "total_effect", "specific_effect", "specific_pvalue", "specific_padj_by_promoter", "hit")],
+  res[, c("promoter", "compound", "total_effect", "specific_effect", "specific_pvalue", "specific_padj_by_reporter", "hit")],
   by = c("promoter", "compound"),
   suffixes = c("_alpha1", "_calibrated_alpha"),
   all = TRUE,

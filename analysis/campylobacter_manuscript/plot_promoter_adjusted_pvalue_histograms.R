@@ -17,7 +17,7 @@ tabs <- lapply(methods, function(method) {
     method = method_label(method),
     pvalue = tab[[paste0(method, "_pvalue")]],
     padj_global = tab[[paste0(method, "_padj_global")]],
-    padj_by_promoter = tab[[paste0(method, "_padj_by_promoter")]],
+    padj_by_reporter = tab[[paste0(method, "_padj_by_reporter")]],
     stringsAsFactors = FALSE
   )
 })
@@ -81,9 +81,9 @@ plot_histograms <- function(label, x_column, x_label) {
 
 raw_summary <- plot_histograms("raw", "pvalue", "Raw p-value")
 global_summary <- plot_histograms("global_adjusted", "padj_global", "Global adjusted p-value")
-by_promoter_summary <- plot_histograms("by_promoter_adjusted", "padj_by_promoter", "Within-promoter adjusted p-value")
+by_reporter_summary <- plot_histograms("by_reporter_adjusted", "padj_by_reporter", "Within-promoter adjusted p-value")
 
 message("Wrote promoter p-value histograms to: ", out_dir)
 print(raw_summary[order(raw_summary$method, -raw_summary$p_lt_0.05), ])
 print(global_summary[order(global_summary$method, -global_summary$p_lt_0.05), ])
-print(by_promoter_summary[order(by_promoter_summary$method, -by_promoter_summary$p_lt_0.05), ])
+print(by_reporter_summary[order(by_reporter_summary$method, -by_reporter_summary$p_lt_0.05), ])

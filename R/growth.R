@@ -1,4 +1,4 @@
-#' Estimate promoter-specific growth normalization exponents
+#' Estimate reporter-specific growth normalization exponents
 #'
 #' Estimates how luminescence scales with growth in negative-control wells,
 #' optionally adjusting for technical factors such as batch, plate, or
@@ -6,34 +6,34 @@
 #'
 #' \deqn{\log_2(LUX_i) = a_g + \alpha_g \log_2(growth_i) + X_i\theta + e_i}
 #'
-#' Raw promoter-specific slopes are then shrunk toward a global control-well
+#' Raw reporter-specific slopes are then shrunk toward a global control-well
 #' slope using an empirical-Bayes normal prior. The shrunken
 #' \eqn{\alpha_g} values can be used in [prepare_assay()] to compute:
 #'
 #' \deqn{y_i = \log_2(LUX_i) - \alpha_g \log_2(growth_i)}
 #'
 #' @param data A data frame with one row per well.
-#' @param promoter,compound,lux,growth Column names.
+#' @param reporter,perturbation,lux,growth Column names.
 #' @param covariates Optional technical covariate column names to include as
 #'   additive adjustment terms when estimating growth slopes. Only covariates
 #'   with more than one observed value in the relevant control subset are used.
 #' @param numeric_covariates Optional subset of `covariates` that should enter
 #'   the growth-slope model as numeric variables. Other covariates are converted
 #'   to factors.
-#' @param controls Control values in `compound`, usually DMSO wells.
+#' @param controls Control values in `perturbation`, usually DMSO wells.
 #' @param pseudocount Added before log2 transformation.
-#' @param min_control_n Minimum control wells needed for a promoter-specific
-#'   raw slope. Promoters with fewer controls use the global slope.
-#' @param shrink If `TRUE`, shrink promoter-specific slopes toward the global
+#' @param min_control_n Minimum control wells needed for a reporter-specific
+#'   raw slope. Reporters with fewer controls use the global slope.
+#' @param shrink If `TRUE`, shrink reporter-specific slopes toward the global
 #'   control slope.
 #' @param alpha_bounds Optional numeric length-2 bounds for the final exponent.
 #'   Use `NULL` for no clipping.
-#' @return A data frame with raw promoter intercepts and raw and shrunken growth
-#'   exponents per promoter.
+#' @return A data frame with raw reporter intercepts and raw and shrunken growth
+#'   exponents per reporter.
 #' @export
 estimate_growth_exponents <- function(data,
-                                      promoter = "promoter",
-                                      compound = "compound",
+                                      reporter = "reporter",
+                                      perturbation = "perturbation",
                                       lux = "lux",
                                       growth = "growth",
                                       covariates = NULL,
@@ -44,13 +44,13 @@ estimate_growth_exponents <- function(data,
                                       shrink = TRUE,
                                       alpha_bounds = c(-2, 3)) {
   stopifnot(is.data.frame(data))
-  required <- c(promoter, compound, lux, growth, covariates)
+  required <- c(reporter, perturbation, lux, growth, covariates)
   missing_cols <- setdiff(required, names(data))
   if (length(missing_cols) > 0) {
     stop("Missing required columns: ", paste(missing_cols, collapse = ", "), call. = FALSE)
   }
 
-  controls_df <- data[data[[compound]] %in% controls, , drop = FALSE]
+  controls_df <- data[data[[perturbation]] %in% controls, , drop = FALSE]
   if (nrow(controls_df) < 3) {
     stop("Need at least three control rows to estimate growth exponent.", call. = FALSE)
   }
@@ -95,7 +95,7 @@ estimate_growth_exponents <- function(data,
   covariates <- unique(stats::na.omit(covariates))
   numeric_covariates <- unique(stats::na.omit(numeric_covariates))
   numeric_covariates <- intersect(covariates, numeric_covariates)
-  controls_df[[promoter]] <- factor(controls_df[[promoter]])
+  controls_df[[reporter]] <- factor(controls_df[[reporter]])
   for (nm in covariates) {
     if (nm %in% numeric_covariates) {
       controls_df[[nm]] <- as.numeric(controls_df[[nm]])
@@ -103,7 +103,7 @@ estimate_growth_exponents <- function(data,
       controls_df[[nm]] <- factor(controls_df[[nm]])
     }
   }
-  global_covariates <- unique(c(promoter, covariates))
+  global_covariates <- unique(c(reporter, covariates))
   global <- fit_growth_slope(controls_df, global_covariates)
   if (!is.finite(global$estimate) || !is.finite(global$se) || global$se <= 0) {
     global <- fit_growth_slope(controls_df, character())
@@ -117,11 +117,11 @@ estimate_growth_exponents <- function(data,
   global_alpha <- global$estimate
   global_se <- global$se
 
-  by_promoter <- split(controls_df, controls_df[[promoter]])
-  estimates <- lapply(by_promoter, function(d) {
+  by_reporter <- split(controls_df, controls_df[[reporter]])
+  estimates <- lapply(by_reporter, function(d) {
     n <- nrow(d)
     out <- data.frame(
-      promoter = as.character(d[[promoter]][1]),
+      reporter = as.character(d[[reporter]][1]),
       control_n = n,
       log_growth_sd = stats::sd(d$.log_growth),
       a_raw = NA_real_,
@@ -185,5 +185,5 @@ estimate_growth_exponents <- function(data,
   estimates$alpha_fixed_one <- 1
   estimates$alpha_diff_from_one <- estimates$alpha_shrunk - 1
   rownames(estimates) <- NULL
-  estimates[order(estimates$promoter), ]
+  estimates[order(estimates$reporter), ]
 }

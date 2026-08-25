@@ -4,17 +4,17 @@
 \alias{results}
 \title{Extract model results}
 \usage{
-results(fit, compounds = NULL, promoters = NULL)
+results(fit, perturbations = NULL, reporters = NULL)
 }
 \arguments{
 \item{fit}{A \code{destress_fit} object.}
 
-\item{compounds}{Optional compound subset.}
+\item{perturbations}{Optional perturbation subset.}
 
-\item{promoters}{Optional promoter subset.}
+\item{reporters}{Optional reporter subset.}
 }
 \value{
-A data frame with total and promoter-specific effects.
+A data frame with total and reporter-specific effects.
 }
 \description{
 Extract model results

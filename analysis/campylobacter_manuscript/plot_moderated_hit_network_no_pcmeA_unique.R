@@ -42,7 +42,7 @@ if (nrow(hits) == 0) {
 }
 
 hits <- merge(hits, compound_lookup, by = "compound", all.x = TRUE, sort = FALSE)
-hits$compound_label <- ifelse(
+hits$perturbation_label <- ifelse(
   is.na(hits$ProductName) | hits$ProductName == "" | hits$ProductName == "NA",
   hits$compound,
   hits$ProductName
@@ -54,17 +54,17 @@ compounds <- sort(unique(hits$compound))
 incidence <- xtabs(~ promoter + compound, hits)
 incidence <- incidence[promoters, compounds, drop = FALSE]
 
-promoter_order <- if (nrow(incidence) > 2 && ncol(incidence) > 1) {
+reporter_order <- if (nrow(incidence) > 2 && ncol(incidence) > 1) {
   rownames(incidence)[stats::hclust(stats::dist(as.matrix(incidence > 0), method = "binary"), method = "average")$order]
 } else {
   promoters
 }
 
-theta <- seq(0, 2 * pi, length.out = length(promoter_order) + 1)[-length(promoter_order) - 1]
+theta <- seq(0, 2 * pi, length.out = length(reporter_order) + 1)[-length(reporter_order) - 1]
 theta <- theta + pi / 2
 promoter_nodes <- data.frame(
-  node_id = promoter_order,
-  label = promoter_order,
+  node_id = reporter_order,
+  label = reporter_order,
   type = "promoter",
   x = cos(theta),
   y = sin(theta),
@@ -76,7 +76,7 @@ compound_summary <- do.call(rbind, lapply(split(hits, hits$compound), function(d
   ps <- sort(unique(d$promoter))
   data.frame(
     node_id = d$compound[1],
-    label = d$compound_label[1],
+    label = d$perturbation_label[1],
     type = "compound",
     degree = length(ps),
     promoter_signature = paste(ps, collapse = ";"),

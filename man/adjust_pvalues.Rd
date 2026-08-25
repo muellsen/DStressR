@@ -2,12 +2,12 @@
 % Please edit documentation in R/model.R
 \name{adjust_pvalues}
 \alias{adjust_pvalues}
-\title{Adjust p-values within promoter}
+\title{Adjust p-values within reporter}
 \usage{
 adjust_pvalues(
   table,
   pvalue = "specific_pvalue",
-  output = "specific_padj_by_promoter",
+  output = "specific_padj_by_reporter",
   method = "BH"
 )
 }
@@ -21,5 +21,5 @@ adjust_pvalues(
 \item{method}{Passed to \code{\link[stats:p.adjust]{stats::p.adjust()}}.}
 }
 \description{
-Adjust p-values within promoter
+Adjust p-values within reporter
 }

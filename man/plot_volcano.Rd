@@ -2,32 +2,32 @@
 % Please edit documentation in R/plots.R
 \name{plot_volcano}
 \alias{plot_volcano}
-\title{Volcano plot for DStressR promoter-compound hits}
+\title{Volcano plot for DStressR reporter-perturbation hits}
 \usage{
 plot_volcano(
   table,
   effect = "specific_effect",
   padj = "specific_padj",
   pvalue = NULL,
-  promoter = "promoter",
-  compound = "compound",
-  compound_label = compound,
+  reporter = "reporter",
+  perturbation = "perturbation",
+  perturbation_label = perturbation,
   fdr = 0.05,
   lfc = 0,
   top_n = 12,
-  top_promoters = 6,
+  top_reporters = 6,
   title = "DStressR volcano plot",
   subtitle = NULL,
   xlab = NULL,
   ylab = NULL,
-  label_by = c("pair", "promoter", "compound"),
+  label_by = c("pair", "reporter", "perturbation"),
   max_label_chars = 46,
   repel_labels = TRUE,
   point_alpha = 0.65
 )
 }
 \arguments{
-\item{table}{A data frame with one row per promoter-compound pair.}
+\item{table}{A data frame with one row per reporter-perturbation pair.}
 
 \item{effect}{Effect-size column to plot on the x-axis.}
 
@@ -35,10 +35,10 @@ plot_volcano(
 
 \item{pvalue}{Optional raw p-value column used only if \code{padj = NULL}.}
 
-\item{promoter, compound}{Columns identifying the promoter and compound.}
+\item{reporter, perturbation}{Columns identifying the reporter and perturbation.}
 
-\item{compound_label}{Optional column with human-readable compound names used
-for annotations. Defaults to \code{compound}.}
+\item{perturbation_label}{Optional column with human-readable perturbation names used
+for annotations. Defaults to \code{perturbation}.}
 
 \item{fdr}{FDR threshold for hit highlighting.}
 
@@ -46,7 +46,7 @@ for annotations. Defaults to \code{compound}.}
 
 \item{top_n}{Number of significant pairs to annotate.}
 
-\item{top_promoters}{Number of promoter groups to color. Remaining promoters
+\item{top_reporters}{Number of reporter groups to color. Remaining reporters
 are shown in grey.}
 
 \item{title, subtitle}{Plot title and subtitle.}
@@ -55,7 +55,7 @@ are shown in grey.}
 selected columns.}
 
 \item{label_by}{Label style for annotated points. The default, \code{"pair"},
-labels top hits as promoter-compound pairs.}
+labels top hits as reporter-perturbation pairs.}
 
 \item{max_label_chars}{Maximum characters per annotation label. Longer
 labels are truncated with \code{...}. Use \code{Inf} to keep full labels.}
@@ -70,14 +70,14 @@ A \code{ggplot} object.
 }
 \description{
 Creates a standard volcano plot from a DStressR result table. The x-axis is a
-promoter-compound effect size and the y-axis is the negative log10 adjusted
-p-value. Significant hits are emphasized, top promoter groups can be colored,
-and the most significant promoter-compound pairs are annotated.
+reporter-perturbation effect size and the y-axis is the negative log10 adjusted
+p-value. Significant hits are emphasized, top reporter groups can be colored,
+and the most significant reporter-perturbation pairs are annotated.
 }
 \details{
 The defaults work with \code{\link[=results]{results()}} followed by \code{\link[=adjust_pvalues]{adjust_pvalues()}} or
 \code{\link[=call_hits]{call_hits()}}. For workflow comparison tables, pass the corresponding column
 names, for example \code{effect = "destress_eb_effect_centered"},
-\code{padj = "estimated_alpha_eb_padj_by_promoter"}, \code{compound = "srn_code"},
-and \code{compound_label = "ProductName"}.
+\code{padj = "estimated_alpha_eb_padj_by_reporter"}, \code{perturbation = "srn_code"},
+and \code{perturbation_label = "ProductName"}.
 }

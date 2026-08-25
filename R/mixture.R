@@ -104,35 +104,35 @@ predict_three_part_t <- function(x, fit) {
   )
 }
 
-#' Fit a three-part empirical-null mixture to promoter-compound effects
+#' Fit a three-part empirical-null mixture to reporter-perturbation effects
 #'
-#' Fits, separately for each promoter, a three-component Student-t mixture to
-#' adjusted promoter-compound effects. The ordered components are interpreted as
+#' Fits, separately for each reporter, a three-component Student-t mixture to
+#' adjusted reporter-perturbation effects. The ordered components are interpreted as
 #' repressed, null, and activated effects. This second-stage model is intended
 #' for empirical-null calibration after the first-stage DStressR model has
-#' already adjusted growth, technical factors, compound-wide effects, and
-#' promoter-specific variance.
+#' already adjusted growth, technical factors, perturbation-wide effects, and
+#' reporter-specific variance.
 #'
-#' @param table A data frame with one row per promoter-compound pair.
+#' @param table A data frame with one row per reporter-perturbation pair.
 #' @param value Numeric effect column, usually `specific_effect` or a centered
 #'   DStressR EB effect column.
-#' @param promoter Column identifying promoters.
+#' @param reporter Column identifying reporters.
 #' @param df Degrees of freedom for each Student-t component. Smaller values
 #'   give heavier tails.
-#' @param max_iter Maximum EM iterations per promoter.
+#' @param max_iter Maximum EM iterations per reporter.
 #' @param tol Relative log-likelihood convergence tolerance.
 #' @param min_scale Lower bound for component scale.
 #' @param min_prior Lower bound for component mixing proportions.
 #' @param padj_method Multiple-testing correction method passed to
-#'   [stats::p.adjust()], applied within promoter to empirical-null p-values.
+#'   [stats::p.adjust()], applied within reporter to empirical-null p-values.
 #' @return The input table with posterior probabilities, local FDR,
-#'   empirical-null p-values, promoter-wise adjusted p-values, and posterior
-#'   class appended. The promoter-level fitted parameters are available as
+#'   empirical-null p-values, reporter-wise adjusted p-values, and posterior
+#'   class appended. The reporter-level fitted parameters are available as
 #'   `attr(result, "mixture_summary")`.
 #' @export
 fit_effect_mixture <- function(table,
                                value = "specific_effect",
-                               promoter = "promoter",
+                               reporter = "reporter",
                                df = 4,
                                max_iter = 2000,
                                tol = 1e-6,
@@ -140,7 +140,7 @@ fit_effect_mixture <- function(table,
                                min_prior = 1e-4,
                                padj_method = "BH") {
   stopifnot(is.data.frame(table))
-  required <- c(value, promoter)
+  required <- c(value, reporter)
   missing_cols <- setdiff(required, names(table))
   if (length(missing_cols) > 0) {
     stop("Missing required columns: ", paste(missing_cols, collapse = ", "), call. = FALSE)
@@ -148,16 +148,16 @@ fit_effect_mixture <- function(table,
 
   out <- table
   out$.effect_mixture_value <- as.numeric(out[[value]])
-  out$.effect_mixture_promoter <- as.character(out[[promoter]])
+  out$.effect_mixture_promoter <- as.character(out[[reporter]])
   out$prob_repressed <- NA_real_
   out$prob_null <- NA_real_
   out$prob_activated <- NA_real_
   out$local_fdr <- NA_real_
   out$posterior_nonnull <- NA_real_
-  out$local_fdr_qvalue_by_promoter <- NA_real_
+  out$local_fdr_qvalue_by_reporter <- NA_real_
   out$empirical_null_z <- NA_real_
   out$empirical_null_pvalue <- NA_real_
-  out$empirical_null_padj_by_promoter <- NA_real_
+  out$empirical_null_padj_by_reporter <- NA_real_
   out$posterior_class <- NA_character_
 
   split_idx <- split(seq_len(nrow(out)), out$.effect_mixture_promoter)
@@ -188,16 +188,16 @@ fit_effect_mixture <- function(table,
       "posterior_class"
     )] <- pred
     out$posterior_nonnull[finite_idx] <- 1 - out$local_fdr[finite_idx]
-    out$empirical_null_padj_by_promoter[finite_idx] <- stats::p.adjust(
+    out$empirical_null_padj_by_reporter[finite_idx] <- stats::p.adjust(
       out$empirical_null_pvalue[finite_idx],
       method = padj_method
     )
     lfdr_order <- finite_idx[order(out$local_fdr[finite_idx])]
     cumulative_fdr <- cumsum(out$local_fdr[lfdr_order]) / seq_along(lfdr_order)
     local_q <- rev(cummin(rev(cumulative_fdr)))
-    out$local_fdr_qvalue_by_promoter[lfdr_order] <- local_q
+    out$local_fdr_qvalue_by_reporter[lfdr_order] <- local_q
     summary_rows[[length(summary_rows) + 1]] <- data.frame(
-      promoter = prom,
+      reporter = prom,
       n = length(finite_idx),
       df = fit$df,
       logLik = fit$logLik,

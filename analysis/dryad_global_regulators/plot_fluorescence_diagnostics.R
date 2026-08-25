@@ -108,7 +108,7 @@ reporter_plot <- plot_mean_variance_diagnostic(
 p_hist <- plot_pvalue_histogram(
   res,
   pvalue = "specific_pvalue",
-  promoter = "promoter",
+  reporter = "promoter",
   by = "all",
   bins = 20,
   title = NULL,
@@ -121,15 +121,15 @@ p_volcano <- plot_volcano(
   res,
   effect = "specific_effect",
   pvalue = "specific_pvalue",
-  padj = "specific_padj_by_promoter",
-  promoter = "promoter",
-  compound = "compound",
+  padj = "specific_padj_by_reporter",
+  reporter = "promoter",
+  perturbation = "compound",
   title = NULL,
   subtitle = NULL,
   xlab = expression(hat(Delta * y)[aj]^"spec"),
   ylab = expression(-log[10] * " raw p-value"),
   top_n = 8,
-  top_promoters = 12
+  top_reporters = 12
 ) +
   ggplot2$theme(legend.position = "right")
 

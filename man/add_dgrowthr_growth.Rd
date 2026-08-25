@@ -51,7 +51,7 @@ keeps the present analysis reproducible while making the DGrowthR bridge
 available for future comparisons.
 
 This helper joins \code{object@growth_parameters} from a fitted DGrowthR object
-onto a promoter/luminescence assay table. Run
+onto a reporter/luminescence assay table. Run
 \code{DGrowthR::estimate_growth_parameters()} first, optionally with
 \code{od_auc_at_t} if you want time-specific columns such as \code{OD_16} or \code{AUC_16}.
 }

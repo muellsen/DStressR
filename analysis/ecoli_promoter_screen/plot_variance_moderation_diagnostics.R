@@ -10,7 +10,7 @@ if (!requireNamespace("scales", quietly = TRUE)) {
 
 ggplot2 <- asNamespace("ggplot2")
 
-load(analysis_path("data", "binsfeld_reporter_data.rda"))
+load_binsfeld_paper_data()
 
 out_dir <- analysis_output_dir("binsfeld_variance_diagnostics")
 
@@ -27,8 +27,8 @@ prepare_ecoli_assay <- function(use_ev_control) {
   }
   args <- list(
     data = assay_data,
-    promoter = "promoter",
-    compound = "compound",
+    reporter = "promoter",
+    perturbation = "compound",
     control = "Water",
     lux = "lux_auc",
     growth = "od_auc",
@@ -39,7 +39,7 @@ prepare_ecoli_assay <- function(use_ev_control) {
     numeric_covariates = "dose_level"
   )
   if (isTRUE(use_ev_control)) {
-    args$background_promoter <- "EVC"
+    args$background_reporter <- "EVC"
     args$background_method <- "huber"
     args$background_by <- c("compound", "dose_level", "replicate")
   }
@@ -51,7 +51,7 @@ fit_pair_results <- function(assay, empirical_bayes) {
     assay,
     technical = c("replicate", "dose_level"),
     empirical_bayes = empirical_bayes,
-    adjustment = "by_promoter",
+    adjustment = "by_reporter",
     interaction = FALSE
   )
   list(fit = fit, results = results(fit))
@@ -63,7 +63,7 @@ variance_table <- function(label, use_ev_control) {
   moderated_fit <- fit_pair_results(assay, empirical_bayes = TRUE)
   raw <- raw_fit$results
   moderated <- moderated_fit$results
-  residual_df <- min(raw_fit$fit$promoter_effects$residual_df, na.rm = TRUE)
+  residual_df <- min(raw_fit$fit$reporter_effects$residual_df, na.rm = TRUE)
   prior <- estimate_eb_prior_variance(raw$specific_se^2, residual_df)
 
   tab <- data.frame(

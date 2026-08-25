@@ -17,7 +17,7 @@ if (!file.exists(result_file)) {
 res <- read_tsv_base(result_file)
 required <- c(
   "promoter", "compound", "specific_effect", "specific_pvalue",
-  "specific_padj_by_promoter", "evc_huber_hit_class"
+  "specific_padj_by_reporter", "evc_huber_hit_class"
 )
 missing_cols <- setdiff(required, names(res))
 if (length(missing_cols) > 0) {
@@ -26,9 +26,9 @@ if (length(missing_cols) > 0) {
 
 res$specific_effect <- as.numeric(res$specific_effect)
 res$specific_pvalue <- as.numeric(res$specific_pvalue)
-res$specific_padj_by_promoter <- as.numeric(res$specific_padj_by_promoter)
+res$specific_padj_by_reporter <- as.numeric(res$specific_padj_by_reporter)
 res <- res[is.finite(res$specific_effect), , drop = FALSE]
-res$hit <- is.finite(res$specific_padj_by_promoter) & res$specific_padj_by_promoter <= 0.05
+res$hit <- is.finite(res$specific_padj_by_reporter) & res$specific_padj_by_reporter <= 0.05
 res$effect_class <- ifelse(
   res$hit & res$specific_effect > 0,
   "Positive hit",
@@ -38,7 +38,7 @@ res$effect_class <- ifelse(
 promoter_summary <- do.call(rbind, lapply(split(res, res$promoter), function(tab) {
   data.frame(
     promoter = tab$promoter[1],
-    n_compounds = length(unique(tab$compound)),
+    n_perturbations = length(unique(tab$compound)),
     median_effect = stats::median(tab$specific_effect, na.rm = TRUE),
     mean_effect = mean(tab$specific_effect, na.rm = TRUE),
     median_abs_effect = stats::median(abs(tab$specific_effect), na.rm = TRUE),
@@ -49,12 +49,12 @@ promoter_summary <- do.call(rbind, lapply(split(res, res$promoter), function(tab
     n_positive_hits = sum(tab$hit & tab$specific_effect > 0, na.rm = TRUE),
     n_negative_hits = sum(tab$hit & tab$specific_effect < 0, na.rm = TRUE),
     min_pvalue = min(tab$specific_pvalue, na.rm = TRUE),
-    min_padj_by_promoter = min(tab$specific_padj_by_promoter, na.rm = TRUE),
+    min_padj_by_reporter = min(tab$specific_padj_by_reporter, na.rm = TRUE),
     stringsAsFactors = FALSE
   )
 }))
-paper_promoter_order <- c("acrABp", "marRABp", "micFp", "ompFp", "robp", "soxSp", "tolCp")
-promoter_summary$paper_order <- match(promoter_summary$promoter, paper_promoter_order)
+paper_reporter_order <- c("acrABp", "marRABp", "micFp", "ompFp", "robp", "soxSp", "tolCp")
+promoter_summary$paper_order <- match(promoter_summary$promoter, paper_reporter_order)
 promoter_summary <- promoter_summary[
   order(promoter_summary$paper_order, promoter_summary$promoter),
   ,
@@ -73,7 +73,7 @@ utils::write.table(
   row.names = FALSE
 )
 
-promoter_levels <- rev(paper_promoter_order[paper_promoter_order %in% promoter_summary$promoter])
+promoter_levels <- rev(paper_reporter_order[paper_reporter_order %in% promoter_summary$promoter])
 res$promoter <- factor(res$promoter, levels = promoter_levels)
 res$effect_class <- factor(
   res$effect_class,

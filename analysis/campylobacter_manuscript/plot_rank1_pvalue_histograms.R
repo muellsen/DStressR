@@ -48,8 +48,8 @@ all_pvalues$method <- factor(
   levels = c("DStressR default k=0", "DStressR default k=1", "Median polish")
 )
 
-promoter_order <- names(sort(table(all_pvalues$promoter), decreasing = TRUE))
-all_pvalues$promoter <- factor(all_pvalues$promoter, levels = promoter_order)
+reporter_order <- names(sort(table(all_pvalues$promoter), decreasing = TRUE))
+all_pvalues$promoter <- factor(all_pvalues$promoter, levels = reporter_order)
 
 summary <- do.call(rbind, lapply(split(all_pvalues, all_pvalues$method), function(d) {
   data.frame(

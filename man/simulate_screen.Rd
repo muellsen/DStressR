@@ -5,15 +5,15 @@
 \title{Simulate a chemical-genomics screen}
 \usage{
 simulate_screen(
-  n_promoters = 12,
-  n_compounds = 24,
+  n_reporters = 12,
+  n_perturbations = 24,
   n_replicates = 2,
   sigma = 0.15,
   seed = NULL
 )
 }
 \arguments{
-\item{n_promoters, n_compounds}{Dimensions excluding DMSO.}
+\item{n_reporters, n_perturbations}{Dimensions excluding DMSO.}
 
 \item{n_replicates}{Number of technical replicates.}
 

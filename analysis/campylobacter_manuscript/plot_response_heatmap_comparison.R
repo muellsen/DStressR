@@ -19,7 +19,7 @@ read_response <- function(method) {
     )
   }
   tab <- read_tsv_base(path)
-  required <- c("promoter", "compound", "compound_label", "response_centered")
+  required <- c("promoter", "compound", "perturbation_label", "response_centered")
   missing <- setdiff(required, names(tab))
   if (length(missing) > 0) {
     stop("Response output is missing columns: ", paste(missing, collapse = ", "), call. = FALSE)
@@ -122,11 +122,11 @@ ratio <- read_response("legacy_ratio")
 modeled <- read_response("modeled")
 
 combined_for_selection <- rbind(
-  ratio[, c("compound", "compound_label", "response_centered"), drop = FALSE],
-  modeled[, c("compound", "compound_label", "response_centered"), drop = FALSE]
+  ratio[, c("compound", "perturbation_label", "response_centered"), drop = FALSE],
+  modeled[, c("compound", "perturbation_label", "response_centered"), drop = FALSE]
 )
 compound_summary <- stats::aggregate(
-  abs(response_centered) ~ compound + compound_label,
+  abs(response_centered) ~ compound + perturbation_label,
   combined_for_selection,
   mean,
   na.rm = TRUE
@@ -149,8 +149,8 @@ write_matrix(ratio_mat, "legacy_ratio_response_heatmap")
 write_matrix(modeled_mat, "modeled_response_heatmap")
 write_matrix(diff_mat, "modeled_minus_ratio_response_heatmap")
 write.table(
-  data.frame(promoter = row_order, promoter_order = seq_along(row_order)),
-  file.path(out_dir, "shared_promoter_order.tsv"),
+  data.frame(promoter = row_order, reporter_order = seq_along(row_order)),
+  file.path(out_dir, "shared_reporter_order.tsv"),
   sep = "\t",
   row.names = FALSE,
   quote = FALSE
@@ -270,7 +270,7 @@ summary <- data.frame(
   rows = c(nrow(ratio), nrow(modeled)),
   promoters = c(length(unique(ratio$promoter)), length(unique(modeled$promoter))),
   compounds = c(length(unique(ratio$compound)), length(unique(modeled$compound))),
-  top_n_compounds = top_n,
+  top_n_perturbations = top_n,
   stringsAsFactors = FALSE
 )
 write.table(

@@ -6,8 +6,8 @@
 \usage{
 prepare_assay(
   data,
-  promoter = "promoter",
-  compound = "compound",
+  reporter = "reporter",
+  perturbation = "perturbation",
   control = "DMSO",
   lux = "lux",
   growth = "growth",
@@ -19,26 +19,26 @@ prepare_assay(
   replicate = NULL,
   growth_covariates = NULL,
   numeric_covariates = NULL,
-  background_promoter = NULL,
+  background_reporter = NULL,
   background_method = c("none", "subtract", "lm", "huber"),
   background_by = NULL,
   pseudocount = 1e-08
 )
 }
 \arguments{
-\item{data}{A data frame with one row per promoter-compound-replicate well.}
+\item{data}{A data frame with one row per reporter-perturbation-replicate well.}
 
-\item{promoter, compound}{Column names identifying promoter and compound.}
+\item{reporter, perturbation}{Column names identifying reporter and perturbation.}
 
-\item{control}{Label in \code{compound} for the negative control, usually DMSO.}
+\item{control}{Label in \code{perturbation} for the negative control, usually DMSO.}
 
 \item{lux, growth}{Column names for luminescence and growth summaries.}
 
 \item{growth_exponent}{Fixed coefficient for growth normalization, a named
-vector keyed by promoter, or \code{"estimate"} to estimate promoter-specific
+vector keyed by reporter, or \code{"estimate"} to estimate reporter-specific
 exponents from controls.}
 
-\item{control_values}{Values in \code{compound} used as controls for growth
+\item{control_values}{Values in \code{perturbation} used as controls for growth
 exponent estimation. Defaults to \code{control}.}
 
 \item{response}{Optional existing response column. If supplied, \code{lux} and
@@ -46,11 +46,11 @@ exponent estimation. Defaults to \code{control}.}
 
 \item{batch, plate, replicate}{Optional technical-factor column names.
 When \code{growth_exponent = "estimate"}, these columns are also used as
-covariates while estimating promoter-specific growth exponents unless
+covariates while estimating reporter-specific growth exponents unless
 \code{growth_covariates} is supplied.}
 
 \item{growth_covariates}{Optional technical covariate column names used only
-while estimating promoter-specific growth exponents from control wells. If
+while estimating reporter-specific growth exponents from control wells. If
 \code{NULL}, DStressR uses the supplied \code{batch}, \code{plate}, and \code{replicate}
 columns for backwards compatibility.}
 
@@ -58,21 +58,21 @@ columns for backwards compatibility.}
 that should remain numeric in model matrices. Other optional covariates are
 converted to factors.}
 
-\item{background_promoter}{Optional reporter promoter used as a background
+\item{background_reporter}{Optional background reporter used as a background
 reference, e.g. an Empty Vector Control. When supplied, the default
 background method is \code{"huber"}. The background reporter is matched to other
-promoters by \code{background_by}, the response is calibrated, and the
+reporters by \code{background_by}, the response is calibrated, and the
 background reporter is excluded from model-based testing.}
 
 \item{background_method}{One of \code{"none"}, \code{"subtract"}, \code{"lm"}, or
 \code{"huber"}. If omitted, DStressR uses \code{"none"} when no
-\code{background_promoter} is supplied and \code{"huber"} when one is supplied.
+\code{background_reporter} is supplied and \code{"huber"} when one is supplied.
 \code{"subtract"} subtracts the matched background response. \code{"lm"} and
-\code{"huber"} replace each non-background promoter response by residuals from
-a promoter-wise calibration against the matched background.}
+\code{"huber"} replace each non-background reporter response by residuals from
+a reporter-wise calibration against the matched background.}
 
 \item{background_by}{Columns used to match each observation to the
-background reporter. Defaults to \code{compound} plus the supplied technical
+background reporter. Defaults to \code{perturbation} plus the supplied technical
 columns.}
 
 \item{pseudocount}{Added before log2 transformation.}
@@ -81,8 +81,8 @@ columns.}
 A \code{destress_assay} data frame.
 }
 \description{
-Computes a growth-adjusted log2 promoter-activity response from luminescence
-and growth measurements. By default, promoter-specific growth exponents are
+Computes a growth-adjusted log2 reporter-activity response from luminescence
+and growth measurements. By default, reporter-specific growth exponents are
 estimated from control wells with available technical-factor adjustment and
 shrunk toward a global control-well slope.
 Set \code{growth_exponent = 1} to reproduce the current workflow's log2(LUX / OD)

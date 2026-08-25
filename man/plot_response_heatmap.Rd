@@ -2,30 +2,30 @@
 % Please edit documentation in R/plots.R
 \name{plot_response_heatmap}
 \alias{plot_response_heatmap}
-\title{Heatmap of a DStressR promoter-by-compound response matrix}
+\title{Heatmap of a DStressR reporter-by-perturbation response matrix}
 \usage{
 plot_response_heatmap(
   table,
   value = "specific_effect",
-  promoter = "promoter",
-  compound = "compound",
-  compound_label = compound,
-  show_compound_ids = TRUE,
-  top_n_compounds = 160,
-  promoter_order = NULL,
+  reporter = "reporter",
+  perturbation = "perturbation",
+  perturbation_label = perturbation,
+  show_perturbation_ids = TRUE,
+  top_n_perturbations = 160,
+  reporter_order = NULL,
   cluster_rows = FALSE,
   cluster_cols = TRUE,
   clip_quantile = 0.98,
   color_limit = NULL,
-  show_compound_labels = NULL,
-  top_compound_labels = 40,
-  compound_label_score = NULL,
-  compound_label_min_gap = NULL,
-  compound_label_angle = 45,
-  title = "DStressR promoter-by-compound matrix",
+  show_perturbation_labels = NULL,
+  top_perturbation_labels = 40,
+  perturbation_label_score = NULL,
+  perturbation_label_min_gap = NULL,
+  perturbation_label_angle = 45,
+  title = "DStressR reporter-by-perturbation matrix",
   subtitle = NULL,
-  xlab = "Compounds",
-  ylab = "Promoters",
+  xlab = "Perturbations",
+  ylab = "Reporters",
   legend_title = value,
   low = "#2166AC",
   mid = "white",
@@ -33,60 +33,58 @@ plot_response_heatmap(
 )
 }
 \arguments{
-\item{table}{A data frame with one row per promoter-compound pair.}
+\item{table}{A data frame with one row per reporter-perturbation pair.}
 
 \item{value}{Numeric response/effect column to show in the heatmap.}
 
-\item{promoter, compound}{Columns identifying promoters and compounds.}
+\item{reporter, perturbation}{Columns identifying reporters and perturbations.}
 
-\item{compound_label}{Optional human-readable compound-name column. Defaults
-to \code{compound}.}
+\item{perturbation_label}{Optional human-readable perturbation-name column. Defaults
+to \code{perturbation}.}
 
-\item{show_compound_ids}{If \code{TRUE}, append compound IDs in square brackets
-to compound labels.}
+\item{show_perturbation_ids}{If \code{TRUE}, append perturbation IDs in square brackets
+to perturbation labels.}
 
-\item{top_n_compounds}{If finite, show only the top compounds by mean
-absolute response. Use \code{Inf} to show all compounds.}
+\item{top_n_perturbations}{If finite, show only the top perturbations by mean
+absolute response. Use \code{Inf} to show all perturbations.}
 
-\item{promoter_order}{Optional global promoter order used when
-\code{cluster_rows = FALSE}. If omitted, the option
-\code{DStressR.promoter_order} is used when set; otherwise known DStressR paper
-promoters are shown in their manuscript order and remaining promoters are
-sorted alphabetically.}
+\item{reporter_order}{Optional global reporter order used when
+\code{cluster_rows = FALSE}. If omitted, the option \code{DStressR.reporter_order} is
+used when set; otherwise known DStressR paper reporters are shown in their
+manuscript order and remaining reporters are sorted alphabetically.}
 
-\item{cluster_rows, cluster_cols}{If \code{TRUE}, hierarchically cluster promoters
-and/or compounds.}
+\item{cluster_rows, cluster_cols}{If \code{TRUE}, hierarchically cluster reporters
+and/or perturbations.}
 
 \item{clip_quantile}{Quantile of absolute response values used to clip the
 color scale. Set to \code{1} to use the observed maximum.}
 
-\item{color_limit}{Optional positive color-scale limit. If supplied, values are
-clipped to \code{[-color_limit, color_limit]}; otherwise the limit is computed
-from \code{clip_quantile}.}
+\item{color_limit}{Optional positive color-scale limit. If supplied, values
+are clipped to \verb{[-color_limit, color_limit]}; otherwise the limit is
+computed from \code{clip_quantile}.}
 
-\item{show_compound_labels}{If \code{TRUE}, draw all x-axis compound labels. If
-\code{FALSE}, suppress x-axis compound labels. The default labels the
-\code{top_compound_labels} compounds with largest absolute column sums, or all
-compounds when fewer are plotted.}
+\item{show_perturbation_labels}{If \code{TRUE}, draw all x-axis perturbation labels. If
+\code{FALSE}, suppress x-axis perturbation labels. The default labels the
+\code{top_perturbation_labels} perturbations with largest absolute column sums, or all
+perturbations when fewer are plotted.}
 
-\item{top_compound_labels}{Number of highest-signal compounds to label when
-\code{show_compound_labels = NULL}.}
+\item{top_perturbation_labels}{Number of highest-signal perturbations to label when
+\code{show_perturbation_labels = NULL}.}
 
-\item{compound_label_score}{Optional numeric score used to choose the
-top-labelled compounds when \code{show_compound_labels = NULL}. If named,
-values are matched to compound labels; otherwise the order must match the
-displayed matrix columns.}
+\item{perturbation_label_score}{Optional numeric score used to choose the
+top-labelled perturbations when \code{show_perturbation_labels = NULL}. If named, values
+are matched to perturbation labels; otherwise the order must match the displayed
+matrix columns.}
 
-\item{compound_label_min_gap}{Minimum number of matrix columns between
+\item{perturbation_label_min_gap}{Minimum number of matrix columns between
 automatically selected labels. The default chooses a gap from the displayed
-matrix size and \code{top_compound_labels}.}
+matrix size and \code{top_perturbation_labels}.}
 
-\item{compound_label_angle}{Angle used for visible compound labels.}
+\item{perturbation_label_angle}{Angle used for visible perturbation labels.}
 
 \item{title, subtitle, xlab, ylab}{Plot labels.}
 
-\item{legend_title}{Colorbar title. Defaults to the selected \code{value}
-column.}
+\item{legend_title}{Colorbar title. Defaults to the selected \code{value} column.}
 
 \item{low, mid, high}{Colors for negative, zero, and positive responses.}
 }
@@ -95,7 +93,7 @@ A \code{ggplot} object. The plotted matrix is available as
 \code{attr(plot, "response_matrix")}.
 }
 \description{
-Creates a standard heatmap for normalized promoter-compound responses. The
+Creates a standard heatmap for normalized reporter-perturbation responses. The
 default \code{value} is \code{specific_effect}, matching \code{\link[=results]{results()}}, but workflow
 tables can use columns such as \code{destress_eb_effect_centered}.
 }

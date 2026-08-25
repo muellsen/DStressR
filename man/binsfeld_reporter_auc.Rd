@@ -8,15 +8,15 @@
 A data frame with 24,576 rows and 12 columns:
 \describe{
 \item{strain}{Reporter host strain.}
-\item{promoter}{Reporter promoter, including \code{EVC}.}
+\item{reporter}{Reporter reporter, including \code{EVC}.}
 \item{replicate}{Reporter replicate number.}
 \item{well}{384-well plate coordinate.}
-\item{drug}{Original compound/control label.}
-\item{compound}{DStressR compound label, with water controls collapsed.}
+\item{drug}{Original perturbation/control label.}
+\item{perturbation}{DStressR perturbation label, with water controls collapsed.}
 \item{concentration_index}{Dose-series index from the source table.}
 \item{dose_level}{Dose-oriented serial dilution level; larger values
 correspond to higher concentration.}
-\item{concentration_ug_ml}{Compound concentration in micrograms per ml.}
+\item{concentration_ug_ml}{Perturbation concentration in micrograms per ml.}
 \item{od_auc}{Optical-density area under the curve.}
 \item{lux_auc}{Luminescence area under the curve.}
 \item{od_auc_per_lux_auc}{Source-table OD/LUX AUC ratio.}
@@ -32,11 +32,11 @@ binsfeld_reporter_auc
 \description{
 A public \emph{E. coli} reporter-screen data set from Binsfeld et al. (2025),
 prepared as an AUC-level long table for DStressR examples and tests. The
-rows are promoter/strain/replicate/well observations from the PLOS Biology
-S3 Data supplement. \code{compound} collapses the water control wells
+rows are reporter/strain/replicate/well observations from the PLOS Biology
+S3 Data supplement. \code{perturbation} collapses the water control wells
 (\code{Water_1}, \code{Water_2}) to \code{Water}; the original label remains in \code{drug}.
 \code{dose_level} is derived from \code{concentration_index} so that larger values
-correspond to higher compound concentration.
+correspond to higher perturbation concentration.
 }
 \details{
 The source article is https://doi.org/10.1371/journal.pbio.3003260. The
