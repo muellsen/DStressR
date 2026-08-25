@@ -28,7 +28,8 @@
   <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" role="button" aria-expanded="false" aria-haspopup="true" id="dropdown-articles">Articles</a>
   <div class="dropdown-menu" aria-labelledby="dropdown-articles">
     <h6 class="dropdown-header" data-toc-skip>Get started</h6>
-    <a class="dropdown-item" href="../articles/ecoli-promoter-screen.html">E. coli promoter-compound screen</a>
+    <a class="dropdown-item" href="../articles/ecoli-promoter-screen.html">E. coli reporter-perturbation screen</a>
+    <a class="dropdown-item" href="../articles/ecoli-fluorescence-stress-screen.html">E. coli fluorescence stress screen</a>
     <a class="dropdown-item" href="../articles/median-polish-workflow.html">Original median-polish workflow</a>
     <a class="dropdown-item" href="../articles/salmonella-empty-vector-workflow.html">Salmonella Empty Vector workflow</a>
   </div>
@@ -67,7 +68,7 @@
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">results</span><span class="op">(</span><span class="va">fit</span>, compounds <span class="op">=</span> <span class="cn">NULL</span>, promoters <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">results</span><span class="op">(</span><span class="va">fit</span>, perturbations <span class="op">=</span> <span class="cn">NULL</span>, reporters <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -76,19 +77,19 @@
 <dd><p>A <code>destress_fit</code> object.</p></dd>
 
 
-<dt>compounds</dt>
-<dd><p>Optional compound subset.</p></dd>
+<dt>perturbations</dt>
+<dd><p>Optional perturbation subset.</p></dd>
 
 
-<dt>promoters</dt>
-<dd><p>Optional promoter subset.</p></dd>
+<dt>reporters</dt>
+<dd><p>Optional reporter subset.</p></dd>
 
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     
 
-<p>A data frame with total and promoter-specific effects.</p>
+<p>A data frame with total and reporter-specific effects.</p>
     </div>
 
   </main><aside class="col-md-3"><nav id="toc"><h2>On this page</h2>

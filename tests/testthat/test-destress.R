@@ -224,24 +224,24 @@ test_that("Binsfeld reporter data support DStressR model analysis", {
 
   expect_equal(nrow(binsfeld_reporter_auc), 24576)
   expect_true(all(c(
-    "strain", "reporter", "perturbation", "dose_level", "od_auc", "lux_auc", "removed"
+    "strain", "reporter", "compound", "dose_level", "od_auc", "lux_auc", "removed"
   ) %in% names(binsfeld_reporter_auc)))
   expect_equal(
-    sort(unique(binsfeld_reporter_auc$perturbation[grepl("^Water_", binsfeld_reporter_auc$drug)])),
+    sort(unique(binsfeld_reporter_auc$compound[grepl("^Water_", binsfeld_reporter_auc$drug)])),
     "Water"
   )
   expect_true(all(c("Scores", "Z_scores") %in% unique(binsfeld_reporter_scores$statistic)))
 
   wt_auc <- binsfeld_reporter_auc[
-    binsfeld_reporter_auc$strain == "WT" &
+      binsfeld_reporter_auc$strain == "WT" &
       binsfeld_reporter_auc$removed == "No" &
-      binsfeld_reporter_auc$perturbation %in% c("Water", "Azithromycin", "Clarithromycin"),
+      binsfeld_reporter_auc$drug %in% c("Water_1", "Water_2", "Azithromycin", "Clarithromycin"),
   ]
   assay <- prepare_assay(
     wt_auc,
     reporter = "reporter",
-    perturbation = "perturbation",
-    control = "Water",
+    perturbation = "drug",
+    control = c("Water_1", "Water_2"),
     lux = "lux_auc",
     growth = "od_auc",
     growth_exponent = "estimate",

@@ -30,7 +30,10 @@ prepare_assay(
 
 \item{reporter, perturbation}{Column names identifying reporter and perturbation.}
 
-\item{control}{Label in \code{perturbation} for the negative control, usually DMSO.}
+\item{control}{Label or labels in \code{perturbation} for the negative control,
+usually DMSO. If several labels are supplied, they are pooled into the
+first label as the model reference while the original input column is kept
+unchanged.}
 
 \item{lux, growth}{Column names for luminescence and growth summaries.}
 

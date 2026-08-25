@@ -1,0 +1,137 @@
+---
+title: "E. coli fluorescence stress screen"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{E. coli fluorescence stress screen}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 4.8
+)
+```
+
+This article documents how DStressR can be used for a fluorescence/OD
+reporter-stress experiment. The example is based on the Dryad data associated
+with Dash et al. (2024), *mSystems*, which contain time-resolved GFP and OD
+measurements for *E. coli* global-regulator reporters under weak-stress
+conditions.
+
+The Dash/Dryad raw data are not shipped with the package. The complete local
+workflow is kept in the repository under `analysis/dryad_global_regulators/`.
+After downloading and unzipping the Dryad archive, the expected local layout is:
+
+```text
+analysis/dryad_global_regulators/raw/Data/
+```
+
+The main script for the windowed weak-stress analysis is:
+
+```sh
+Rscript analysis/dryad_global_regulators/run_weak_stress_window_calibrated_pipeline.R
+```
+
+## Analysis Table
+
+The weak-stress fluorescence time series are summarized into GFP AUC values and
+matched OD AUC values. The analysis table should use source-appropriate column
+names. In this dataset, the DStressR perturbation variable is a `stress`, not a
+drug or compound.
+
+```{r dryad-table, eval = FALSE}
+weak_stress <- read.delim(
+  "analysis/outputs/dryad_global_regulators/dryad_weak_stress_windows_calibrated_alpha_input.tsv",
+  check.names = FALSE
+)
+
+weak_stress$stress <- weak_stress$compound
+weak_stress$compound <- NULL
+
+names(weak_stress)
+```
+
+The reporter unit can be a biological reporter or a derived reporter-window
+unit. For the analysis used during manuscript development, each base reporter is
+crossed with a time window:
+
+```{r dryad-reporter-window, eval = FALSE}
+weak_stress$pseudo_reporter <- paste(
+  weak_stress$promoter,
+  weak_stress$window,
+  sep = " | "
+)
+```
+
+## DStressR Model
+
+The response model maps the Dash data to the generic DStressR interface by
+using `reporter = "pseudo_reporter"` and `perturbation = "stress"`. Standard
+growth is the reference condition. The fluorescence signal is represented by
+`gfp_auc`, and growth by `od_auc`.
+
+```{r dryad-destress, eval = FALSE}
+alpha <- read.delim(
+  "analysis/outputs/dryad_global_regulators/dryad_weak_stress_windows_calibrated_alpha_supplied.tsv",
+  check.names = FALSE
+)
+stress_alpha <- setNames(alpha$alpha_calibrated, alpha$pseudo_reporter)
+
+assay <- prepare_assay(
+  weak_stress,
+  reporter = "pseudo_reporter",
+  perturbation = "stress",
+  control = "Standard",
+  lux = "gfp_auc",
+  growth = "od_auc",
+  growth_exponent = stress_alpha,
+  replicate = "replicate"
+)
+
+fit <- fit_destress(
+  assay,
+  technical = "replicate",
+  empirical_bayes = TRUE,
+  adjustment = "by_reporter",
+  interaction = FALSE
+)
+
+tab <- results(fit)
+hits <- call_hits(
+  tab,
+  fdr = 0.05,
+  effect = "specific_effect",
+  padj = "specific_padj_by_reporter"
+)
+```
+
+The same workflow can be run with `growth_exponent = 1` when the goal is to
+match a GFP/OD-style response more directly. The calibrated-alpha analysis shows
+how DStressR can use additional no-stress growth-transition data to estimate the
+response scale, while the weak-stress subset is used for inference.
+
+## Reproducibility Scripts
+
+The repository scripts write intermediate inputs, fitted results, p-value
+histograms, volcano plots, and effect heatmaps under:
+
+```text
+analysis/outputs/dryad_global_regulators/
+```
+
+The most relevant scripts are:
+
+```text
+analysis/dryad_global_regulators/run_weak_stress_window_pipeline.R
+analysis/dryad_global_regulators/run_weak_stress_window_calibrated_pipeline.R
+analysis/dryad_global_regulators/run_weak_stress_window_rank1_adjustment.R
+analysis/dryad_global_regulators/plot_weak_stress_three_target_inference.R
+```
+
+This example is intentionally different from the Binsfeld reporter-drug screen:
+it illustrates a small structured fluorescence/OD reporter-stress design rather
+than a large chemical library.

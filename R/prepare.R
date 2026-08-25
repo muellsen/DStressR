@@ -9,7 +9,10 @@
 #'
 #' @param data A data frame with one row per reporter-perturbation-replicate well.
 #' @param reporter,perturbation Column names identifying reporter and perturbation.
-#' @param control Label in `perturbation` for the negative control, usually DMSO.
+#' @param control Label or labels in `perturbation` for the negative control,
+#'   usually DMSO. If several labels are supplied, they are pooled into the
+#'   first label as the model reference while the original input column is kept
+#'   unchanged.
 #' @param lux,growth Column names for luminescence and growth summaries.
 #' @param growth_exponent Fixed coefficient for growth normalization, a named
 #'   vector keyed by reporter, or `"estimate"` to estimate reporter-specific
@@ -83,13 +86,24 @@ prepare_assay <- function(data,
          paste(missing_numeric_covariates, collapse = ", "), call. = FALSE)
   }
 
+  control <- as.character(control)
+  control <- control[!is.na(control) & nzchar(control)]
+  if (length(control) == 0) {
+    stop("`control` must contain at least one non-empty perturbation label.", call. = FALSE)
+  }
+  control_label <- control[1]
+
   out <- data
   out$.reporter <- factor(out[[reporter]])
-  out$.perturbation <- factor(out[[perturbation]])
-  if (!control %in% levels(out$.perturbation)) {
-    stop("Control perturbation '", control, "' was not found in `", perturbation, "`.", call. = FALSE)
+  perturbation_values <- as.character(out[[perturbation]])
+  missing_controls <- setdiff(control, unique(perturbation_values))
+  if (length(missing_controls) > 0) {
+    stop("Control perturbation(s) '",
+         paste(missing_controls, collapse = "', '"),
+         "' were not found in `", perturbation, "`.", call. = FALSE)
   }
-  out$.perturbation <- stats::relevel(out$.perturbation, ref = control)
+  perturbation_values[perturbation_values %in% control] <- control_label
+  out$.perturbation <- stats::relevel(factor(perturbation_values), ref = control_label)
 
   if (!is.null(response)) {
     out$.response <- as.numeric(out[[response]])
@@ -179,7 +193,8 @@ prepare_assay <- function(data,
   attr(out, "destress") <- list(
     reporter = reporter,
     perturbation = perturbation,
-    control = control,
+    control = control_label,
+    control_labels = control,
     lux = lux,
     growth = growth,
     control_values = control_values,

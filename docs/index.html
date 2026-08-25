@@ -57,7 +57,8 @@
   <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" role="button" aria-expanded="false" aria-haspopup="true" id="dropdown-articles">Articles</a>
   <div class="dropdown-menu" aria-labelledby="dropdown-articles">
     <h6 class="dropdown-header" data-toc-skip>Get started</h6>
-    <a class="dropdown-item" href="articles/ecoli-promoter-screen.html">E. coli promoter-compound screen</a>
+    <a class="dropdown-item" href="articles/ecoli-promoter-screen.html">E. coli reporter-perturbation screen</a>
+    <a class="dropdown-item" href="articles/ecoli-fluorescence-stress-screen.html">E. coli fluorescence stress screen</a>
     <a class="dropdown-item" href="articles/median-polish-workflow.html">Original median-polish workflow</a>
     <a class="dropdown-item" href="articles/salmonella-empty-vector-workflow.html">Salmonella Empty Vector workflow</a>
   </div>
@@ -92,10 +93,12 @@
 <div class="section level1">
 <div class="page-header"><h1 id="dstressr-differential-stress-response-modeling-for-chemical-genomics-screens">DStressR: Differential stress-response modeling for chemical genomics screens<a class="anchor" aria-label="anchor" href="#dstressr-differential-stress-response-modeling-for-chemical-genomics-screens"></a>
 </h1></div>
-<p>This repository hosts the <code>DStressR</code> R package and companion analysis workflow for high-throughput bacterial chemical genomics screens. <code>DStressR</code> is designed to go hand in hand with <a href="https://bio-datascience.github.io/DGrowthR/" class="external-link"><code>DGrowthR</code></a>: <code>DGrowthR</code> models bacterial growth curves, while <code>DStressR</code> models promoter-activity responses after accounting for growth, compound-wide effects, technical covariates, and promoter-specific uncertainty.</p>
-<p><img src="reference/figures/dstressr_panel.svg"></p>
+<p>This repository hosts the <code>DStressR</code> R package and companion analysis workflow for high-throughput reporter-perturbation screens. <code>DStressR</code> is designed to go hand in hand with <a href="https://bio-datascience.github.io/DGrowthR/" class="external-link"><code>DGrowthR</code></a>: <code>DGrowthR</code> models bacterial growth curves, while <code>DStressR</code> models reporter responses after accounting for growth, perturbation-wide effects, technical covariates, and reporter-specific uncertainty.</p>
+<div class="float">
+<img src="reference/figures/dstressr-workflow.png" alt="DStressR statistical workflow: response estimation, effect estimation and diagnostics, and inference."><div class="figcaption">DStressR statistical workflow: response estimation, effect estimation and diagnostics, and inference.</div>
+</div>
 <blockquote>
-<p>[!TIP] <code>DStressR</code> is intended as the promoter-response counterpart to <a href="https://bio-datascience.github.io/DGrowthR/" class="external-link"><code>DGrowthR</code></a>. The current default hit-determination workflow is based on the original exported luminescence and growth summaries; DGrowthR-derived growth parameters can be handed over explicitly for sensitivity analyses.</p>
+<p>[!TIP] <code>DStressR</code> is intended as the reporter-response counterpart to <a href="https://bio-datascience.github.io/DGrowthR/" class="external-link"><code>DGrowthR</code></a>. The current default hit-determination workflow is based on the original exported luminescence and growth summaries; DGrowthR-derived growth parameters can be handed over explicitly for sensitivity analyses.</p>
 </blockquote>
 <div class="section level2">
 <h2 id="installation-guide">Installation Guide<a class="anchor" aria-label="anchor" href="#installation-guide"></a>
@@ -136,8 +139,8 @@
 <span></span>
 <span><span class="va">assay</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/prepare_assay.html">prepare_assay</a></span><span class="op">(</span></span>
 <span>  <span class="va">screen</span>,</span>
-<span>  promoter <span class="op">=</span> <span class="st">"promoter"</span>,</span>
-<span>  compound <span class="op">=</span> <span class="st">"compound"</span>,</span>
+<span>  reporter <span class="op">=</span> <span class="st">"reporter"</span>,</span>
+<span>  perturbation <span class="op">=</span> <span class="st">"perturbation"</span>,</span>
 <span>  control <span class="op">=</span> <span class="st">"DMSO"</span>,</span>
 <span>  lux <span class="op">=</span> <span class="st">"LUX.AUC_16"</span>,</span>
 <span>  growth <span class="op">=</span> <span class="st">"od_16h.measured"</span>,</span>
@@ -169,9 +172,9 @@
 <span></span>
 <span><span class="va">assay</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/prepare_assay.html">prepare_assay</a></span><span class="op">(</span></span>
 <span>  <span class="va">wt_auc</span>,</span>
-<span>  promoter <span class="op">=</span> <span class="st">"promoter"</span>,</span>
-<span>  compound <span class="op">=</span> <span class="st">"compound"</span>,</span>
-<span>  control <span class="op">=</span> <span class="st">"Water"</span>,</span>
+<span>  reporter <span class="op">=</span> <span class="st">"reporter"</span>,</span>
+<span>  perturbation <span class="op">=</span> <span class="st">"drug"</span>,</span>
+<span>  control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Water_1"</span>, <span class="st">"Water_2"</span><span class="op">)</span>,</span>
 <span>  lux <span class="op">=</span> <span class="st">"lux_auc"</span>,</span>
 <span>  growth <span class="op">=</span> <span class="st">"od_auc"</span>,</span>
 <span>  growth_exponent <span class="op">=</span> <span class="st">"estimate"</span>,</span>
@@ -179,8 +182,8 @@
 <span>  replicate <span class="op">=</span> <span class="st">"replicate"</span>,</span>
 <span>  growth_covariates <span class="op">=</span> <span class="st">"replicate"</span>,</span>
 <span>  numeric_covariates <span class="op">=</span> <span class="st">"dose_level"</span>,</span>
-<span>  background_promoter <span class="op">=</span> <span class="st">"EVC"</span>,</span>
-<span>  background_by <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"compound"</span>, <span class="st">"dose_level"</span>, <span class="st">"replicate"</span><span class="op">)</span></span>
+<span>  background_reporter <span class="op">=</span> <span class="st">"EVC"</span>,</span>
+<span>  background_by <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"drug"</span>, <span class="st">"dose_level"</span>, <span class="st">"replicate"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/fit_destress.html">fit_destress</a></span><span class="op">(</span></span>
@@ -188,11 +191,11 @@
 <span>  preset <span class="op">=</span> <span class="st">"model"</span>,</span>
 <span>  technical <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"replicate"</span>, <span class="st">"dose_level"</span><span class="op">)</span>,</span>
 <span>  empirical_bayes <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  adjustment <span class="op">=</span> <span class="st">"by_promoter"</span>,</span>
+<span>  adjustment <span class="op">=</span> <span class="st">"by_reporter"</span>,</span>
 <span>  interaction <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p>Here <code>growth_covariates = "replicate"</code> keeps the water-control growth-response model separate from the downstream concentration-index adjustment: <code>dose_level</code> is used in the compound-effect model, not in the estimation of <code>alpha_g</code>.</p>
-<p>The public sources are the PLOS article <a href="https://doi.org/10.1371/journal.pbio.3003260" class="external-link uri">https://doi.org/10.1371/journal.pbio.3003260</a> and the Zenodo archive <a href="https://doi.org/10.5281/zenodo.15600688" class="external-link uri">https://doi.org/10.5281/zenodo.15600688</a>. The reproducibility script <code>analysis/ecoli_promoter_screen/compare_reporter_hits.R</code> rebuilds the Binsfeld-style Wilcoxon/Z-score hit calls and compares them with the two default DStressR workflows. In the current WT analysis, the reconstructed reference rule calls 53 hits, DStressR without EV calls 80 hits, and DStressR with EV calls 92 hits. The workflow with EV overlaps with 37 of the 53 reference hits.</p>
+<p>Here <code>growth_covariates = "replicate"</code> keeps the water-control growth-response model separate from the downstream concentration-index adjustment: <code>dose_level</code> is used in the perturbation-effect model, not in the estimation of <code>alpha_g</code>.</p>
+<p>The public sources are the PLOS article <a href="https://doi.org/10.1371/journal.pbio.3003260" class="external-link uri">https://doi.org/10.1371/journal.pbio.3003260</a> and the Zenodo archive <a href="https://doi.org/10.5281/zenodo.15600688" class="external-link uri">https://doi.org/10.5281/zenodo.15600688</a>. The primary reproducibility script <code>analysis/ecoli_promoter_screen/run_evc_calibrated_analysis.R</code> rebuilds the Binsfeld-style Wilcoxon/Z-score hit calls and compares them with the two default DStressR workflows. In the current WT analysis, the reconstructed reference rule calls 53 hits, DStressR without EVC calls 80 hits, and DStressR with EVC calls 92 hits. The workflow with EVC overlaps with 37 of the 53 reference hits. The optional full interaction-model analysis is reproduced by <code>analysis/ecoli_promoter_screen/run_interaction_sensitivity.R</code>.</p>
 <p>Equivalently, using staged options directly:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/fit_destress.html">fit_destress</a></span><span class="op">(</span></span>
@@ -201,8 +204,8 @@
 <span>  testing <span class="op">=</span> <span class="st">"moderated_t"</span>,</span>
 <span>  aggregation <span class="op">=</span> <span class="st">"none"</span>,</span>
 <span>  adjustment <span class="op">=</span> <span class="st">"global"</span>,</span>
-<span>  promoter <span class="op">=</span> <span class="st">"promoter"</span>,</span>
-<span>  compound <span class="op">=</span> <span class="st">"compound"</span>,</span>
+<span>  reporter <span class="op">=</span> <span class="st">"reporter"</span>,</span>
+<span>  perturbation <span class="op">=</span> <span class="st">"perturbation"</span>,</span>
 <span>  control <span class="op">=</span> <span class="st">"DMSO"</span>,</span>
 <span>  lux <span class="op">=</span> <span class="st">"LUX.AUC_16"</span>,</span>
 <span>  growth <span class="op">=</span> <span class="st">"od_16h.measured"</span>,</span>
@@ -211,37 +214,37 @@
 <span>  replicate <span class="op">=</span> <span class="st">"replicate"</span>,</span>
 <span>  technical <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"batch"</span>, <span class="st">"replicate"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p>Growth-response normalization for the model path is controlled in <code><a href="reference/prepare_assay.html">prepare_assay()</a></code> or by passing the same arguments through <code><a href="reference/fit_destress.html">fit_destress()</a></code>. Use <code>growth_exponent = 1</code> for the fixed log2(LUX / OD) normalization, <code>growth_exponent = "estimate"</code> to estimate promoter-specific <code>alpha_g</code> values from controls, or pass a named promoter vector.</p>
-<p>In model-based analyses, <code>empirical_bayes = TRUE</code> is the default moderated model and <code>empirical_bayes = FALSE</code> is the ordinary Student-<span class="math inline"><em>t</em></span> sensitivity model. The Campylobacter manuscript comparison uses the default moderated model against the median-polish max-p workflow.</p>
+<p>Growth-response normalization for the model path is controlled in <code><a href="reference/prepare_assay.html">prepare_assay()</a></code> or by passing the same arguments through <code><a href="reference/fit_destress.html">fit_destress()</a></code>. Use <code>growth_exponent = 1</code> for the fixed log2(LUX / OD) normalization, <code>growth_exponent = "estimate"</code> to estimate reporter-specific <code>alpha_g</code> values from controls, or pass a named reporter vector.</p>
+<p>In model-based analyses, <code>empirical_bayes = TRUE</code> is the default moderated model and <code>empirical_bayes = FALSE</code> is the ordinary Student-<span class="math inline"><em>t</em></span> sensitivity model. The local Campylobacter comparison uses the default moderated model against the median-polish max-p workflow.</p>
 </div>
 <div class="section level2">
 <h2 id="model-based-background-reporter-calibration">Model-based Background Reporter Calibration<a class="anchor" aria-label="anchor" href="#model-based-background-reporter-calibration"></a>
 </h2>
-<p>If the screen contains an Empty Vector Control (EVC) reporter, it can be used when constructing the model-based response. This is different from the project-level <code>preset = "empty_vector_control"</code> workflow below: the model-based path still fits promoter-specific linear models, but first calibrates each non-background reporter against the matched background reporter.</p>
+<p>If the screen contains an Empty Vector Control (EVC) reporter, it can be used when constructing the model-based response. This is different from the project-level <code>preset = "empty_vector_control"</code> workflow below: the model-based path still fits reporter-specific linear models, but first calibrates each non-background reporter against the matched background reporter.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">assay</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/prepare_assay.html">prepare_assay</a></span><span class="op">(</span></span>
 <span>  <span class="va">expression_df</span>,</span>
-<span>  promoter <span class="op">=</span> <span class="st">"promoter"</span>,</span>
-<span>  compound <span class="op">=</span> <span class="st">"srn_code"</span>,</span>
+<span>  reporter <span class="op">=</span> <span class="st">"promoter"</span>,</span>
+<span>  perturbation <span class="op">=</span> <span class="st">"srn_code"</span>,</span>
 <span>  control <span class="op">=</span> <span class="st">"DMSO"</span>,</span>
 <span>  lux <span class="op">=</span> <span class="st">"LUX.AUC_16"</span>,</span>
 <span>  growth <span class="op">=</span> <span class="st">"od_16h.measured"</span>,</span>
 <span>  batch <span class="op">=</span> <span class="st">"batch"</span>,</span>
 <span>  replicate <span class="op">=</span> <span class="st">"replicate"</span>,</span>
-<span>  background_promoter <span class="op">=</span> <span class="st">"PEVC3"</span>,</span>
+<span>  background_reporter <span class="op">=</span> <span class="st">"PEVC3"</span>,</span>
 <span>  background_by <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"srn_code"</span>, <span class="st">"batch"</span>, <span class="st">"replicate"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/fit_destress.html">fit_destress</a></span><span class="op">(</span><span class="va">assay</span>, technical <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"batch"</span>, <span class="st">"replicate"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">tab</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/results.html">results</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></code></pre></div>
-<p>When <code>background_promoter</code> is supplied, <code><a href="reference/prepare_assay.html">prepare_assay()</a></code> uses Huber calibration by default. Use <code>background_method = "lm"</code> for least-squares calibration or <code>background_method = "subtract"</code> for direct matched-background subtraction. Without <code>background_promoter</code>, no background calibration is applied and the default DStressR workflow is unchanged.</p>
+<p>When <code>background_reporter</code> is supplied, <code><a href="reference/prepare_assay.html">prepare_assay()</a></code> uses Huber calibration by default. Use <code>background_method = "lm"</code> for least-squares calibration or <code>background_method = "subtract"</code> for direct matched-background subtraction. Without <code>background_reporter</code>, no background calibration is applied and the default DStressR workflow is unchanged.</p>
 <p>The fitted object stores growth-exponent and background-calibration metadata, and the background reporter is excluded from model-based testing.</p>
-<p>Estimated model components, including growth-exponent parameters and promoter-compound effect estimates, can be extracted with:</p>
+<p>Estimated model components, including growth-exponent parameters and reporter-perturbation effect estimates, can be extracted with:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">params</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/model_parameters.html">model_parameters</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">growth_parameters</span> <span class="op">&lt;-</span> <span class="va">params</span><span class="op">$</span><span class="va">growth_exponents</span></span>
-<span><span class="va">promoter_effects</span> <span class="op">&lt;-</span> <span class="va">params</span><span class="op">$</span><span class="va">promoter_effects</span></span></code></pre></div>
+<span><span class="va">reporter_effects</span> <span class="op">&lt;-</span> <span class="va">params</span><span class="op">$</span><span class="va">reporter_effects</span></span></code></pre></div>
 <p>The median-polish compatibility workflow starts from the original exported expression table and DMSO library-well IDs:</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">legacy</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/fit_destress.html">fit_destress</a></span><span class="op">(</span></span>
@@ -262,7 +265,7 @@
 <span>  <span class="va">expression_df</span>,</span>
 <span>  preset <span class="op">=</span> <span class="st">"empty_vector_control"</span>,</span>
 <span>  response <span class="op">=</span> <span class="st">"log2.lux.normed.centered"</span>,</span>
-<span>  empty_vector_promoter <span class="op">=</span> <span class="st">"PEVC3"</span>,</span>
+<span>  empty_vector_reporter <span class="op">=</span> <span class="st">"PEVC3"</span>,</span>
 <span>  control <span class="op">=</span> <span class="va">dmso_srn_codes</span>,</span>
 <span>  exclude <span class="op">=</span> <span class="va">dmso_noisy_srn_codes</span></span>
 <span><span class="op">)</span></span>
@@ -273,14 +276,14 @@
 <h2 id="how-to-use-dstressr">How to use <code>DStressR</code>
 <a class="anchor" aria-label="anchor" href="#how-to-use-dstressr"></a>
 </h2>
-<p>The typical DStressR analysis starts from promoter-level luminescence and growth summaries, together with compound, promoter, replicate, plate, and batch metadata.</p>
+<p>The typical DStressR analysis starts from reporter-level luminescence and growth summaries, together with perturbation, reporter, replicate, plate, and batch metadata.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://muellsen.github.io/DStressR/">DStressR</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">assay</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/prepare_assay.html">prepare_assay</a></span><span class="op">(</span></span>
 <span>  <span class="va">expression_df</span>,</span>
-<span>  promoter <span class="op">=</span> <span class="st">"promoter"</span>,</span>
-<span>  compound <span class="op">=</span> <span class="st">"srn_code"</span>,</span>
+<span>  reporter <span class="op">=</span> <span class="st">"promoter"</span>,</span>
+<span>  perturbation <span class="op">=</span> <span class="st">"srn_code"</span>,</span>
 <span>  control <span class="op">=</span> <span class="st">"DMSO"</span>,</span>
 <span>  lux <span class="op">=</span> <span class="st">"LUX.AUC_16"</span>,</span>
 <span>  growth <span class="op">=</span> <span class="st">"od_16h.measured"</span>,</span>
@@ -302,25 +305,25 @@
 <p>The fitted model separates two related quantities:</p>
 <ul>
 <li>
-<code>total_effect</code>: DMSO-relative promoter response for a compound.</li>
+<code>total_effect</code>: control-relative reporter response for a perturbation.</li>
 <li>
-<code>specific_effect</code>: promoter-specific response after subtracting the compound-wide effect shared across promoters.</li>
+<code>specific_effect</code>: reporter-specific response after subtracting the perturbation-wide effect shared across reporters.</li>
 </ul>
-<p>This distinction is important for compounds that globally perturb growth, luminescence, metabolism, or assay chemistry.</p>
-<p>For downstream comparisons and publication figures, use the promoter-specific columns from <code>results(fit)</code>: <code>specific_effect</code>, <code>specific_pvalue</code>, <code>specific_padj_global</code>, and <code>specific_padj_by_promoter</code>. The <code>total_*</code> columns remain useful diagnostics, but they are not the centered promoter-specific estimand used for DStressR hit calls in the current analysis scripts.</p>
+<p>This distinction is important for perturbations that globally affect growth, luminescence, metabolism, or assay chemistry.</p>
+<p>For downstream comparisons and publication figures, use the reporter-specific columns from <code>results(fit)</code>: <code>specific_effect</code>, <code>specific_pvalue</code>, <code>specific_padj_global</code>, and <code>specific_padj_by_reporter</code>. The <code>total_*</code> columns remain useful diagnostics, but they are not the centered reporter-specific estimand used for DStressR hit calls in the current analysis scripts.</p>
 <p>The compatibility wrapper <code><a href="reference/fit_workflow.html">fit_workflow()</a></code> and the lower-level functions <code><a href="reference/fit_median_polish.html">fit_median_polish()</a></code> and <code><a href="reference/fit_empty_vector_control.html">fit_empty_vector_control()</a></code> remain available for existing scripts. New analyses should prefer <code><a href="reference/fit_destress.html">fit_destress()</a></code> so that the selected statistical path is explicit in the code.</p>
 </div>
 <div class="section level2">
-<h2 id="standard-plots">Standard plots<a class="anchor" aria-label="anchor" href="#standard-plots"></a>
+<h2 id="diagnostic-and-summary-plots">Diagnostic and Summary Plots<a class="anchor" aria-label="anchor" href="#diagnostic-and-summary-plots"></a>
 </h2>
-<p><code>DStressR</code> includes standard output plots for common screening summaries, including volcano plots, promoter-compound response heatmaps, clustered heatmaps, effect histograms, and empirical-Bayes variance diagnostics.</p>
+<p><code>DStressR</code> includes output plots for common screening summaries, including volcano plots, reporter-perturbation response heatmaps, clustered heatmaps, effect histograms, and empirical-Bayes variance diagnostics.</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="reference/plot_volcano.html">plot_volcano</a></span><span class="op">(</span></span>
 <span>  <span class="va">tab</span>,</span>
 <span>  effect <span class="op">=</span> <span class="st">"specific_effect"</span>,</span>
 <span>  padj <span class="op">=</span> <span class="st">"specific_padj"</span>,</span>
 <span>  top_n <span class="op">=</span> <span class="fl">12</span>,</span>
-<span>  top_promoters <span class="op">=</span> <span class="fl">6</span></span>
+<span>  top_reporters <span class="op">=</span> <span class="fl">6</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="reference/plot_response_heatmap.html">plot_response_heatmap</a></span><span class="op">(</span></span>
@@ -331,8 +334,8 @@
 <div class="section level2">
 <h2 id="required-input-shape">Required input shape<a class="anchor" aria-label="anchor" href="#required-input-shape"></a>
 </h2>
-<p>DStressR expects a long promoter-compound table with one row per measured promoter-compound-replicate observation. In a complete rectangular screen, the number of rows is approximately:</p>
-<pre class="text"><code>n_promoters x (n_compound_wells + n_control_wells) x n_replicates</code></pre>
+<p>DStressR expects a long reporter-perturbation table with one row per measured reporter-perturbation-replicate observation. In a complete rectangular screen, the number of rows is approximately:</p>
+<pre class="text"><code>n_reporters x (n_perturbation_wells + n_control_wells) x n_replicates</code></pre>
 <p>Additional rows can occur when the same design is repeated across batches, library plates, measurement plates, or experimental days.</p>
 <p>At minimum, the expression table must contain columns that identify:</p>
 <ul>
@@ -353,8 +356,8 @@
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">assay</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/prepare_assay.html">prepare_assay</a></span><span class="op">(</span></span>
 <span>  <span class="va">expression_df</span>,</span>
-<span>  promoter <span class="op">=</span> <span class="st">"promoter"</span>,</span>
-<span>  compound <span class="op">=</span> <span class="st">"srn_code"</span>,</span>
+<span>  reporter <span class="op">=</span> <span class="st">"promoter"</span>,</span>
+<span>  perturbation <span class="op">=</span> <span class="st">"srn_code"</span>,</span>
 <span>  control <span class="op">=</span> <span class="st">"DMSO"</span>,</span>
 <span>  lux <span class="op">=</span> <span class="st">"LUX.AUC_16"</span>,</span>
 <span>  growth <span class="op">=</span> <span class="st">"od_16h.measured"</span>,</span>
@@ -396,7 +399,7 @@
 <span>  libmap_file <span class="op">=</span> <span class="st">"LibMap.txt"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>The returned object has the same number of rows as <code>expression_values.tsv.gz</code>, with compound annotations added. This joined table can then be passed directly to <code><a href="reference/prepare_assay.html">prepare_assay()</a></code>.</p>
-<p>The public template script <code>scripts/export_campy_default_model_template.R</code> records the exact Campylobacter default-model call used to regenerate the local package output <code>analysis/outputs/package_results/destress_moderated_pair_results.tsv</code> from the proprietary expression table. It sets <code>empirical_bayes = TRUE</code>, <code>interaction = FALSE</code>, <code>background_rank = 0</code>, uses promoter-specific estimated growth exponents, and exports the <code>specific_*</code> result columns expected by the downstream analysis scripts. The <code>scripts/README.md</code> file highlights this data-free export template as the canonical place to inspect the actual manuscript model call.</p>
+<p>The public template script <code>scripts/export_campy_default_model_template.R</code> records the exact Campylobacter default-model call used to regenerate the local package output <code>analysis/outputs/package_results/destress_moderated_pair_results.tsv</code> from the proprietary expression table. It sets <code>empirical_bayes = TRUE</code>, <code>interaction = FALSE</code>, <code>background_rank = 0</code>, uses reporter-specific estimated growth exponents, and exports the <code>specific_*</code> result columns expected by the downstream analysis scripts. The <code>scripts/README.md</code> file highlights this data-free export template as the canonical place to inspect the actual local model call.</p>
 <p>To reproduce the original median-polish workflow, provide the DMSO library-well IDs and optional noisy-DMSO well IDs from <code>LibMap.txt</code>:</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">libmap</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.delim</a></span><span class="op">(</span><span class="st">"LibMap.txt"</span>, check.names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
@@ -451,10 +454,10 @@
 <span>  <span class="va">expression_df</span>,</span>
 <span>  workflow <span class="op">=</span> <span class="st">"empty_vector_control"</span>,</span>
 <span>  response <span class="op">=</span> <span class="st">"log2.lux.normed.centered"</span>,</span>
-<span>  empty_vector_promoter <span class="op">=</span> <span class="st">"PEVC3"</span>,</span>
+<span>  empty_vector_reporter <span class="op">=</span> <span class="st">"PEVC3"</span>,</span>
 <span>  control <span class="op">=</span> <span class="va">dmso_srn_codes</span>,</span>
 <span>  exclude <span class="op">=</span> <span class="va">dmso_noisy_srn_codes</span>,</span>
-<span>  remove_promoters <span class="op">=</span> <span class="st">"PmgrR"</span></span>
+<span>  remove_reporters <span class="op">=</span> <span class="st">"PmgrR"</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">replicate_pvalues</span> <span class="op">&lt;-</span> <span class="va">evc</span><span class="op">$</span><span class="va">replicate_results</span></span>
@@ -477,8 +480,8 @@
 <span></span>
 <span><span class="va">assay</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/prepare_assay.html">prepare_assay</a></span><span class="op">(</span></span>
 <span>  <span class="va">expression_df2</span>,</span>
-<span>  promoter <span class="op">=</span> <span class="st">"promoter"</span>,</span>
-<span>  compound <span class="op">=</span> <span class="st">"srn_code"</span>,</span>
+<span>  reporter <span class="op">=</span> <span class="st">"promoter"</span>,</span>
+<span>  perturbation <span class="op">=</span> <span class="st">"srn_code"</span>,</span>
 <span>  control <span class="op">=</span> <span class="st">"DMSO"</span>,</span>
 <span>  lux <span class="op">=</span> <span class="st">"LUX.AUC_16"</span>,</span>
 <span>  growth <span class="op">=</span> <span class="st">"dgrowthr_od16"</span></span>
@@ -487,7 +490,10 @@
 <div class="section level2">
 <h2 id="analysis-workflow">Analysis workflow<a class="anchor" aria-label="anchor" href="#analysis-workflow"></a>
 </h2>
-<p>The <code>analysis/</code> folder is a downstream comparison and figure-generation layer that is excluded from the CRAN source package. Public <em>E. coli</em> promoter-screen reproducibility checks live in <code>analysis/ecoli_promoter_screen/</code>; the previous Campylobacter manuscript comparison workflow lives in <code>analysis/campylobacter_manuscript/</code>. Analysis scripts read package-generated outputs and must not reimplement estimators, p-value calculations, empirical-Bayes moderation, replicate aggregation, or multiple-testing correction. Generated outputs under <code>analysis/outputs/</code> are intentionally ignored by Git so proprietary result tables and manuscript figures stay local.</p>
+<p>The repository separates the R package from downstream reproducibility work. The package API, data objects, documentation, and tests live in <code>R/</code>, <code>data/</code>, <code>man/</code>, <code>vignettes/</code>, and <code>tests/</code>. The <code>analysis/</code> folder is a downstream comparison and figure-generation layer that is excluded from the CRAN source package.</p>
+<p>Canonical DStressR manuscript analyses live in <code>analysis/ecoli_promoter_screen/</code> and <code>analysis/dryad_global_regulators/</code>. Earlier Campylobacter work is retained in <code>analysis/campylobacter_manuscript/</code> for future analysis manuscripts, and exploratory datasets belong under <code>analysis/exploratory/</code>.</p>
+<p>Analysis scripts read package-generated outputs and must not reimplement estimators, p-value calculations, empirical-Bayes moderation, replicate aggregation, or multiple-testing correction. Generated outputs under <code>analysis/outputs/</code> are intentionally ignored by Git so regenerated result tables and manuscript figures stay local.</p>
+<p>The package manuscript source lives under <code>paper/dstressr_package_manuscript/</code>. It is not part of the CRAN package, but its source and reproducibility instructions are intended to be versioned with the repository.</p>
 </div>
 </div>
 

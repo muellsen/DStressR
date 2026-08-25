@@ -6,7 +6,7 @@
 \title{Binsfeld et al. reporter scores and Z-scores}
 \format{
 A data frame with one row per well, strain, statistic, reporter, and
-replicate. Columns are \code{well}, \code{drug}, \code{perturbation}, \code{concentration_ug_ml},
+replicate. Columns are \code{well}, \code{drug}, \code{compound}, \code{concentration_ug_ml},
 \code{strain}, \code{statistic}, \code{reporter}, \code{replicate}, and \code{value}.
 }
 \source{

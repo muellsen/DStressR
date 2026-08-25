@@ -21,5 +21,6 @@ articles:
     contents:
       - DStressR
       - ecoli-promoter-screen
+      - ecoli-fluorescence-stress-screen
       - median-polish-workflow
       - salmonella-empty-vector-workflow

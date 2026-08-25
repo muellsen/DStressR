@@ -1829,15 +1829,17 @@ model-based estimand.
 
 The software flow mirrors the statistical construction in the paper. First, a
 long-format screen is mapped to an assay object with explicit columns for the
-reporter signal, the growth signal, the promoter, the compound, the reference
-condition, and technical covariates. Second, the response scale is constructed
-from the reporter and growth summaries, optionally using an estimated
-promoter-specific growth exponent and an empty-vector or other background
-reporter. Third, the model-based analysis estimates reporter-perturbation effects,
-applies the selected uncertainty model, adjusts p-values within the chosen
-family, and returns directional calls. Finally, the same result table is used
-for visualization, comparison with legacy analyses, and manuscript-scale
-exports.
+reporter signal, the growth signal, the reporter, the perturbation variable, the
+reference condition, and technical covariates. The names of these columns remain
+dataset-specific. In the Binsfeld screen, the perturbation column is the original
+`drug` label; in the Dash fluorescence experiment, it is a derived `stress`
+label. Second, the response scale is constructed from the reporter and growth
+summaries, optionally using an estimated reporter-specific growth exponent and
+an empty-vector or other background reporter. Third, the model-based analysis
+estimates reporter-perturbation effects, applies the selected uncertainty model,
+adjusts p-values within the chosen family, and returns directional calls.
+Finally, the same result table is used for visualization, comparison with legacy
+analyses, and manuscript-scale exports.
 
 For a generic arrayed reporter screen without a matched background reporter,
 the complete model-based workflow can be written as:
@@ -1848,8 +1850,8 @@ library(DStressR)
 
 assay <- prepare_assay(
   screen_table,
-  promoter = "promoter",
-  compound = "compound",
+  reporter = "reporter",
+  perturbation = "perturbation",
   control = "DMSO",
   lux = "lux_auc",
   growth = "od_fixed_time",
@@ -1863,7 +1865,7 @@ fit <- fit_destress(
   preset = "model",
   technical = c("plate", "replicate"),
   empirical_bayes = TRUE,
-  adjustment = "by_promoter"
+  adjustment = "by_reporter"
 )
 
 pair_results <- results(fit)
@@ -1877,17 +1879,17 @@ during response construction rather than as a separate legacy analysis:
 #| eval: false
 assay_evc <- prepare_assay(
   screen_table,
-  promoter = "promoter",
-  compound = "compound",
+  reporter = "reporter",
+  perturbation = "perturbation",
   control = "DMSO",
   lux = "lux_auc",
   growth = "od_fixed_time",
   growth_exponent = "estimate",
   batch = "plate",
   replicate = "replicate",
-  background_promoter = "EVC",
+  background_reporter = "EVC",
   background_method = "huber",
-  background_by = c("compound", "plate", "replicate")
+  background_by = c("perturbation", "plate", "replicate")
 )
 
 fit_evc <- fit_destress(
@@ -1895,7 +1897,48 @@ fit_evc <- fit_destress(
   preset = "model",
   technical = c("plate", "replicate"),
   empirical_bayes = TRUE,
-  adjustment = "by_promoter"
+  adjustment = "by_reporter"
+)
+```
+
+For the public Binsfeld data object, the source-faithful perturbation variable is
+`drug`. The two water controls are supplied together and are pooled internally as
+the model reference without modifying the original input column:
+
+```{r}
+#| eval: false
+binsfeld_assay <- prepare_assay(
+  binsfeld_reporter_auc,
+  reporter = "reporter",
+  perturbation = "drug",
+  control = c("Water_1", "Water_2"),
+  lux = "lux_auc",
+  growth = "od_auc",
+  growth_exponent = "estimate",
+  batch = "dose_level",
+  replicate = "replicate",
+  growth_covariates = "replicate",
+  numeric_covariates = "dose_level",
+  background_reporter = "EVC",
+  background_method = "huber",
+  background_by = c("drug", "dose_level", "replicate")
+)
+```
+
+For the Dash fluorescence/OD example, the local workflow converts the
+weak-stress condition into a `stress` column and analyzes reporter-window units:
+
+```{r}
+#| eval: false
+dash_assay <- prepare_assay(
+  dash_weak_stress,
+  reporter = "pseudo_reporter",
+  perturbation = "stress",
+  control = "Standard",
+  lux = "gfp_auc",
+  growth = "od_auc",
+  growth_exponent = stress_alpha,
+  replicate = "replicate"
 )
 ```
 
@@ -1910,7 +1953,7 @@ head(results(fit_evc))
 plot_volcano(
   results(fit_evc),
   effect = "specific_effect",
-  padj = "specific_padj"
+  padj = "specific_padj_by_reporter"
 )
 
 plot_response_heatmap(
@@ -2040,8 +2083,8 @@ legacy preset:
 mp_fit <- fit_median_polish(
   screen_table,
   response = "response",
-  promoter = "promoter",
-  compound = "compound",
+  reporter = "reporter",
+  perturbation = "perturbation",
   control = c("DMSO1", "DMSO2"),
   replicate = "replicate"
 )
@@ -2051,8 +2094,8 @@ mp_fit <- fit_destress(
   screen_table,
   preset = "median_polish",
   response = "response",
-  promoter = "promoter",
-  compound = "compound",
+  reporter = "reporter",
+  perturbation = "perturbation",
   control = c("DMSO1", "DMSO2"),
   replicate = "replicate"
 )
@@ -2118,9 +2161,9 @@ legacy preset:
 evc_fit <- fit_empty_vector_control(
   screen_table,
   response = "response",
-  promoter = "promoter",
-  compound = "compound",
-  empty_vector = "EVC",
+  reporter = "reporter",
+  perturbation = "perturbation",
+  empty_vector_reporter = "EVC",
   control = c("DMSO1", "DMSO2"),
   replicate = "replicate"
 )
@@ -2130,9 +2173,9 @@ evc_fit <- fit_destress(
   screen_table,
   preset = "evc",
   response = "response",
-  promoter = "promoter",
-  compound = "compound",
-  empty_vector = "EVC",
+  reporter = "reporter",
+  perturbation = "perturbation",
+  empty_vector_reporter = "EVC",
   control = c("DMSO1", "DMSO2"),
   replicate = "replicate"
 )
@@ -2292,8 +2335,8 @@ union_tbl <- union_tbl[
 ]
 union_tbl <- union_tbl[, c(
   "promoter", "compound", "evc_huber_class", "mean_z",
-  "binsfeld_padj", "modeled_effect", "modeled_padj_by_promoter",
-  "evc_huber_effect", "evc_huber_padj_by_promoter"
+  "binsfeld_padj", "modeled_effect", "modeled_padj_by_reporter",
+  "evc_huber_effect", "evc_huber_padj_by_reporter"
 )]
 union_tbl$evc_huber_class <- shorten_hit_set(union_tbl$evc_huber_class)
 names(union_tbl) <- c(
@@ -2330,8 +2373,8 @@ support_tbl <- read.delim(
 )
 support_tbl <- support_tbl[, c(
   "promoter", "compound", "evc_huber_class", "modeled_effect",
-  "modeled_padj_by_promoter", "evc_huber_effect",
-  "evc_huber_padj_by_promoter", "literature_support", "source"
+  "modeled_padj_by_reporter", "evc_huber_effect",
+  "evc_huber_padj_by_reporter", "literature_support", "source"
 )]
 support_tbl$evc_huber_class <- shorten_hit_set(support_tbl$evc_huber_class)
 names(support_tbl) <- c(
@@ -2491,9 +2534,9 @@ key_pairs <- key_pairs[, c(
   "evc_huber_hit", "interaction_without_ev_hit", "interaction_with_ev_hit",
   "modeled_effect", "evc_huber_effect",
   "interaction_without_ev_effect", "interaction_with_ev_effect",
-  "modeled_padj_by_promoter", "evc_huber_padj_by_promoter",
-  "interaction_without_ev_padj_by_promoter",
-  "interaction_with_ev_padj_by_promoter"
+  "modeled_padj_by_reporter", "evc_huber_padj_by_reporter",
+  "interaction_without_ev_padj_by_reporter",
+  "interaction_with_ev_padj_by_reporter"
 )]
 hit_code <- function(ref, no_evc, evc, int_no_evc, int_evc) {
   hits <- c(
@@ -2518,9 +2561,9 @@ key_pairs <- key_pairs[, c(
   "promoter", "compound", "hit_sets",
   "modeled_effect", "evc_huber_effect",
   "interaction_without_ev_effect", "interaction_with_ev_effect",
-  "modeled_padj_by_promoter", "evc_huber_padj_by_promoter",
-  "interaction_without_ev_padj_by_promoter",
-  "interaction_with_ev_padj_by_promoter"
+  "modeled_padj_by_reporter", "evc_huber_padj_by_reporter",
+  "interaction_without_ev_padj_by_reporter",
+  "interaction_with_ev_padj_by_reporter"
 )]
 names(key_pairs) <- c(
   "Prom.", "Cmpd.", "Hits",

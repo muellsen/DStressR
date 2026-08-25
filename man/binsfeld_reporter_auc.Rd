@@ -5,18 +5,19 @@
 \alias{binsfeld_reporter_auc}
 \title{Binsfeld et al. reporter screen AUC data}
 \format{
-A data frame with 24,576 rows and 12 columns:
+A data frame with 24,576 rows and 13 columns:
 \describe{
 \item{strain}{Reporter host strain.}
-\item{reporter}{Reporter reporter, including \code{EVC}.}
+\item{reporter}{Reporter label, including \code{EVC}.}
 \item{replicate}{Reporter replicate number.}
 \item{well}{384-well plate coordinate.}
-\item{drug}{Original perturbation/control label.}
-\item{perturbation}{DStressR perturbation label, with water controls collapsed.}
+\item{drug}{Original drug/control label from the source table.}
+\item{compound}{Derived drug/control grouping label, with water controls
+collapsed.}
 \item{concentration_index}{Dose-series index from the source table.}
 \item{dose_level}{Dose-oriented serial dilution level; larger values
 correspond to higher concentration.}
-\item{concentration_ug_ml}{Perturbation concentration in micrograms per ml.}
+\item{concentration_ug_ml}{Compound concentration in micrograms per ml.}
 \item{od_auc}{Optical-density area under the curve.}
 \item{lux_auc}{Luminescence area under the curve.}
 \item{od_auc_per_lux_auc}{Source-table OD/LUX AUC ratio.}
@@ -33,10 +34,11 @@ binsfeld_reporter_auc
 A public \emph{E. coli} reporter-screen data set from Binsfeld et al. (2025),
 prepared as an AUC-level long table for DStressR examples and tests. The
 rows are reporter/strain/replicate/well observations from the PLOS Biology
-S3 Data supplement. \code{perturbation} collapses the water control wells
-(\code{Water_1}, \code{Water_2}) to \code{Water}; the original label remains in \code{drug}.
+S3 Data supplement. \code{drug} keeps the original Binsfeld perturbation labels,
+including \code{Water_1} and \code{Water_2}. \code{compound} is a derived grouping column
+that collapses the water control wells to \code{Water} for summaries.
 \code{dose_level} is derived from \code{concentration_index} so that larger values
-correspond to higher perturbation concentration.
+correspond to higher compound concentration.
 }
 \details{
 The source article is https://doi.org/10.1371/journal.pbio.3003260. The

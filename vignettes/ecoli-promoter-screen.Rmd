@@ -38,16 +38,17 @@ binsfeld_reporter_scores <- DStressR::binsfeld_reporter_scores
 dim(binsfeld_reporter_auc)
 table(binsfeld_reporter_auc$strain)
 length(unique(binsfeld_reporter_auc$reporter))
-length(unique(binsfeld_reporter_auc$perturbation))
+length(unique(binsfeld_reporter_auc$drug))
 ```
 
-The AUC table is a long table with one row per strain, reporter, perturbation or
-control, replicate, and serial-dilution observation. The package-level
-`perturbation` column keeps the original perturbation labels, except that the water
-control wells are collapsed to `Water`. The original label remains in `drug`.
+The AUC table is a long table with one row per strain, reporter, drug or
+control, replicate, and serial-dilution observation. The `drug` column keeps the
+original Binsfeld labels, including `Water_1` and `Water_2`. The derived
+`compound` column is retained only as a convenience grouping variable for
+summaries.
 The source `concentration_index` increases with dilution; `dose_level` reverses
 this coding so that larger values correspond to higher concentration for
-non-water perturbation wells. For water controls, the same column records the
+non-water compound wells. For water controls, the same column records the
 matched concentration-index position in the screen layout.
 
 ```{r auc-columns}
@@ -64,10 +65,11 @@ names(binsfeld_reporter_scores)
 ## DStressR analysis
 
 For the package application, the wild-type reporter data are filtered to rows
-that passed the original quality-control flag. Water is used as the reference
-condition. The Empty Vector Control reporter is supplied to `prepare_assay()`
-as a matched background reporter, so the default response model performs
-Huber-calibrated background adjustment before model-based testing.
+that passed the original quality-control flag. The original `Water_1` and
+`Water_2` labels are supplied together as the reference condition. The Empty
+Vector Control reporter is supplied to `prepare_assay()` as a matched
+background reporter, so the default response model performs Huber-calibrated
+background adjustment before model-based testing.
 
 ```{r ecoli-destress, eval = FALSE}
 wt_auc <- subset(
@@ -78,8 +80,8 @@ wt_auc <- subset(
 assay <- prepare_assay(
   wt_auc,
   reporter = "reporter",
-  perturbation = "perturbation",
-  control = "Water",
+  perturbation = "drug",
+  control = c("Water_1", "Water_2"),
   lux = "lux_auc",
   growth = "od_auc",
   growth_exponent = "estimate",
@@ -88,7 +90,7 @@ assay <- prepare_assay(
   growth_covariates = "replicate",
   numeric_covariates = "dose_level",
   background_reporter = "EVC",
-  background_by = c("perturbation", "dose_level", "replicate")
+  background_by = c("drug", "dose_level", "replicate")
 )
 
 fit <- fit_destress(

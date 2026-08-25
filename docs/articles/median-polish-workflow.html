@@ -45,7 +45,8 @@
   <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" role="button" aria-expanded="false" aria-haspopup="true" id="dropdown-articles">Articles</a>
   <div class="dropdown-menu" aria-labelledby="dropdown-articles">
     <h6 class="dropdown-header" data-toc-skip>Get started</h6>
-    <a class="dropdown-item" href="../articles/ecoli-promoter-screen.html">E. coli promoter-compound screen</a>
+    <a class="dropdown-item" href="../articles/ecoli-promoter-screen.html">E. coli reporter-perturbation screen</a>
+    <a class="dropdown-item" href="../articles/ecoli-fluorescence-stress-screen.html">E. coli fluorescence stress screen</a>
     <a class="dropdown-item" href="../articles/median-polish-workflow.html">Original median-polish workflow</a>
     <a class="dropdown-item" href="../articles/salmonella-empty-vector-workflow.html">Salmonella Empty Vector workflow</a>
   </div>
@@ -102,21 +103,21 @@ for existing scripts.</p>
 <div class="section level2">
 <h2 id="required-input-files">Required input files<a class="anchor" aria-label="anchor" href="#required-input-files"></a>
 </h2>
-<p>For the original Campylobacter promoter-library workflow, the
+<p>For the original Campylobacter reporter-library workflow, the
 median-polish baseline starts from two exported files.</p>
 <div class="section level3">
 <h3 id="expression_values-tsv-gz">
 <code>expression_values.tsv.gz</code><a class="anchor" aria-label="anchor" href="#expression_values-tsv-gz"></a>
 </h3>
 <p>This is a long table with one row per measured
-promoter-library-well-replicate observation. Its shape is
+reporter-library-well-replicate observation. Its shape is
 approximately:</p>
-<pre class="text"><code>n_promoters x (n_compound_wells + n_dmso_wells + n_noisy_dmso_wells) x n_replicates</code></pre>
+<pre class="text"><code>n_reporters x (n_compound_wells + n_dmso_wells + n_noisy_dmso_wells) x n_replicates</code></pre>
 <p>The required columns are:</p>
 <ul>
-<li>promoter identifier, for example <code>promoter</code>
+<li>reporter identifier, for example <code>reporter</code>
 </li>
-<li>compound/library-well identifier, for example
+<li>perturbation/library-well identifier, for example
 <code>srn_code</code>
 </li>
 <li>library plate, for example <code>libplate</code>
@@ -135,8 +136,8 @@ approximately:</p>
 <h3 id="libmap-txt">
 <code>LibMap.txt</code><a class="anchor" aria-label="anchor" href="#libmap-txt"></a>
 </h3>
-<p>This is a library annotation table with one row per compound/library
-well. The required columns are:</p>
+<p>This is a library annotation table with one row per
+perturbation/library well. The required columns are:</p>
 <ul>
 <li><code>Library plate</code></li>
 <li><code>Well</code></li>
@@ -144,7 +145,7 @@ well. The required columns are:</p>
 <li><code>Catalog Number</code></li>
 </ul>
 <p>The original workflow identifies ordinary DMSO controls and noisy
-DMSO wells from this table. DStressR uses the same compound key:</p>
+DMSO wells from this table. DStressR uses the same perturbation key:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">srn_code</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"lp"</span>, <span class="va">`Library plate`</span>, <span class="st">"_"</span>, <span class="va">Well</span><span class="op">)</span></span></code></pre></div>
 </div>
@@ -169,8 +170,8 @@ DMSO wells from this table. DStressR uses the same compound key:</p>
 <span><span class="va">legacy</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fit_workflow.html">fit_workflow</a></span><span class="op">(</span></span>
 <span>  <span class="va">expression_df</span>,</span>
 <span>  workflow <span class="op">=</span> <span class="st">"median_polish"</span>,</span>
-<span>  promoter <span class="op">=</span> <span class="st">"promoter"</span>,</span>
-<span>  compound <span class="op">=</span> <span class="st">"srn_code"</span>,</span>
+<span>  reporter <span class="op">=</span> <span class="st">"reporter"</span>,</span>
+<span>  perturbation <span class="op">=</span> <span class="st">"srn_code"</span>,</span>
 <span>  libplate <span class="op">=</span> <span class="st">"libplate"</span>,</span>
 <span>  replicate <span class="op">=</span> <span class="st">"replicate"</span>,</span>
 <span>  response <span class="op">=</span> <span class="st">"log2.auc.16hmeasured.normed"</span>,</span>
@@ -183,7 +184,7 @@ DMSO wells from this table. DStressR uses the same compound key:</p>
 <p>The optional <code>normality_results</code> table corresponds to the
 original DMSO normality check: Shapiro-Wilk and Lilliefors p-values are
 computed from pre-polish DMSO-centered fold changes within each
-promoter-libplate-replicate group, then BH-adjusted across groups.</p>
+reporter-libplate-replicate group, then BH-adjusted across groups.</p>
 <p>The replicate-level table corresponds to the original
 <code>expression_df.pvalues.tsv.gz</code> output:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
@@ -192,8 +193,8 @@ promoter-libplate-replicate group, then BH-adjusted across groups.</p>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">replicate_pvalues</span><span class="op">)</span></span></code></pre></div>
 <p>The pair-level table corresponds to the original hit-calling table:
 DMSO and excluded controls are removed, the largest replicate-level
-p-value is retained for each promoter-compound pair, and BH correction
-is applied within promoter.</p>
+p-value is retained for each reporter-perturbation pair, and BH
+correction is applied within reporter.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">hit_table</span> <span class="op">&lt;-</span> <span class="va">legacy</span><span class="op">$</span><span class="va">pair_results</span></span>
 <span></span>
@@ -207,25 +208,25 @@ is applied within promoter.</p>
 the original hit-determination steps:</p>
 <ol style="list-style-type: decimal">
 <li>Build
-<code>promoter_libplate_replicate = paste(promoter, libplate, replicate, sep = "_")</code>.</li>
+<code>promoter_libplate_replicate = paste(reporter, libplate, replicate, sep = "_")</code>.</li>
 <li>Compute the DMSO mean normalized response within each
-promoter-libplate-replicate group.</li>
+reporter-libplate-replicate group.</li>
 <li>Compute
 <code>log2FC = normalized.lux - avg.dmso.expression</code>.</li>
-<li>Form a matrix with promoter-libplate-replicate groups in rows and
-<code>srn_code</code> compound/library wells in columns.</li>
+<li>Form a matrix with reporter-libplate-replicate groups in rows and
+<code>srn_code</code> perturbation/library wells in columns.</li>
 <li>Apply
 <code>stats::medpolish(..., na.rm = TRUE, maxiter = 1000, eps = 1e-8)</code>.</li>
 <li>Use the median-polish residuals as
 <code>log2FC.polished</code>.</li>
 <li>Estimate the DMSO residual mean and standard deviation within each
-promoter-libplate-replicate group.</li>
+reporter-libplate-replicate group.</li>
 <li>Compute
 <code>zscore = (log2FC.polished - dmso.avg_dmsoFC) / dmso.stdv_dmsoFC</code>.</li>
 <li>Compute two-sided Gaussian p-values.</li>
 <li>For hit calling, remove DMSO/noisy-DMSO wells, keep the largest
-p-value across replicates for each promoter-compound pair, and apply BH
-correction within promoter.</li>
+p-value across replicates for each reporter-perturbation pair, and apply
+BH correction within reporter.</li>
 </ol>
 <p>If <code>normality = TRUE</code>, the function also runs the
 workflow’s DMSO normality screen before median polishing. The Lilliefors
@@ -238,11 +239,11 @@ when only the Shapiro-Wilk check is needed.</p>
 </h2>
 <p>This toy example is deliberately tiny; it only shows the mechanics of
 the legacy path. Real screens need multiple DMSO wells per
-promoter-libplate-replicate group to estimate the DMSO null
+reporter-libplate-replicate group to estimate the DMSO null
 distribution.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">toy</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/expand.grid.html" class="external-link">expand.grid</a></span><span class="op">(</span></span>
-<span>  promoter <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"P1"</span>, <span class="st">"P2"</span><span class="op">)</span>,</span>
+<span>  reporter <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"P1"</span>, <span class="st">"P2"</span><span class="op">)</span>,</span>
 <span>  libplate <span class="op">=</span> <span class="st">"lp1"</span>,</span>
 <span>  replicate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"r1"</span>, <span class="st">"r2"</span><span class="op">)</span>,</span>
 <span>  srn_code <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"DMSO1"</span>, <span class="st">"DMSO2"</span>, <span class="st">"C1"</span>, <span class="st">"C2"</span><span class="op">)</span>,</span>
@@ -263,7 +264,7 @@ distribution.</p>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">legacy</span><span class="op">$</span><span class="va">replicate_results</span></span>
-<span><span class="co">#&gt;    promoter_libplate_replicate promoter libplate replicate srn_code</span></span>
+<span><span class="co">#&gt;    promoter_libplate_replicate reporter libplate replicate srn_code</span></span>
 <span><span class="co">#&gt; 1                    P1_lp1_r1       P1      lp1        r1       C1</span></span>
 <span><span class="co">#&gt; 2                    P1_lp1_r1       P1      lp1        r1       C2</span></span>
 <span><span class="co">#&gt; 3                    P1_lp1_r1       P1      lp1        r1    DMSO1</span></span>
@@ -298,7 +299,7 @@ distribution.</p>
 <span><span class="co">#&gt; 15           -0.05           -0.05     3.140185e-16 2  7.071068e-01 0.4795001</span></span>
 <span><span class="co">#&gt; 16           -0.05           -0.05     3.140185e-16 2 -7.071068e-01 0.4795001</span></span>
 <span><span class="va">legacy</span><span class="op">$</span><span class="va">pair_results</span></span>
-<span><span class="co">#&gt;    promoter_libplate_replicate promoter libplate replicate srn_code</span></span>
+<span><span class="co">#&gt;    promoter_libplate_replicate reporter libplate replicate srn_code</span></span>
 <span><span class="co">#&gt; 1                    P1_lp1_r1       P1      lp1        r1       C1</span></span>
 <span><span class="co">#&gt; 2                    P1_lp1_r1       P1      lp1        r1       C2</span></span>
 <span><span class="co">#&gt; 9                    P2_lp1_r1       P2      lp1        r1       C1</span></span>
@@ -323,8 +324,8 @@ model-based DStressR analysis starts from the same long table but uses
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">assay</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/prepare_assay.html">prepare_assay</a></span><span class="op">(</span></span>
 <span>  <span class="va">expression_df</span>,</span>
-<span>  promoter <span class="op">=</span> <span class="st">"promoter"</span>,</span>
-<span>  compound <span class="op">=</span> <span class="st">"srn_code"</span>,</span>
+<span>  reporter <span class="op">=</span> <span class="st">"reporter"</span>,</span>
+<span>  perturbation <span class="op">=</span> <span class="st">"srn_code"</span>,</span>
 <span>  control <span class="op">=</span> <span class="st">"DMSO"</span>,</span>
 <span>  lux <span class="op">=</span> <span class="st">"LUX.AUC_16"</span>,</span>
 <span>  growth <span class="op">=</span> <span class="st">"od_16h.measured"</span>,</span>
