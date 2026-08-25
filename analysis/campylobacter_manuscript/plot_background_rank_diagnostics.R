@@ -36,7 +36,7 @@ libmap$ProductName <- ifelse(
 )
 compound_lookup <- unique(libmap[, c("compound", "ProductName", "Catalog Number", "Target"), drop = FALSE])
 
-clean_compound_label <- function(x, max_chars = 34) {
+clean_perturbation_label <- function(x, max_chars = 34) {
   x <- iconv(x, from = "", to = "ASCII//TRANSLIT")
   x[is.na(x) | x == "" | x == "NA"] <- NA_character_
   too_long <- !is.na(x) & nchar(x) > max_chars
@@ -46,8 +46,8 @@ clean_compound_label <- function(x, max_chars = 34) {
 
 assay <- prepare_assay(
   expr,
-  promoter = "promoter",
-  compound = "compound_model",
+  reporter = "promoter",
+  perturbation = "compound_model",
   control = "DMSO",
   lux = "lux_auc_until16h",
   growth = "od_at_16h",
@@ -74,7 +74,7 @@ export_rank_results <- function(rank) {
     global_effect = res$global_effect,
     pvalue = res$specific_pvalue,
     padj_global = res$specific_padj_global,
-    padj_by_promoter = res$specific_padj_by_promoter,
+    padj_by_reporter = res$specific_padj_by_reporter,
     stringsAsFactors = FALSE
   )
   write.table(
@@ -170,7 +170,7 @@ compound_loadings$label <- ifelse(
   compound_loadings$compound,
   compound_loadings$ProductName
 )
-compound_loadings$label <- clean_compound_label(compound_loadings$label)
+compound_loadings$label <- clean_perturbation_label(compound_loadings$label)
 compound_loadings$label[is.na(compound_loadings$label)] <- compound_loadings$compound[is.na(compound_loadings$label)]
 compound_loadings$component <- factor(
   compound_loadings$component,
@@ -207,11 +207,11 @@ compound_summary <- do.call(rbind, lapply(split(rank_results, rank_results$rank)
     return(data.frame())
   }
   tab <- as.data.frame(table(hits$compound), stringsAsFactors = FALSE)
-  names(tab) <- c("compound", "n_promoters")
+  names(tab) <- c("compound", "n_reporters")
   tab$rank <- unique(d$rank)
   tab
 }))
-compound_summary <- compound_summary[order(compound_summary$rank, -compound_summary$n_promoters), ]
+compound_summary <- compound_summary[order(compound_summary$rank, -compound_summary$n_reporters), ]
 write.table(
   compound_summary,
   file.path(out_dir, "background_rank_compound_breadth.tsv"),

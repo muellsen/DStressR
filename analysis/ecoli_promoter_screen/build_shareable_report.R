@@ -101,19 +101,19 @@ promoter_summary <- aggregate(
   sum
 )
 names(promoter_summary) <- c("Promoter", "Binsfeld hits", "DStressR hits")
-overlap_by_promoter <- aggregate(
+overlap_by_reporter <- aggregate(
   overlap_class ~ promoter,
   all_pairs,
   function(x) sum(x == "Both")
 )
-promoter_summary$Overlap <- overlap_by_promoter$overlap_class[
-  match(promoter_summary$Promoter, overlap_by_promoter$promoter)
+promoter_summary$Overlap <- overlap_by_reporter$overlap_class[
+  match(promoter_summary$Promoter, overlap_by_reporter$promoter)
 ]
 promoter_summary <- promoter_summary[order(promoter_summary$Promoter), ]
 
 both <- union_pairs[union_pairs$overlap_class == "Both", ]
 both$binsfeld_padj <- fmt_num(both$binsfeld_padj)
-both$specific_padj_by_promoter <- fmt_num(both$specific_padj_by_promoter)
+both$specific_padj_by_reporter <- fmt_num(both$specific_padj_by_reporter)
 both$mean_z <- fmt_num(both$mean_z)
 both$specific_effect <- fmt_num(both$specific_effect)
 
@@ -123,7 +123,7 @@ appendix$binsfeld_pvalue <- fmt_num(appendix$binsfeld_pvalue)
 appendix$binsfeld_padj <- fmt_num(appendix$binsfeld_padj)
 appendix$specific_effect <- fmt_num(appendix$specific_effect)
 appendix$specific_pvalue <- fmt_num(appendix$specific_pvalue)
-appendix$specific_padj_by_promoter <- fmt_num(appendix$specific_padj_by_promoter)
+appendix$specific_padj_by_reporter <- fmt_num(appendix$specific_padj_by_reporter)
 
 binsfeld_only <- appendix[appendix$overlap_class == "Binsfeld only", ]
 destress_only <- appendix[appendix$overlap_class == "DStressR only", ]
@@ -219,7 +219,7 @@ html_table(promoter_summary),
 <h2>Top Overlapping Hits</h2>',
 html_table(
   both[order(as.numeric(both$binsfeld_padj)), ],
-  columns = c("promoter", "compound", "mean_z", "binsfeld_padj", "specific_effect", "specific_padj_by_promoter", "destress_hit_class"),
+  columns = c("promoter", "compound", "mean_z", "binsfeld_padj", "specific_effect", "specific_padj_by_reporter", "destress_hit_class"),
   max_rows = 20
 ),
 
@@ -234,26 +234,26 @@ html_table(
 <h3>Binsfeld-only Significant Pairs</h3>',
 html_table(
   binsfeld_only,
-  columns = c("promoter", "compound", "mean_z", "binsfeld_padj", "binsfeld_direction", "specific_effect", "specific_padj_by_promoter")
+  columns = c("promoter", "compound", "mean_z", "binsfeld_padj", "binsfeld_direction", "specific_effect", "specific_padj_by_reporter")
 ),
 
 '<h3>DStressR-only Significant Pairs</h3>',
 html_table(
   destress_only,
-  columns = c("promoter", "compound", "mean_z", "binsfeld_padj", "specific_effect", "specific_padj_by_promoter", "destress_hit_class")
+  columns = c("promoter", "compound", "mean_z", "binsfeld_padj", "specific_effect", "specific_padj_by_reporter", "destress_hit_class")
 ),
 
 '<h3>Overlapping Significant Pairs</h3>',
 html_table(
   overlap_hits,
-  columns = c("promoter", "compound", "mean_z", "binsfeld_padj", "binsfeld_direction", "specific_effect", "specific_padj_by_promoter", "destress_hit_class")
+  columns = c("promoter", "compound", "mean_z", "binsfeld_padj", "binsfeld_direction", "specific_effect", "specific_padj_by_reporter", "destress_hit_class")
 ),
 
 '<h3>Full Union of Significant Pairings</h3>
 <p>The table below is the union of all promoter-compound pairs significant by either method. The same table is written as a shareable TSV at <code>analysis/outputs/binsfeld/binsfeld_destress_significant_union.tsv</code>.</p>',
 html_table(
   appendix,
-  columns = c("promoter", "compound", "overlap_class", "mean_z", "binsfeld_padj", "binsfeld_direction", "specific_effect", "specific_padj_by_promoter", "destress_hit_class")
+  columns = c("promoter", "compound", "overlap_class", "mean_z", "binsfeld_padj", "binsfeld_direction", "specific_effect", "specific_padj_by_reporter", "destress_hit_class")
 ),
 
 '<h2>Reproducibility</h2>

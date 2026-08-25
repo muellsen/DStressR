@@ -1,31 +1,31 @@
 #' Reproduce the legacy median-polish workflow
 #'
 #' This function implements the original median-polish hit-determination
-#' workflow used for the Campylobacter promoter-library screen. It starts from a
-#' long expression table, centers each promoter-library-plate-replicate group by
+#' workflow used for the Campylobacter reporter-library screen. It starts from a
+#' long expression table, centers each reporter-library-plate-replicate group by
 #' its DMSO wells, applies [stats::medpolish()] to the resulting
-#' promoter-libplate-replicate by compound matrix, and computes z-test p-values
+#' reporter-libplate-replicate by perturbation matrix, and computes z-test p-values
 #' from the polished DMSO residual distribution.
 #'
-#' The promoter-compound hit table follows the original conservative replicate
+#' The reporter-perturbation hit table follows the original conservative replicate
 #' aggregation: DMSO and excluded control wells are removed, the largest
-#' replicate-level p-value is retained for each promoter-compound pair, and
-#' p-values are BH-adjusted within promoter.
+#' replicate-level p-value is retained for each reporter-perturbation pair, and
+#' p-values are BH-adjusted within reporter.
 #'
 #' @param data Long expression table with one row per
-#'   promoter-compound-replicate observation.
-#' @param promoter,compound,libplate,replicate Column names identifying the
-#'   promoter, compound/library well, library plate, and replicate.
+#'   reporter-perturbation-replicate observation.
+#' @param reporter,perturbation,libplate,replicate Column names identifying the
+#'   reporter, perturbation/library well, library plate, and replicate.
 #' @param response Column containing the already growth-normalized log2
 #'   response, for example `log2.auc.16hmeasured.normed`.
-#' @param control Character vector of compound/library-well IDs used as DMSO
+#' @param control Character vector of perturbation/library-well IDs used as DMSO
 #'   controls.
-#' @param exclude Character vector of compound/library-well IDs to remove before
+#' @param exclude Character vector of perturbation/library-well IDs to remove before
 #'   median polishing and hit calling, for example noisy DMSO wells.
 #' @param fdr FDR threshold used to assign the `hit` class in the pair-level
 #'   table.
 #' @param normality If `TRUE`, test pre-polish DMSO-centered fold changes
-#'   within each promoter-library-plate-replicate group.
+#'   within each reporter-library-plate-replicate group.
 #' @param normality_methods Character vector containing `"shapiro"` and/or
 #'   `"lilliefors"`. The Lilliefors test requires the suggested `nortest`
 #'   package.
@@ -35,8 +35,8 @@
 #'   `normality_results` components.
 #' @export
 fit_median_polish <- function(data,
-                              promoter = "promoter",
-                              compound = "srn_code",
+                              reporter = "reporter",
+                              perturbation = "srn_code",
                               libplate = "libplate",
                               replicate = "replicate",
                               response = "log2.auc.16hmeasured.normed",
@@ -49,31 +49,31 @@ fit_median_polish <- function(data,
                               eps = 1e-8) {
   stopifnot(is.data.frame(data))
   if (missing(control) || length(control) == 0) {
-    stop("`control` must contain one or more DMSO/control compound IDs.", call. = FALSE)
+    stop("`control` must contain one or more DMSO/control perturbation IDs.", call. = FALSE)
   }
-  required <- c(promoter, compound, libplate, replicate, response)
+  required <- c(reporter, perturbation, libplate, replicate, response)
   missing_cols <- setdiff(required, names(data))
   if (length(missing_cols) > 0) {
     stop("Missing required columns: ", paste(missing_cols, collapse = ", "), call. = FALSE)
   }
 
   d <- data
-  d$.promoter <- as.character(d[[promoter]])
-  d$.compound <- as.character(d[[compound]])
+  d$.reporter <- as.character(d[[reporter]])
+  d$.perturbation <- as.character(d[[perturbation]])
   d$.libplate <- as.character(d[[libplate]])
   d$.replicate <- as.character(d[[replicate]])
   d$.response <- as.numeric(d[[response]])
-  d$.group <- paste(d$.promoter, d$.libplate, d$.replicate, sep = "_")
+  d$.group <- paste(d$.reporter, d$.libplate, d$.replicate, sep = "_")
   d <- d[is.finite(d$.response), , drop = FALSE]
-  d <- d[!(d$.compound %in% exclude), , drop = FALSE]
+  d <- d[!(d$.perturbation %in% exclude), , drop = FALSE]
   if (nrow(d) == 0) {
     stop("No finite rows remain after applying exclusions.", call. = FALSE)
   }
-  if (!any(d$.compound %in% control)) {
+  if (!any(d$.perturbation %in% control)) {
     stop("No control rows found after applying exclusions.", call. = FALSE)
   }
 
-  dmso <- d[d$.compound %in% control, , drop = FALSE]
+  dmso <- d[d$.perturbation %in% control, , drop = FALSE]
   dmso_mean <- stats::aggregate(
     .response ~ .group,
     dmso,
@@ -96,24 +96,24 @@ fit_median_polish <- function(data,
     )
   }
 
-  key <- paste(d$.group, d$.compound, sep = "\r")
+  key <- paste(d$.group, d$.perturbation, sep = "\r")
   if (anyDuplicated(key)) {
     stop(
       "Median-polish input must have at most one row per ",
-      "promoter/libplate/replicate/compound combination.",
+      "reporter/libplate/replicate/perturbation combination.",
       call. = FALSE
     )
   }
 
   groups <- sort(unique(d$.group))
-  compounds <- sort(unique(d$.compound))
+  perturbations <- sort(unique(d$.perturbation))
   mat <- matrix(
     NA_real_,
     nrow = length(groups),
-    ncol = length(compounds),
-    dimnames = list(groups, compounds)
+    ncol = length(perturbations),
+    dimnames = list(groups, perturbations)
   )
-  mat[cbind(match(d$.group, groups), match(d$.compound, compounds))] <- d$.log2FC
+  mat[cbind(match(d$.group, groups), match(d$.perturbation, perturbations))] <- d$.log2FC
 
   polish <- stats::medpolish(mat, na.rm = TRUE, maxiter = maxiter, eps = eps, trace.iter = FALSE)
   polished <- polish$residuals
@@ -121,8 +121,8 @@ fit_median_polish <- function(data,
   names(long) <- c("promoter_libplate_replicate", "srn_code", "log2FC.polished")
   long <- long[is.finite(long$log2FC.polished), , drop = FALSE]
 
-  group_map <- unique(d[, c(".group", ".promoter", ".libplate", ".replicate"), drop = FALSE])
-  names(group_map) <- c("promoter_libplate_replicate", "promoter", "libplate", "replicate")
+  group_map <- unique(d[, c(".group", ".reporter", ".libplate", ".replicate"), drop = FALSE])
+  names(group_map) <- c("promoter_libplate_replicate", "reporter", "libplate", "replicate")
   long <- merge(long, group_map, by = "promoter_libplate_replicate", all.x = TRUE, sort = FALSE)
 
   dmso_polished <- long[long$srn_code %in% control, , drop = FALSE]
@@ -161,7 +161,7 @@ fit_median_polish <- function(data,
   )
   replicate_results <- replicate_results[, c(
     "promoter_libplate_replicate",
-    "promoter",
+    "reporter",
     "libplate",
     "replicate",
     "srn_code",
@@ -180,14 +180,14 @@ fit_median_polish <- function(data,
     drop = FALSE
   ]
   pair_results <- pair_results[order(
-    pair_results$promoter,
+    pair_results$reporter,
     pair_results$srn_code,
     -pair_results$pvalue
   ), , drop = FALSE]
-  pair_results <- pair_results[!duplicated(paste(pair_results$promoter, pair_results$srn_code)), , drop = FALSE]
+  pair_results <- pair_results[!duplicated(paste(pair_results$reporter, pair_results$srn_code)), , drop = FALSE]
   pair_results$pvalue.adj <- rep(NA_real_, nrow(pair_results))
   if (nrow(pair_results) > 0) {
-    split_idx <- split(seq_len(nrow(pair_results)), pair_results$promoter)
+    split_idx <- split(seq_len(nrow(pair_results)), pair_results$reporter)
     for (idx in split_idx) {
       pair_results$pvalue.adj[idx] <- stats::p.adjust(pair_results$pvalue[idx], method = "BH")
     }
@@ -231,7 +231,7 @@ dmso_normality_tests <- function(data, control, methods = c("shapiro", "lilliefo
     )
   }
 
-  dmso <- data[data$.compound %in% control, , drop = FALSE]
+  dmso <- data[data$.perturbation %in% control, , drop = FALSE]
   groups <- split(dmso, dmso$.group)
   out <- do.call(rbind, lapply(groups, function(group_data) {
     x <- group_data$.log2FC[is.finite(group_data$.log2FC)]
@@ -247,7 +247,7 @@ dmso_normality_tests <- function(data, control, methods = c("shapiro", "lilliefo
     }
     data.frame(
       promoter_libplate_replicate = group_data$.group[1],
-      promoter = group_data$.promoter[1],
+      reporter = group_data$.reporter[1],
       libplate = group_data$.libplate[1],
       replicate = group_data$.replicate[1],
       n = length(x),

@@ -10,7 +10,7 @@ if (!requireNamespace("base64enc", quietly = TRUE)) {
 
 ggplot2 <- asNamespace("ggplot2")
 
-load(analysis_path("data", "binsfeld_reporter_data.rda"))
+load_binsfeld_paper_data()
 out_dir <- analysis_output_dir("binsfeld_three_method")
 
 hit_key <- function(x) paste(x$promoter, x$compound, sep = "::")
@@ -50,8 +50,8 @@ wt_auc_model <- wt_auc[wt_auc$promoter != "EVC", ]
 run_destress <- function(growth_exponent, label) {
   assay <- prepare_assay(
     wt_auc_model,
-    promoter = "promoter",
-    compound = "compound",
+    reporter = "promoter",
+    perturbation = "compound",
     control = "Water",
     lux = "lux_auc",
     growth = "od_auc",
@@ -67,30 +67,32 @@ run_destress <- function(growth_exponent, label) {
     preset = "model",
     technical = c("replicate", "dose_level"),
     empirical_bayes = TRUE,
-    adjustment = "by_promoter",
+    adjustment = "by_reporter",
     interaction = FALSE
   )
 
   out <- results(fit)
+  out$promoter <- out$reporter
+  out$compound <- out$perturbation
   out <- out[out$compound != "Water", ]
   hit_class <- call_hits(
     out,
     fdr = 0.05,
     effect = "specific_effect",
-    padj = "specific_padj_by_promoter"
+    padj = "specific_padj_by_reporter"
   )$hit
   out[[paste0(label, "_hit_class")]] <- hit_class
   out[[paste0(label, "_hit")]] <- hit_class != "Not DE"
   out$pair_id <- hit_key(out)
   keep <- c(
     "promoter", "compound", "pair_id", "specific_effect",
-    "specific_pvalue", "specific_padj_by_promoter",
+    "specific_pvalue", "specific_padj_by_reporter",
     paste0(label, "_hit"), paste0(label, "_hit_class")
   )
   out <- out[, keep]
   names(out)[names(out) == "specific_effect"] <- paste0(label, "_effect")
   names(out)[names(out) == "specific_pvalue"] <- paste0(label, "_pvalue")
-  names(out)[names(out) == "specific_padj_by_promoter"] <- paste0(label, "_padj_by_promoter")
+  names(out)[names(out) == "specific_padj_by_reporter"] <- paste0(label, "_padj_by_reporter")
 
   list(results = out, parameters = model_parameters(fit))
 }
@@ -190,8 +192,8 @@ utils::write.table(
 significant_union <- comparison[comparison$three_method_class != "None", c(
   "promoter", "compound", "three_method_class",
   "mean_z", "binsfeld_pvalue", "binsfeld_padj", "binsfeld_direction",
-  "modeled_effect", "modeled_pvalue", "modeled_padj_by_promoter", "modeled_hit_class",
-  "standard_effect", "standard_pvalue", "standard_padj_by_promoter", "standard_hit_class"
+  "modeled_effect", "modeled_pvalue", "modeled_padj_by_reporter", "modeled_hit_class",
+  "standard_effect", "standard_pvalue", "standard_padj_by_reporter", "standard_hit_class"
 )]
 class_levels <- c(
   "Binsfeld + DStressR without EV control + DStressR alpha=1 sensitivity",
@@ -353,7 +355,7 @@ pvalue_long <- rbind(
   data.frame(
     method = "DStressR without EV control",
     pvalue_type = "Promoter-wise BH adjusted",
-    pvalue = comparison$modeled_padj_by_promoter,
+    pvalue = comparison$modeled_padj_by_reporter,
     hit = comparison$modeled_hit,
     stringsAsFactors = FALSE
   ),
@@ -367,7 +369,7 @@ pvalue_long <- rbind(
   data.frame(
     method = "DStressR alpha=1 sensitivity",
     pvalue_type = "Promoter-wise BH adjusted",
-    pvalue = comparison$standard_padj_by_promoter,
+    pvalue = comparison$standard_padj_by_reporter,
     hit = comparison$standard_hit,
     stringsAsFactors = FALSE
   )
@@ -634,8 +636,8 @@ ggplot2$ggsave(file.path(out_dir, "binsfeld_reference_pvalue_scatter.png"), pval
 appendix <- significant_union
 for (col in c(
   "mean_z", "binsfeld_pvalue", "binsfeld_padj", "modeled_effect",
-  "modeled_pvalue", "modeled_padj_by_promoter", "standard_effect",
-  "standard_pvalue", "standard_padj_by_promoter"
+  "modeled_pvalue", "modeled_padj_by_reporter", "standard_effect",
+  "standard_pvalue", "standard_padj_by_reporter"
 )) {
   appendix[[col]] <- fmt_num(appendix[[col]])
 }
@@ -673,8 +675,8 @@ dstressr_only_lit <- comparison[
   !comparison$binsfeld_hit & (comparison$modeled_hit | comparison$standard_hit),
   c(
     "promoter", "compound", "three_method_class",
-    "modeled_effect", "modeled_padj_by_promoter",
-    "standard_effect", "standard_padj_by_promoter"
+    "modeled_effect", "modeled_padj_by_reporter",
+    "standard_effect", "standard_padj_by_reporter"
   )
 ]
 dstressr_only_lit$literature_support <- "Hypothesis-generating; no direct prior support identified in this quick review"
@@ -802,8 +804,8 @@ sections <- lapply(class_levels, function(class_name) {
       rows,
       columns = c(
         "promoter", "compound", "mean_z", "binsfeld_padj",
-        "modeled_effect", "modeled_padj_by_promoter",
-        "standard_effect", "standard_padj_by_promoter",
+        "modeled_effect", "modeled_padj_by_reporter",
+        "standard_effect", "standard_padj_by_reporter",
         "modeled_hit_class", "standard_hit_class"
       )
     )
@@ -901,8 +903,8 @@ html_table(
   columns = c(
     "promoter", "compound", "three_method_class",
     "mean_z", "binsfeld_padj", "binsfeld_direction",
-    "modeled_effect", "modeled_padj_by_promoter",
-    "standard_effect", "standard_padj_by_promoter",
+    "modeled_effect", "modeled_padj_by_reporter",
+    "standard_effect", "standard_padj_by_reporter",
     "modeled_hit_class", "standard_hit_class"
   )
 ),

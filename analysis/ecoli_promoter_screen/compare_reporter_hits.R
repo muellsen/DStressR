@@ -1,7 +1,7 @@
 source(file.path("analysis", "_helpers.R"))
 load_destress_package()
 
-load(analysis_path("data", "binsfeld_reporter_data.rda"))
+load_binsfeld_paper_data()
 
 out_dir <- analysis_output_dir("binsfeld")
 
@@ -13,8 +13,8 @@ wt_auc_model <- wt_auc[wt_auc$promoter != "EVC", ]
 
 assay <- prepare_assay(
   wt_auc_model,
-  promoter = "promoter",
-  compound = "compound",
+  reporter = "promoter",
+  perturbation = "compound",
   control = "Water",
   lux = "lux_auc",
   growth = "od_auc",
@@ -30,7 +30,7 @@ fit <- fit_destress(
   preset = "model",
   technical = c("replicate", "dose_level"),
   empirical_bayes = TRUE,
-  adjustment = "by_promoter",
+  adjustment = "by_reporter",
   interaction = FALSE
 )
 
@@ -39,7 +39,7 @@ destress_hits <- call_hits(
   destress_results,
   fdr = 0.05,
   effect = "specific_effect",
-  padj = "specific_padj_by_promoter"
+  padj = "specific_padj_by_reporter"
 )
 destress_hits <- destress_hits[destress_hits$hit != "Not DE", ]
 
@@ -84,7 +84,7 @@ destress_key <- hit_key(destress_hits)
 
 comparison <- merge(
   author_hits[, c("promoter", "compound", "mean_z", "padj")],
-  destress_hits[, c("promoter", "compound", "specific_effect", "specific_padj_by_promoter", "hit")],
+  destress_hits[, c("promoter", "compound", "specific_effect", "specific_padj_by_reporter", "hit")],
   by = c("promoter", "compound"),
   all = TRUE
 )

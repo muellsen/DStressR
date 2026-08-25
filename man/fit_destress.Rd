@@ -8,7 +8,7 @@ fit_destress(
   assay,
   technical = NULL,
   empirical_bayes = TRUE,
-  empty_vector_promoter = NULL,
+  empty_vector_reporter = NULL,
   background_rank = 0,
   normalization = NULL,
   testing = NULL,
@@ -32,18 +32,18 @@ empirical prior variance with prior degrees of freedom estimated from the
 observed variance distribution. This maps to \code{testing = "moderated_t"} for
 the model path; \code{FALSE} maps to \code{testing = "student_t"}.}
 
-\item{empty_vector_promoter}{Optional promoter/control strain used as an
+\item{empty_vector_reporter}{Optional reporter/control strain used as an
 empty-vector reporter in the model-based path. When supplied, its
-reference-relative compound effect is subtracted from every promoter's
-reference-relative compound effect before promoter-library centering.
-For new analyses, prefer \code{background_promoter} in \code{\link[=prepare_assay]{prepare_assay()}}, which
+reference-relative perturbation effect is subtracted from every reporter's
+reference-relative perturbation effect before reporter-library centering.
+For new analyses, prefer \code{background_reporter} in \code{\link[=prepare_assay]{prepare_assay()}}, which
 performs explicit response-level background calibration before model
 fitting.}
 
 \item{background_rank}{Non-negative integer. The default \code{0} removes no
 latent background. Values \code{1} or \code{2} additionally subtract a low-rank
 background term from the reference-relative total-effect matrix before
-testing rank-adjusted total and promoter-specific residual effects.}
+testing rank-adjusted total and reporter-specific residual effects.}
 
 \item{normalization}{One of \code{"linear_model"}, \code{"median_polish"}, or
 \code{"empty_vector"}. \code{"model"} and \code{"evc"} are accepted aliases.}
@@ -52,13 +52,13 @@ testing rank-adjusted total and promoter-specific residual effects.}
 
 \item{aggregation}{One of \code{"none"} or \code{"max_p"}.}
 
-\item{adjustment}{One of \code{"global"}, \code{"by_promoter"}, or \code{"none"}.}
+\item{adjustment}{One of \code{"global"}, \code{"by_reporter"}, or \code{"none"}.}
 
 \item{interaction}{If \code{FALSE}, fit one Gaussian linear
-model per promoter with the control compound as reference and the supplied
+model per reporter with the control perturbation as reference and the supplied
 technical covariates as design terms. The latter is the scalable path for
-promoter-specific compound effects. If \code{TRUE}, fit the historical full
-promoter-by-compound interaction model.}
+reporter-specific perturbation effects. If \code{TRUE}, fit the historical full
+reporter-by-perturbation interaction model.}
 
 \item{preset}{Optional named preset: \code{"model"}, \code{"median_polish_legacy"}, or
 \code{"empty_vector_control"}. Common aliases such as \code{"median_polish"} and
@@ -83,5 +83,5 @@ normalization, test statistic and p-value calculation, replicate aggregation,
 and p-value adjustment. Only implemented combinations are accepted. For the
 model-based path, growth-response normalization is performed upstream by
 \code{\link[=prepare_assay]{prepare_assay()}}, where \code{growth_exponent} can be fixed, estimated, or
-supplied as promoter-specific values.
+supplied as reporter-specific values.
 }

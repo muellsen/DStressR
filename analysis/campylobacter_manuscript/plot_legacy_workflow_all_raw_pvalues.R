@@ -50,7 +50,7 @@ summary <- do.call(rbind, lapply(split(workflow, workflow$promoter), function(x)
   )
 }))
 
-p_by_promoter <- ggplot(workflow, aes(pvalue)) +
+p_by_reporter <- ggplot(workflow, aes(pvalue)) +
   geom_histogram(binwidth = 0.05, boundary = 0, fill = "#2563eb", color = "white", linewidth = 0.12) +
   facet_wrap(~ promoter, ncol = 6) +
   scale_x_continuous(limits = c(0, 1), breaks = c(0, 0.5, 1)) +
@@ -81,23 +81,23 @@ p_all <- ggplot(workflow, aes(pvalue)) +
 
 write.table(
   summary,
-  file.path(out_dir, "legacy_workflow_all_raw_pvalues_by_promoter_summary.tsv"),
+  file.path(out_dir, "legacy_workflow_all_raw_pvalues_by_reporter_summary.tsv"),
   sep = "\t",
   row.names = FALSE,
   quote = FALSE
 )
 
 ggsave(
-  file.path(out_dir, "legacy_workflow_all_raw_pvalues_by_promoter.png"),
-  p_by_promoter,
+  file.path(out_dir, "legacy_workflow_all_raw_pvalues_by_reporter.png"),
+  p_by_reporter,
   width = 14,
   height = 10,
   dpi = 300,
   bg = "white"
 )
 ggsave(
-  file.path(out_dir, "legacy_workflow_all_raw_pvalues_by_promoter.pdf"),
-  p_by_promoter,
+  file.path(out_dir, "legacy_workflow_all_raw_pvalues_by_reporter.pdf"),
+  p_by_reporter,
   width = 14,
   height = 10,
   bg = "white"

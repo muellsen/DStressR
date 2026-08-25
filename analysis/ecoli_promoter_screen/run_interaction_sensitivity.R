@@ -7,9 +7,9 @@ if (!requireNamespace("ggplot2", quietly = TRUE)) {
 
 ggplot2 <- asNamespace("ggplot2")
 
-load(analysis_path("data", "binsfeld_reporter_data.rda"))
+load_binsfeld_paper_data()
 
-out_dir <- analysis_output_dir("ecoli_interaction_sensitivity")
+out_dir <- analysis_output_dir("ecoli_interaction_model")
 ev_dir <- analysis_output_dir("binsfeld_evc_calibrated")
 
 wt_auc <- binsfeld_reporter_auc[
@@ -23,8 +23,8 @@ fit_interaction <- function(use_ev = FALSE) {
   analysis_data <- if (use_ev) wt_auc else wt_auc[wt_auc$promoter != "EVC", , drop = FALSE]
   assay <- prepare_assay(
     analysis_data,
-    promoter = "promoter",
-    compound = "compound",
+    reporter = "promoter",
+    perturbation = "compound",
     control = "Water",
     lux = "lux_auc",
     growth = "od_auc",
@@ -33,7 +33,7 @@ fit_interaction <- function(use_ev = FALSE) {
     replicate = "replicate",
     growth_covariates = "replicate",
     numeric_covariates = "dose_level",
-    background_promoter = if (use_ev) "EVC" else NULL,
+    background_reporter = if (use_ev) "EVC" else NULL,
     background_method = if (use_ev) "huber" else "none",
     background_by = if (use_ev) c("compound", "dose_level", "replicate") else NULL
   )
@@ -42,16 +42,18 @@ fit_interaction <- function(use_ev = FALSE) {
     assay,
     technical = c("replicate", "dose_level"),
     empirical_bayes = TRUE,
-    adjustment = "by_promoter",
+    adjustment = "by_reporter",
     interaction = TRUE
   )
 
   res <- results(fit)
+  res$promoter <- res$reporter
+  res$compound <- res$perturbation
   hit_class <- call_hits(
     res,
     fdr = 0.05,
     effect = "specific_effect",
-    padj = "specific_padj_by_promoter"
+    padj = "specific_padj_by_reporter"
   )$hit
   res$hit_class <- hit_class
   res$hit <- hit_class != "Not DE"
@@ -73,7 +75,7 @@ write_pair_results <- function(x, prefix) {
     "promoter", "compound",
     "total_effect", "global_effect", "low_rank_effect",
     "specific_effect", "specific_se", "specific_statistic", "specific_pvalue",
-    "specific_padj_by_promoter", "hit", "hit_class"
+    "specific_padj_by_reporter", "hit", "hit_class"
   )]
   utils::write.table(
     out,
@@ -115,21 +117,21 @@ comparison$evc_huber_hit <- as.logical(comparison$evc_huber_hit)
 
 no_ev_small <- no_ev$results[, c(
   "promoter", "compound", "specific_effect", "specific_pvalue",
-  "specific_padj_by_promoter", "hit", "hit_class"
+  "specific_padj_by_reporter", "hit", "hit_class"
 )]
 names(no_ev_small) <- c(
   "promoter", "compound", "interaction_without_ev_effect",
-  "interaction_without_ev_pvalue", "interaction_without_ev_padj_by_promoter",
+  "interaction_without_ev_pvalue", "interaction_without_ev_padj_by_reporter",
   "interaction_without_ev_hit", "interaction_without_ev_hit_class"
 )
 
 with_ev_small <- with_ev$results[, c(
   "promoter", "compound", "specific_effect", "specific_pvalue",
-  "specific_padj_by_promoter", "hit", "hit_class"
+  "specific_padj_by_reporter", "hit", "hit_class"
 )]
 names(with_ev_small) <- c(
   "promoter", "compound", "interaction_with_ev_effect",
-  "interaction_with_ev_pvalue", "interaction_with_ev_padj_by_promoter",
+  "interaction_with_ev_pvalue", "interaction_with_ev_padj_by_reporter",
   "interaction_with_ev_hit", "interaction_with_ev_hit_class"
 )
 
@@ -440,12 +442,12 @@ key_cols <- c(
   "interaction_without_ev_hit", "interaction_with_ev_hit",
   "mean_z", "modeled_effect", "evc_huber_effect",
   "interaction_without_ev_effect", "interaction_with_ev_effect",
-  "binsfeld_padj", "modeled_padj_by_promoter", "evc_huber_padj_by_promoter",
-  "interaction_without_ev_padj_by_promoter", "interaction_with_ev_padj_by_promoter"
+  "binsfeld_padj", "modeled_padj_by_reporter", "evc_huber_padj_by_reporter",
+  "interaction_without_ev_padj_by_reporter", "interaction_with_ev_padj_by_reporter"
 )
 utils::write.table(
   key_pairs[, key_cols, drop = FALSE],
-  file.path(out_dir, "interaction_key_pair_sensitivity.tsv"),
+  file.path(out_dir, "interaction_key_pair_comparison.tsv"),
   sep = "\t",
   quote = FALSE,
   row.names = FALSE
@@ -504,14 +506,14 @@ effect_plot <- ggplot2$ggplot(
   )
 
 ggplot2$ggsave(
-  file.path(out_dir, "interaction_effect_sensitivity.png"),
+  file.path(out_dir, "interaction_effect_comparison.png"),
   effect_plot,
   width = 7.2,
   height = 4.6,
   dpi = 300
 )
 ggplot2$ggsave(
-  file.path(out_dir, "interaction_effect_sensitivity.pdf"),
+  file.path(out_dir, "interaction_effect_comparison.pdf"),
   effect_plot,
   width = 7.2,
   height = 4.6
@@ -542,14 +544,14 @@ pvalue_plot <- ggplot2$ggplot(
   )
 
 ggplot2$ggsave(
-  file.path(out_dir, "interaction_pvalue_sensitivity.png"),
+  file.path(out_dir, "interaction_pvalue_comparison.png"),
   pvalue_plot,
   width = 7.2,
   height = 4.6,
   dpi = 300
 )
 ggplot2$ggsave(
-  file.path(out_dir, "interaction_pvalue_sensitivity.pdf"),
+  file.path(out_dir, "interaction_pvalue_comparison.pdf"),
   pvalue_plot,
   width = 7.2,
   height = 4.6

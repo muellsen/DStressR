@@ -275,8 +275,8 @@ screen$compound <- factor(screen$compound, levels = c("Standard", "Iron", "Kanam
 
 assay <- prepare_assay(
   screen,
-  promoter = "pseudo_reporter",
-  compound = "compound",
+  reporter = "pseudo_reporter",
+  perturbation = "compound",
   control = "Standard",
   lux = "gfp_auc",
   growth = "od_auc",
@@ -287,11 +287,13 @@ fit <- fit_destress(
   assay,
   technical = "replicate",
   empirical_bayes = TRUE,
-  adjustment = "by_promoter",
+  adjustment = "by_reporter",
   interaction = FALSE
 )
 
 res <- results(fit)
+res$promoter <- res$reporter
+res$compound <- res$perturbation
 parts <- do.call(rbind, strsplit(as.character(res$promoter), " \\| "))
 res$base_promoter <- parts[, 1]
 res$window <- parts[, 2]
@@ -301,7 +303,7 @@ hit_table <- call_hits(
   res,
   fdr = 0.05,
   effect = "specific_effect",
-  padj = "specific_padj_by_promoter"
+  padj = "specific_padj_by_reporter"
 )
 res$hit_class <- hit_table$hit
 res$hit <- res$hit_class != "Not DE"
@@ -394,11 +396,11 @@ ggplot2::ggsave(file.path(out_dir, "dryad_weak_stress_windows_alpha1_pvalue_hist
 p_volcano <- plot_volcano(
   res,
   effect = "specific_effect",
-  padj = "specific_padj_by_promoter",
+  padj = "specific_padj_by_reporter",
   title = "Dryad weak-stress reporter windows: DStressR volcano with alpha = 1",
   label_by = "pair",
   top_n = 15,
-  top_promoters = 8
+  top_reporters = 8
 )
 ggplot2::ggsave(file.path(out_dir, "dryad_weak_stress_windows_alpha1_volcano.png"), p_volcano, width = 8, height = 5.5, dpi = 300)
 ggplot2::ggsave(file.path(out_dir, "dryad_weak_stress_windows_alpha1_volcano.pdf"), p_volcano, width = 8, height = 5.5)

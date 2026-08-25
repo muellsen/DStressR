@@ -20,7 +20,7 @@ dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 
 expr <- read_tsv_base(file.path(data_root, "03-hit_determination", "expression_table.tsv.gz"))
 
-# Match the promoter set used in the current Campylobacter manuscript figures.
+# Match the promoter set used in the local Campylobacter comparison figures.
 expr <- expr[!(expr$promoter %in% c("PCJnc20", "PCjas704")), , drop = FALSE]
 
 # DMSO is coded as one common reference level; non-DMSO compounds retain their
@@ -30,8 +30,8 @@ expr$compound_model <- ifelse(expr$ProductName == "DMSO", "DMSO", expr$srn_code)
 
 assay <- prepare_assay(
   expr,
-  promoter = "promoter",
-  compound = "compound_model",
+  reporter = "promoter",
+  perturbation = "compound_model",
   control = "DMSO",
   lux = "lux_auc_until16h",
   growth = "od_at_16h",
@@ -52,14 +52,14 @@ fit_default <- fit_destress(
 res <- results(fit_default)
 
 default_pairs <- data.frame(
-  promoter = res$promoter,
-  compound = res$compound,
+  promoter = res$reporter,
+  compound = res$perturbation,
   effect = res$specific_effect,
   low_rank_effect = res$low_rank_effect,
   global_effect = res$global_effect,
   pvalue = res$specific_pvalue,
   padj_global = res$specific_padj_global,
-  padj_by_promoter = res$specific_padj_by_promoter,
+  padj_by_reporter = res$specific_padj_by_reporter,
   stringsAsFactors = FALSE
 )
 

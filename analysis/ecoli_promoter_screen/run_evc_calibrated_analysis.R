@@ -29,7 +29,7 @@ panel_label <- function(label, size = 16) {
   )
 }
 
-load(analysis_path("data", "binsfeld_reporter_data.rda"))
+load_binsfeld_paper_data()
 
 out_dir <- analysis_output_dir("binsfeld_evc_calibrated")
 three_method_dir <- analysis_output_dir("binsfeld_three_method")
@@ -43,8 +43,8 @@ wt_auc <- binsfeld_reporter_auc[
 
 assay <- prepare_assay(
   wt_auc,
-  promoter = "promoter",
-  compound = "compound",
+  reporter = "promoter",
+  perturbation = "compound",
   control = "Water",
   lux = "lux_auc",
   growth = "od_auc",
@@ -53,7 +53,7 @@ assay <- prepare_assay(
   replicate = "replicate",
   growth_covariates = "replicate",
   numeric_covariates = "dose_level",
-  background_promoter = "EVC",
+  background_reporter = "EVC",
   background_method = "huber",
   background_by = c("compound", "dose_level", "replicate")
 )
@@ -62,7 +62,7 @@ fit <- fit_destress(
   assay,
   technical = c("replicate", "dose_level"),
   empirical_bayes = TRUE,
-  adjustment = "by_promoter",
+  adjustment = "by_reporter",
   interaction = FALSE
 )
 
@@ -71,7 +71,7 @@ res$evc_huber_hit_class <- call_hits(
   res,
   fdr = 0.05,
   effect = "specific_effect",
-  padj = "specific_padj_by_promoter"
+  padj = "specific_padj_by_reporter"
 )$hit
 res$evc_huber_hit <- res$evc_huber_hit_class != "Not DE"
 
@@ -95,10 +95,12 @@ if (!is.null(params$growth_exponents)) {
 }
 
 pair_results <- res[, c(
-  "promoter", "compound", "total_effect", "global_effect", "low_rank_effect",
+  "reporter", "perturbation", "total_effect", "global_effect", "low_rank_effect",
   "specific_effect", "specific_se", "specific_statistic", "specific_pvalue",
-  "specific_padj_by_promoter", "evc_huber_hit", "evc_huber_hit_class"
+  "specific_padj_by_reporter", "evc_huber_hit", "evc_huber_hit_class"
 )]
+names(pair_results)[names(pair_results) == "reporter"] <- "promoter"
+names(pair_results)[names(pair_results) == "perturbation"] <- "compound"
 utils::write.table(
   pair_results,
   file.path(out_dir, "evc_huber_pair_results.tsv"),
@@ -119,11 +121,11 @@ if (file.exists(comparison_file)) {
   comparison <- utils::read.delim(comparison_file, check.names = FALSE)
   evc <- pair_results[, c(
     "promoter", "compound", "specific_effect", "specific_pvalue",
-    "specific_padj_by_promoter", "evc_huber_hit", "evc_huber_hit_class"
+    "specific_padj_by_reporter", "evc_huber_hit", "evc_huber_hit_class"
   )]
   names(evc) <- c(
     "promoter", "compound", "evc_huber_effect", "evc_huber_pvalue",
-    "evc_huber_padj_by_promoter", "evc_huber_hit", "evc_huber_hit_class"
+    "evc_huber_padj_by_reporter", "evc_huber_hit", "evc_huber_hit_class"
   )
   comparison <- merge(comparison, evc, by = c("promoter", "compound"), all.x = TRUE, sort = FALSE)
   comparison$evc_huber_hit[is.na(comparison$evc_huber_hit)] <- FALSE
@@ -135,7 +137,7 @@ if (file.exists(comparison_file)) {
     comparison[, c("binsfeld_hit", "modeled_hit", "evc_huber_hit")],
     1,
     function(x) {
-      names <- c("Binsfeld reference", "DStressR without EV", "DStressR with EV")[as.logical(x)]
+      names <- c("Binsfeld reference", "DStressR without EVC", "DStressR with EVC")[as.logical(x)]
       if (length(names) == 0) {
         "None"
       } else {
@@ -189,12 +191,12 @@ if (file.exists(comparison_file)) {
     metric = c(
       "Promoter-compound pairs tested",
       "Reference significant pairs",
-      "DStressR without EV significant pairs",
-      "DStressR with EV significant pairs",
-      "Reference and DStressR with EV overlap",
+      "DStressR without EVC significant pairs",
+      "DStressR with EVC significant pairs",
+      "Reference and DStressR with EVC overlap",
       "DStressR workflows overlap",
       "All three overlap",
-      "DStressR with EV only vs reference/without EV"
+      "DStressR with EVC only vs reference/without EVC"
     ),
     count = c(
       nrow(comparison),
@@ -243,8 +245,8 @@ if (file.exists(comparison_file)) {
   }
   venn_df <- rbind(
     cbind(circle_points(-0.55, 0.25, 0.9), method = "Binsfeld reference"),
-    cbind(circle_points(0.55, 0.25, 0.9), method = "DStressR without EV"),
-    cbind(circle_points(0, -0.48, 0.9), method = "DStressR with EV")
+    cbind(circle_points(0.55, 0.25, 0.9), method = "DStressR without EVC"),
+    cbind(circle_points(0, -0.48, 0.9), method = "DStressR with EVC")
   )
   venn <- ggplot2$ggplot(venn_df, ggplot2$aes(x, y, fill = method, color = method)) +
     ggplot2$geom_polygon(alpha = 0.22, linewidth = 0.75) +
@@ -256,17 +258,17 @@ if (file.exists(comparison_file)) {
     ggplot2$annotate("text", x = 0.42, y = -0.22, label = region_counts[["modeled_evc_huber"]], size = 6, fontface = "bold") +
     ggplot2$annotate("text", x = 0, y = 0.1, label = region_counts[["all_three"]], size = 6.3, fontface = "bold") +
     ggplot2$annotate("text", x = -0.75, y = 1.35, label = paste0("Binsfeld reference\n", set_counts[["binsfeld"]], " hits"), size = 3.7, fontface = "bold") +
-    ggplot2$annotate("text", x = 0.75, y = 1.35, label = paste0("DStressR without EV\n", set_counts[["modeled"]], " hits"), size = 3.7, fontface = "bold") +
-    ggplot2$annotate("text", x = 0, y = -1.65, label = paste0("DStressR with EV\n", set_counts[["evc_huber"]], " hits"), size = 3.7, fontface = "bold") +
+    ggplot2$annotate("text", x = 0.75, y = 1.35, label = paste0("DStressR without EVC\n", set_counts[["modeled"]], " hits"), size = 3.7, fontface = "bold") +
+    ggplot2$annotate("text", x = 0, y = -1.65, label = paste0("DStressR with EVC\n", set_counts[["evc_huber"]], " hits"), size = 3.7, fontface = "bold") +
     ggplot2$scale_fill_manual(values = c(
       "Binsfeld reference" = "#6f7f8f",
-      "DStressR without EV" = "#d8b56d",
-      "DStressR with EV" = "#9b6a55"
+      "DStressR without EVC" = "#d8b56d",
+      "DStressR with EVC" = "#9b6a55"
     )) +
     ggplot2$scale_color_manual(values = c(
       "Binsfeld reference" = "#3f5264",
-      "DStressR without EV" = "#9f7625",
-      "DStressR with EV" = "#633b2d"
+      "DStressR without EVC" = "#9f7625",
+      "DStressR with EVC" = "#633b2d"
     )) +
     ggplot2$coord_equal(xlim = c(-1.75, 1.75), ylim = c(-1.85, 1.65), expand = FALSE) +
     ggplot2$theme_void(base_size = 10) +
@@ -281,17 +283,17 @@ if (file.exists(comparison_file)) {
     ggplot2$annotate("text", x = 0.42, y = -0.22, label = region_counts[["modeled_evc_huber"]], size = 5.2, fontface = "bold") +
     ggplot2$annotate("text", x = 0, y = 0.1, label = region_counts[["all_three"]], size = 5.5, fontface = "bold") +
     ggplot2$annotate("text", x = -1.05, y = 1.35, label = paste0("Binsfeld reference\n", set_counts[["binsfeld"]], " hits"), size = 2.8, fontface = "bold") +
-    ggplot2$annotate("text", x = 1.05, y = 1.35, label = paste0("DStressR without\nEV control\n", set_counts[["modeled"]], " hits"), size = 2.8, fontface = "bold") +
-    ggplot2$annotate("text", x = 0, y = -1.66, label = paste0("DStressR with EV\n", set_counts[["evc_huber"]], " hits"), size = 2.8, fontface = "bold") +
+    ggplot2$annotate("text", x = 1.05, y = 1.35, label = paste0("DStressR without\nEVC\n", set_counts[["modeled"]], " hits"), size = 2.8, fontface = "bold") +
+    ggplot2$annotate("text", x = 0, y = -1.66, label = paste0("DStressR with EVC\n", set_counts[["evc_huber"]], " hits"), size = 2.8, fontface = "bold") +
     ggplot2$scale_fill_manual(values = c(
       "Binsfeld reference" = "#6f7f8f",
-      "DStressR without EV" = "#d8b56d",
-      "DStressR with EV" = "#9b6a55"
+      "DStressR without EVC" = "#d8b56d",
+      "DStressR with EVC" = "#9b6a55"
     )) +
     ggplot2$scale_color_manual(values = c(
       "Binsfeld reference" = "#3f5264",
-      "DStressR without EV" = "#9f7625",
-      "DStressR with EV" = "#633b2d"
+      "DStressR without EVC" = "#9f7625",
+      "DStressR with EVC" = "#633b2d"
     )) +
     ggplot2$coord_equal(xlim = c(-1.88, 1.88), ylim = c(-1.85, 1.68), expand = FALSE) +
     ggplot2$theme_void(base_size = 10) +
@@ -311,7 +313,7 @@ if (file.exists(comparison_file)) {
       stringsAsFactors = FALSE
     ),
     data.frame(
-      method = "DStressR without EV",
+      method = "DStressR without EVC",
       promoter = comparison$promoter,
       compound = comparison$compound,
       effect = comparison$modeled_effect,
@@ -320,7 +322,7 @@ if (file.exists(comparison_file)) {
       stringsAsFactors = FALSE
     ),
     data.frame(
-      method = "DStressR with EV",
+      method = "DStressR with EVC",
       promoter = comparison$promoter,
       compound = comparison$compound,
       effect = comparison$evc_huber_effect,
@@ -331,7 +333,7 @@ if (file.exists(comparison_file)) {
   )
   volcano_data$method <- factor(
     volcano_data$method,
-    levels = c("Binsfeld reference", "DStressR without EV", "DStressR with EV")
+    levels = c("Binsfeld reference", "DStressR without EVC", "DStressR with EVC")
   )
   volcano_data$in_all_three <- comparison$binsfeld_hit & comparison$modeled_hit & comparison$evc_huber_hit
   volcano_data$method_hit_count <- ave(
@@ -373,14 +375,14 @@ if (file.exists(comparison_file)) {
       stringsAsFactors = FALSE
     ),
     data.frame(
-      method = "DStressR without EV",
+      method = "DStressR without EVC",
       promoter = comparison$promoter,
       pvalue = comparison$modeled_pvalue,
       hit = comparison$modeled_hit,
       stringsAsFactors = FALSE
     ),
     data.frame(
-      method = "DStressR with EV",
+      method = "DStressR with EVC",
       promoter = comparison$promoter,
       pvalue = comparison$evc_huber_pvalue,
       hit = comparison$evc_huber_hit,
@@ -389,7 +391,7 @@ if (file.exists(comparison_file)) {
   )
   pvalue_long$method <- factor(
     pvalue_long$method,
-    levels = c("Binsfeld reference", "DStressR without EV", "DStressR with EV")
+    levels = c("Binsfeld reference", "DStressR without EVC", "DStressR with EVC")
   )
   pvalue_long$status <- ifelse(pvalue_long$hit, "Called hit", "Not called")
   pvalue_long <- pvalue_long[is.finite(pvalue_long$pvalue), , drop = FALSE]
@@ -419,7 +421,7 @@ if (file.exists(comparison_file)) {
 	    y = "Promoter-compound pairs"
 	  )
   pvalue_promoter_panel <- pvalue_panel[pvalue_panel$panel != "All promoters", , drop = FALSE]
-  pvalue_hist_by_promoter <- ggplot2$ggplot(pvalue_promoter_panel, ggplot2$aes(pvalue)) +
+  pvalue_hist_by_reporter <- ggplot2$ggplot(pvalue_promoter_panel, ggplot2$aes(pvalue)) +
     ggplot2$geom_histogram(
       bins = 30,
       fill = "#d1d5db",
@@ -810,7 +812,7 @@ if (file.exists(comparison_file)) {
 
   pvalue_scatter_long <- rbind(
     data.frame(
-      comparison = "DStressR without EV",
+      comparison = "DStressR without EVC",
       promoter = comparison$promoter,
       compound = comparison$compound,
       binsfeld_pvalue = comparison$binsfeld_pvalue,
@@ -824,7 +826,7 @@ if (file.exists(comparison_file)) {
       stringsAsFactors = FALSE
     ),
     data.frame(
-      comparison = "DStressR with EV",
+      comparison = "DStressR with EVC",
       promoter = comparison$promoter,
       compound = comparison$compound,
       binsfeld_pvalue = comparison$binsfeld_pvalue,
@@ -840,7 +842,7 @@ if (file.exists(comparison_file)) {
   )
   pvalue_scatter_long$comparison <- factor(
     pvalue_scatter_long$comparison,
-    levels = c("DStressR without EV", "DStressR with EV")
+    levels = c("DStressR without EVC", "DStressR with EVC")
   )
   pvalue_scatter_long$disagreement <- abs(
     pvalue_scatter_long$destress_neglog10_pvalue - pvalue_scatter_long$binsfeld_neglog10_pvalue
@@ -848,7 +850,7 @@ if (file.exists(comparison_file)) {
   pvalue_scatter_long$binsfeld_only_all <- pvalue_scatter_long$binsfeld_hit &
     !pvalue_scatter_long$modeled_hit & !pvalue_scatter_long$evc_huber_hit
   pvalue_scatter_long$dstressr_unique <- ifelse(
-    pvalue_scatter_long$comparison == "DStressR without EV",
+    pvalue_scatter_long$comparison == "DStressR without EVC",
     !pvalue_scatter_long$binsfeld_hit & pvalue_scatter_long$modeled_hit & !pvalue_scatter_long$evc_huber_hit,
     !pvalue_scatter_long$binsfeld_hit & !pvalue_scatter_long$modeled_hit & pvalue_scatter_long$evc_huber_hit
   )
@@ -984,8 +986,10 @@ if (file.exists(comparison_file)) {
   ggplot2$ggsave(file.path(out_dir, "evc_huber_hit_overlap_venn.pdf"), venn, width = 7.2, height = 6.8)
   ggplot2$ggsave(file.path(out_dir, "evc_huber_pvalue_histograms.png"), pvalue_hist, width = 11, height = 10.5, dpi = 220)
   ggplot2$ggsave(file.path(out_dir, "evc_huber_pvalue_histograms.pdf"), pvalue_hist, width = 11, height = 10.5)
-  ggplot2$ggsave(file.path(out_dir, "evc_huber_pvalue_histograms_by_promoter.png"), pvalue_hist_by_promoter, width = 11, height = 9.4, dpi = 220)
-  ggplot2$ggsave(file.path(out_dir, "evc_huber_pvalue_histograms_by_promoter.pdf"), pvalue_hist_by_promoter, width = 11, height = 9.4)
+  ggplot2$ggsave(file.path(out_dir, "evc_huber_pvalue_histograms_by_reporter.png"), pvalue_hist_by_reporter, width = 11, height = 9.4, dpi = 220)
+  ggplot2$ggsave(file.path(out_dir, "evc_huber_pvalue_histograms_by_reporter.pdf"), pvalue_hist_by_reporter, width = 11, height = 9.4)
+  ggplot2$ggsave(file.path(out_dir, "evc_huber_pvalue_histograms_by_promoter.png"), pvalue_hist_by_reporter, width = 11, height = 9.4, dpi = 220)
+  ggplot2$ggsave(file.path(out_dir, "evc_huber_pvalue_histograms_by_promoter.pdf"), pvalue_hist_by_reporter, width = 11, height = 9.4)
   ggplot2$ggsave(file.path(out_dir, "ecoli_reference_volcano_plot.png"), reference_plot, width = 8.2, height = 5.6, dpi = 220)
   ggplot2$ggsave(file.path(out_dir, "ecoli_reference_volcano_plot.pdf"), reference_plot, width = 8.2, height = 5.6)
   ggplot2$ggsave(file.path(out_dir, "evc_huber_volcano_plots.png"), volcano_plot, width = 12, height = 4.8, dpi = 220)
@@ -1004,4 +1008,4 @@ if (file.exists(comparison_file)) {
   print(summary)
 }
 
-message("Wrote E. coli DStressR-with-EV analysis to: ", out_dir)
+message("Wrote E. coli DStressR-with-EVC analysis to: ", out_dir)

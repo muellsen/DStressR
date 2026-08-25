@@ -37,7 +37,7 @@ hits <- read_tsv_base(input_file)
 for (method in methods) {
   hits[[method]] <- truthy(hits[[method]])
 }
-hits$compound_label <- if ("ProductName" %in% names(hits)) {
+hits$perturbation_label <- if ("ProductName" %in% names(hits)) {
   ifelse(is.na(hits$ProductName) | hits$ProductName == "" | hits$ProductName == "NA",
          hits$compound, hits$ProductName)
 } else {
@@ -49,20 +49,20 @@ compounds <- sort(unique(hits$compound))
 
 incidence <- xtabs(~ promoter + compound, hits)
 incidence <- incidence[promoters, compounds, drop = FALSE]
-promoter_order <- if (nrow(incidence) > 2) {
+reporter_order <- if (nrow(incidence) > 2) {
   rownames(incidence)[stats::hclust(stats::dist(as.matrix(incidence > 0), method = "binary"), method = "average")$order]
 } else {
   promoters
 }
 
-theta <- seq(0, 2 * pi, length.out = length(promoter_order) + 1)[-length(promoter_order) - 1]
+theta <- seq(0, 2 * pi, length.out = length(reporter_order) + 1)[-length(reporter_order) - 1]
 theta <- theta + pi / 2
 promoter_counts <- aggregate(compound ~ promoter, hits, function(x) length(unique(x)))
-names(promoter_counts)[2] <- "n_compounds"
+names(promoter_counts)[2] <- "n_perturbations"
 
 promoter_nodes <- data.frame(
-  node_id = promoter_order,
-  label = promoter_order,
+  node_id = reporter_order,
+  label = reporter_order,
   type = "promoter",
   angle = theta,
   x = cos(theta),
@@ -70,17 +70,17 @@ promoter_nodes <- data.frame(
   stringsAsFactors = FALSE
 )
 promoter_nodes <- merge(promoter_nodes, promoter_counts, by.x = "node_id", by.y = "promoter", all.x = TRUE, sort = FALSE)
-promoter_nodes$n_compounds[is.na(promoter_nodes$n_compounds)] <- 0
-promoter_nodes$degree <- promoter_nodes$n_compounds
-promoter_nodes$node_size <- rescale(sqrt(promoter_nodes$n_compounds), to = c(4.5, 16))
+promoter_nodes$n_perturbations[is.na(promoter_nodes$n_perturbations)] <- 0
+promoter_nodes$degree <- promoter_nodes$n_perturbations
+promoter_nodes$node_size <- rescale(sqrt(promoter_nodes$n_perturbations), to = c(4.5, 16))
 
 compound_summary <- do.call(rbind, lapply(split(hits, hits$compound), function(d) {
   ps <- unique(d$promoter)
   data.frame(
     node_id = d$compound[1],
-    label = d$compound_label[1],
+    label = d$perturbation_label[1],
     type = "compound",
-    n_promoters = length(ps),
+    n_reporters = length(ps),
     promoter_signature = paste(sort(ps), collapse = ";"),
     stringsAsFactors = FALSE
   )
@@ -94,13 +94,13 @@ compound_coords <- do.call(rbind, lapply(seq_len(nrow(compound_summary)), functi
   center_x <- mean(pxy$x)
   center_y <- mean(pxy$y)
   uv <- unit_vector(center_x, center_y)
-  if (row$n_promoters == 1) {
+  if (row$n_reporters == 1) {
     angle <- pxy$angle[1] + stats::runif(1, -0.12, 0.12)
     radius <- stats::runif(1, 0.62, 0.88)
     x <- radius * cos(angle)
     y <- radius * sin(angle)
   } else {
-    radius <- rescale(row$n_promoters, to = c(0.52, 0.18), from = range(compound_summary$n_promoters))
+    radius <- rescale(row$n_reporters, to = c(0.52, 0.18), from = range(compound_summary$n_reporters))
     if (!is.finite(radius)) {
       radius <- 0.42
     }
@@ -112,8 +112,8 @@ compound_coords <- do.call(rbind, lapply(seq_len(nrow(compound_summary)), functi
 }))
 
 compound_nodes <- merge(compound_summary, compound_coords, by = "node_id", all.x = TRUE, sort = FALSE)
-compound_nodes$degree <- compound_nodes$n_promoters
-compound_nodes$node_size <- rescale(sqrt(compound_nodes$n_promoters), to = c(1.1, 4.5))
+compound_nodes$degree <- compound_nodes$n_reporters
+compound_nodes$node_size <- rescale(sqrt(compound_nodes$n_reporters), to = c(1.1, 4.5))
 
 nodes <- rbind(
   promoter_nodes[, c("node_id", "label", "type", "x", "y", "degree", "node_size")],
@@ -152,8 +152,8 @@ edge_base$y <- edge_base$y_promoter + edge_base$method_offset * perp$y
 edge_base$xend <- edge_base$x_compound + edge_base$method_offset * perp$x
 edge_base$yend <- edge_base$y_compound + edge_base$method_offset * perp$y
 
-compound_label_nodes <- compound_nodes[
-  compound_nodes$n_promoters >= 3 |
+perturbation_label_nodes <- compound_nodes[
+  compound_nodes$n_reporters >= 3 |
     compound_nodes$node_id %in% names(sort(table(hits$compound), decreasing = TRUE))[seq_len(min(18, length(unique(hits$compound))))],
 ]
 
@@ -173,7 +173,7 @@ p <- ggplot() +
                   aes(x = x * 1.06, y = y * 1.06, label = label),
                   size = 3.1, segment.color = NA, max.overlaps = Inf,
                   box.padding = 0.15, point.padding = 0.1) +
-  geom_text_repel(data = compound_label_nodes,
+  geom_text_repel(data = perturbation_label_nodes,
                   aes(x = x, y = y, label = label),
                   size = 2, color = "#334155", alpha = 0.85,
                   max.overlaps = 80, box.padding = 0.12, point.padding = 0.08,

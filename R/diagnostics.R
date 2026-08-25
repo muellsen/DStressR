@@ -15,8 +15,8 @@ if (getRversion() >= "2.15.1") {
 #' in spirit to mean-variance diagnostic plots used for count-data workflows.
 #'
 #' The function is deliberately generic: columns are referred to as reporters
-#' and perturbations, although DStressR result tables usually contain promoters
-#' and compounds. Large absolute mean effects with low variance indicate
+#' and perturbations, although DStressR result tables usually contain reporters
+#' and perturbations. Large absolute mean effects with low variance indicate
 #' coherent, broad responses, whereas unusually large variance conditional on
 #' the absolute mean effect indicates heterogeneous reporter behavior.
 #'
@@ -38,8 +38,8 @@ if (getRversion() >= "2.15.1") {
 perturbation_diagnostics <- function(table,
                                      mean_effect = "total_effect",
                                      variance_effect = mean_effect,
-                                     reporter = "promoter",
-                                     perturbation = "compound",
+                                     reporter = "reporter",
+                                     perturbation = "perturbation",
                                      perturbation_label = perturbation,
                                      min_reporters = 2,
                                      trend_span = 0.45) {
@@ -150,8 +150,8 @@ plot_mean_variance_diagnostic <- function(table = NULL,
                                           diagnostics = NULL,
                                           mean_effect = "total_effect",
                                           variance_effect = mean_effect,
-                                          reporter = "promoter",
-                                          perturbation = "compound",
+                                          reporter = "reporter",
+                                          perturbation = "perturbation",
                                           perturbation_label = perturbation,
                                           min_reporters = 2,
                                           trend_span = 0.45,
@@ -719,14 +719,14 @@ destress_effect_axis_label <- function(effect, type = c("mean", "rank_abs_mean",
       effect,
       total_effect = ,
       mean_response = ,
-      total_effect_variance = expression("Variance across promoters of " * hat(Delta * y)["\u00b7" * j]^"tot"),
+      total_effect_variance = expression("Variance across reporters of " * hat(Delta * y)["\u00b7" * j]^"tot"),
       rank_adjusted_total_effect = ,
-      rank_adjusted_total_effect_variance = expression("Variance across promoters of " * hat(Delta * y)["\u00b7" * j]^"tot,k"),
+      rank_adjusted_total_effect_variance = expression("Variance across reporters of " * hat(Delta * y)["\u00b7" * j]^"tot,k"),
       specific_effect = ,
       effect = ,
-      specific_effect_variance = expression("Variance across promoters of " * hat(Delta * y)["\u00b7" * j]^"spec"),
+      specific_effect_variance = expression("Variance across reporters of " * hat(Delta * y)["\u00b7" * j]^"spec"),
       global_effect = ,
-      rank_adjusted_global_effect = expression("Variance across promoters of " * bar(Delta * y)[j]^"tot"),
+      rank_adjusted_global_effect = expression("Variance across reporters of " * bar(Delta * y)[j]^"tot"),
       expression("Variance across reporters")
     ))
   }
@@ -734,12 +734,12 @@ destress_effect_axis_label <- function(effect, type = c("mean", "rank_abs_mean",
     effect,
     total_effect = ,
     mean_response = ,
-    total_effect_variance = expression(log[10] * " variance across promoters of " * hat(Delta * y)["\u00b7" * j]^"tot"),
+    total_effect_variance = expression(log[10] * " variance across reporters of " * hat(Delta * y)["\u00b7" * j]^"tot"),
     rank_adjusted_total_effect = ,
-    rank_adjusted_total_effect_variance = expression(log[10] * " variance across promoters of " * hat(Delta * y)["\u00b7" * j]^"tot,k"),
+    rank_adjusted_total_effect_variance = expression(log[10] * " variance across reporters of " * hat(Delta * y)["\u00b7" * j]^"tot,k"),
     specific_effect = ,
     effect = ,
-    specific_effect_variance = expression(log[10] * " variance across promoters of " * hat(Delta * y)["\u00b7" * j]^"spec"),
+    specific_effect_variance = expression(log[10] * " variance across reporters of " * hat(Delta * y)["\u00b7" * j]^"spec"),
     expression(log[10] * " variance across reporters")
   )
 }

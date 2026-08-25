@@ -7,20 +7,20 @@
 background_rank_diagnostics(
   table,
   effect = "total_effect",
-  promoter = "promoter",
-  compound = "compound",
+  reporter = "reporter",
+  perturbation = "perturbation",
   rank_max = 10,
   permutations = 100,
   seed = NULL
 )
 }
 \arguments{
-\item{table}{Data frame with promoter, compound, and effect columns.}
+\item{table}{Data frame with reporter, perturbation, and effect columns.}
 
 \item{effect}{Numeric effect column to decompose, usually \code{total_effect} or
 \code{background_adjusted_effect}.}
 
-\item{promoter, compound}{Column names identifying promoters and compounds.}
+\item{reporter, perturbation}{Column names identifying reporters and perturbations.}
 
 \item{rank_max}{Maximum component index to report.}
 
@@ -33,8 +33,8 @@ A data frame with observed singular values, variance fractions, and
 optional permutation summaries.
 }
 \description{
-Computes singular values of a promoter-by-compound effect matrix and compares
-them with a permutation null. The default permutation shuffles promoter
-labels within each compound, preserving the compound-wise marginal
-distribution while breaking shared promoter-loading structure.
+Computes singular values of a reporter-by-perturbation effect matrix and compares
+them with a permutation null. The default permutation shuffles reporter
+labels within each perturbation, preserving the perturbation-wise marginal
+distribution while breaking shared reporter-loading structure.
 }

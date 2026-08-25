@@ -8,8 +8,8 @@ perturbation_diagnostics(
   table,
   mean_effect = "total_effect",
   variance_effect = mean_effect,
-  reporter = "promoter",
-  perturbation = "compound",
+  reporter = "reporter",
+  perturbation = "perturbation",
   perturbation_label = perturbation,
   min_reporters = 2,
   trend_span = 0.45
@@ -47,8 +47,8 @@ in spirit to mean-variance diagnostic plots used for count-data workflows.
 }
 \details{
 The function is deliberately generic: columns are referred to as reporters
-and perturbations, although DStressR result tables usually contain promoters
-and compounds. Large absolute mean effects with low variance indicate
+and perturbations, although DStressR result tables usually contain reporters
+and perturbations. Large absolute mean effects with low variance indicate
 coherent, broad responses, whereas unusually large variance conditional on
 the absolute mean effect indicates heterogeneous reporter behavior.
 }

@@ -16,7 +16,7 @@ if (!file.exists(result_file)) {
 }
 
 res <- read_tsv_base(result_file)
-required <- c("promoter", "compound", "specific_effect", "specific_padj_by_promoter")
+required <- c("promoter", "compound", "specific_effect", "specific_padj_by_reporter")
 missing_cols <- setdiff(required, names(res))
 if (length(missing_cols) > 0) {
   stop("Missing required columns: ", paste(missing_cols, collapse = ", "), call. = FALSE)
@@ -25,9 +25,9 @@ if (length(missing_cols) > 0) {
 hit_summary <- summarize_hits(
   res,
   effect = "specific_effect",
-  padj = "specific_padj_by_promoter",
-  promoter = "promoter",
-  compound = "compound",
+  padj = "specific_padj_by_reporter",
+  reporter = "promoter",
+  perturbation = "compound",
   fdr = 0.05
 )
 utils::write.table(
@@ -39,7 +39,7 @@ utils::write.table(
 )
 utils::write.table(
   hit_summary$promoters,
-  file.path(out_dir, "binsfeld_evc_hit_summary_by_promoter.tsv"),
+  file.path(out_dir, "binsfeld_evc_hit_summary_by_reporter.tsv"),
   sep = "\t",
   quote = FALSE,
   row.names = FALSE
@@ -55,11 +55,11 @@ utils::write.table(
 base_hit_plot <- plot_hit_heatmap(
   res,
   effect = "specific_effect",
-  padj = "specific_padj_by_promoter",
-  promoter = "promoter",
-  compound = "compound",
-  show_compound_ids = FALSE,
-  top_n_compounds = Inf,
+  padj = "specific_padj_by_reporter",
+  reporter = "promoter",
+  perturbation = "compound",
+  show_perturbation_ids = FALSE,
+  top_n_perturbations = Inf,
   order_cols = "frequency",
   title = NULL,
   subtitle = "",

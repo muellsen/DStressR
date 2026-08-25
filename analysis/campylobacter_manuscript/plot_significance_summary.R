@@ -38,7 +38,7 @@ pair_table <- Reduce(
   tabs
 )
 pair_table <- merge(pair_table, compound_lookup, by = "compound", all.x = TRUE, sort = FALSE)
-pair_table$compound_label <- ifelse(
+pair_table$perturbation_label <- ifelse(
   is.na(pair_table$ProductName) | pair_table$ProductName == "" | pair_table$ProductName == "NA",
   pair_table$compound,
   pair_table$ProductName
@@ -91,7 +91,7 @@ label_pairs <- function(tab, method, max_labels = 32) {
   labeled <- rbind(priority, most_sig)
   labeled <- labeled[!duplicated(labeled$pair_id), , drop = FALSE]
   labeled <- head(labeled, max_labels)
-  labeled$.label <- paste0(labeled$promoter, ": ", clean_label(labeled$compound_label, 28))
+  labeled$.label <- paste0(labeled$promoter, ": ", clean_label(labeled$perturbation_label, 28))
   labeled
 }
 
@@ -285,7 +285,7 @@ plot_count_table <- function(hit_counts, method, stem) {
   p
 }
 
-method_promoter_order <- function(hit_counts, method) {
+method_reporter_order <- function(hit_counts, method) {
   positive_col <- paste0(method, "_positive_hits")
   negative_col <- paste0(method, "_negative_hits")
   d <- hit_counts[, c("promoter", positive_col, negative_col), drop = FALSE]
@@ -295,7 +295,7 @@ method_promoter_order <- function(hit_counts, method) {
   d$promoter
 }
 
-pvalue_histogram_plot <- function(tab, method, promoter_order) {
+pvalue_histogram_plot <- function(tab, method, reporter_order) {
   pvalue <- paste0(method, "_pvalue")
   hit <- paste0(method, "_hit")
   direction <- paste0(method, "_direction")
@@ -307,7 +307,7 @@ pvalue_histogram_plot <- function(tab, method, promoter_order) {
     stringsAsFactors = FALSE
   )
   d <- d[is.finite(d$pvalue), , drop = FALSE]
-  d$promoter <- factor(d$promoter, levels = promoter_order)
+  d$promoter <- factor(d$promoter, levels = reporter_order)
   hits <- d[d$hit, , drop = FALSE]
   hits$direction <- factor(hits$direction, levels = c("Negative", "Positive"))
 
@@ -349,8 +349,8 @@ pvalue_histogram_plot <- function(tab, method, promoter_order) {
 }
 
 write_histogram_table_combined <- function(tab, hit_counts, method, table_plot, stem) {
-  promoter_order <- method_promoter_order(hit_counts, method)
-  hist_plot <- pvalue_histogram_plot(tab, method, promoter_order)
+  reporter_order <- method_reporter_order(hit_counts, method)
+  hist_plot <- pvalue_histogram_plot(tab, method, reporter_order)
   compact_table <- table_plot + theme(plot.title = element_blank())
   combined <- arrangeGrob(hist_plot, compact_table, ncol = 2, widths = c(3.1, 1.15))
   png(file.path(out_dir, paste0(stem, ".png")), width = 14, height = 6.4, units = "in", res = 300)

@@ -74,7 +74,7 @@ compound_diag <- merge(
 )
 names(compound_diag) <- c(
   "workflow", "compound", "mean_total_response", "abs_mean_total_response",
-  "total_effect_variance", "n_promoters", "rank_abs_mean_total_response",
+  "total_effect_variance", "n_reporters", "rank_abs_mean_total_response",
   "variance_trend", "variance_residual", "rank_variance_residual",
   "specific_effect_variance"
 )

@@ -9,8 +9,8 @@ technical_formula <- function(technical) {
 make_formulas <- function(technical) {
   tech <- technical_formula(technical)
   list(
-    total = stats::as.formula(paste(".response ~ .promoter + .compound +", tech)),
-    full = stats::as.formula(paste(".response ~ .promoter * .compound +", tech)),
+    total = stats::as.formula(paste(".response ~ .reporter + .perturbation +", tech)),
+    full = stats::as.formula(paste(".response ~ .reporter * .perturbation +", tech)),
     technical = stats::as.formula(paste(".response ~", tech))
   )
 }
@@ -110,10 +110,10 @@ contrast_estimates <- function(fit, newdata_a, newdata_b) {
 }
 
 representative_rows <- function(assay, technical) {
-  reps <- assay[!duplicated(assay$.promoter), c(".promoter", ".compound", technical), drop = FALSE]
-  template <- assay[1, c(".promoter", ".compound", technical), drop = FALSE]
-  template <- template[rep(1, length(levels(assay$.promoter))), , drop = FALSE]
-  template$.promoter <- factor(levels(assay$.promoter), levels = levels(assay$.promoter))
+  reps <- assay[!duplicated(assay$.reporter), c(".reporter", ".perturbation", technical), drop = FALSE]
+  template <- assay[1, c(".reporter", ".perturbation", technical), drop = FALSE]
+  template <- template[rep(1, length(levels(assay$.reporter))), , drop = FALSE]
+  template$.reporter <- factor(levels(assay$.reporter), levels = levels(assay$.reporter))
   for (col in technical) {
     level <- names(sort(table(assay[[col]]), decreasing = TRUE))[1]
     template[[col]] <- factor(level, levels = levels(assay[[col]]))
@@ -228,24 +228,24 @@ low_rank_background_effect <- function(table, effect, rank) {
     return(rep(0, nrow(table)))
   }
 
-  required <- c("promoter", "compound", effect)
+  required <- c("reporter", "perturbation", effect)
   missing <- setdiff(required, names(table))
   if (length(missing) > 0) {
     stop("Cannot estimate low-rank background; missing columns: ",
          paste(missing, collapse = ", "), call. = FALSE)
   }
 
-  promoters <- unique(as.character(table$promoter))
-  compounds <- unique(as.character(table$compound))
+  reporters <- unique(as.character(table$reporter))
+  perturbations <- unique(as.character(table$perturbation))
   mat <- matrix(
     NA_real_,
-    nrow = length(promoters),
-    ncol = length(compounds),
-    dimnames = list(promoters, compounds)
+    nrow = length(reporters),
+    ncol = length(perturbations),
+    dimnames = list(reporters, perturbations)
   )
   idx <- cbind(
-    match(as.character(table$promoter), promoters),
-    match(as.character(table$compound), compounds)
+    match(as.character(table$reporter), reporters),
+    match(as.character(table$perturbation), perturbations)
   )
   mat[idx] <- as.numeric(table[[effect]])
 
@@ -267,25 +267,25 @@ low_rank_background_effect <- function(table, effect, rank) {
   as.numeric(low_rank[idx])
 }
 
-effect_matrix_from_table <- function(table, effect, promoter = "promoter", compound = "compound") {
-  required <- c(promoter, compound, effect)
+effect_matrix_from_table <- function(table, effect, reporter = "reporter", perturbation = "perturbation") {
+  required <- c(reporter, perturbation, effect)
   missing <- setdiff(required, names(table))
   if (length(missing) > 0) {
     stop("Cannot build effect matrix; missing columns: ",
          paste(missing, collapse = ", "), call. = FALSE)
   }
 
-  promoters <- unique(as.character(table[[promoter]]))
-  compounds <- unique(as.character(table[[compound]]))
+  reporters <- unique(as.character(table[[reporter]]))
+  perturbations <- unique(as.character(table[[perturbation]]))
   mat <- matrix(
     NA_real_,
-    nrow = length(promoters),
-    ncol = length(compounds),
-    dimnames = list(promoters, compounds)
+    nrow = length(reporters),
+    ncol = length(perturbations),
+    dimnames = list(reporters, perturbations)
   )
   idx <- cbind(
-    match(as.character(table[[promoter]]), promoters),
-    match(as.character(table[[compound]]), compounds)
+    match(as.character(table[[reporter]]), reporters),
+    match(as.character(table[[perturbation]]), perturbations)
   )
   mat[idx] <- as.numeric(table[[effect]])
   mat
@@ -293,15 +293,15 @@ effect_matrix_from_table <- function(table, effect, promoter = "promoter", compo
 
 #' Diagnose low-rank background structure
 #'
-#' Computes singular values of a promoter-by-compound effect matrix and compares
-#' them with a permutation null. The default permutation shuffles promoter
-#' labels within each compound, preserving the compound-wise marginal
-#' distribution while breaking shared promoter-loading structure.
+#' Computes singular values of a reporter-by-perturbation effect matrix and compares
+#' them with a permutation null. The default permutation shuffles reporter
+#' labels within each perturbation, preserving the perturbation-wise marginal
+#' distribution while breaking shared reporter-loading structure.
 #'
-#' @param table Data frame with promoter, compound, and effect columns.
+#' @param table Data frame with reporter, perturbation, and effect columns.
 #' @param effect Numeric effect column to decompose, usually `total_effect` or
 #'   `background_adjusted_effect`.
-#' @param promoter,compound Column names identifying promoters and compounds.
+#' @param reporter,perturbation Column names identifying reporters and perturbations.
 #' @param rank_max Maximum component index to report.
 #' @param permutations Number of null permutations. Use `0` to skip the null.
 #' @param seed Optional random seed for reproducible permutations.
@@ -310,8 +310,8 @@ effect_matrix_from_table <- function(table, effect, promoter = "promoter", compo
 #' @export
 background_rank_diagnostics <- function(table,
                                         effect = "total_effect",
-                                        promoter = "promoter",
-                                        compound = "compound",
+                                        reporter = "reporter",
+                                        perturbation = "perturbation",
                                         rank_max = 10,
                                         permutations = 100,
                                         seed = NULL) {
@@ -320,8 +320,8 @@ background_rank_diagnostics <- function(table,
   mat <- effect_matrix_from_table(
     table,
     effect = effect,
-    promoter = promoter,
-    compound = compound
+    reporter = reporter,
+    perturbation = perturbation
   )
   observed <- is.finite(mat)
   decomp <- mat
@@ -381,8 +381,8 @@ background_rank_diagnostics <- function(table,
     null_median = null_median,
     null_q95 = null_q95,
     null_q99 = null_q99,
-    n_promoters = nrow(decomp),
-    n_compounds = ncol(decomp),
+    n_reporters = nrow(decomp),
+    n_perturbations = ncol(decomp),
     permutations = permutations,
     stringsAsFactors = FALSE
   )
@@ -411,21 +411,21 @@ independent_columns <- function(x) {
   x[, sort(qr_x$pivot[seq_len(qr_x$rank)]), drop = FALSE]
 }
 
-fit_promoter_effects <- function(assay, technical, control) {
+fit_reporter_effects <- function(assay, technical, control) {
   technical_terms <- technical_formula(technical)
   technical_design_formula <- stats::as.formula(paste("~", technical_terms))
-  by_promoter <- split(assay, assay$.promoter)
+  by_reporter <- split(assay, assay$.reporter)
 
-  rows <- lapply(names(by_promoter), function(promoter) {
-    d <- by_promoter[[promoter]]
+  rows <- lapply(names(by_reporter), function(reporter) {
+    d <- by_reporter[[reporter]]
     d <- d[is.finite(d$.response), , drop = FALSE]
     if (nrow(d) == 0) {
       return(NULL)
     }
 
-    compound <- as.character(d$.compound)
-    compounds <- sort(setdiff(unique(compound), control))
-    if (length(compounds) == 0 || !any(compound == control)) {
+    perturbation <- as.character(d$.perturbation)
+    perturbations <- sort(setdiff(unique(perturbation), control))
+    if (length(perturbations) == 0 || !any(perturbation == control)) {
       return(NULL)
     }
 
@@ -436,17 +436,17 @@ fit_promoter_effects <- function(assay, technical, control) {
     mz_y <- as.numeric(stats::lm.fit(z, y)$residuals)
     y_mz_y <- sum(mz_y^2)
 
-    counts_all <- table(factor(compound, levels = c(control, compounds)))
-    n_compound <- as.numeric(counts_all[compounds])
-    names(n_compound) <- compounds
+    counts_all <- table(factor(perturbation, levels = c(control, perturbations)))
+    n_perturbation <- as.numeric(counts_all[perturbations])
+    names(n_perturbation) <- perturbations
 
-    z_sum_all <- rowsum(z, factor(compound, levels = c(control, compounds)), reorder = FALSE)
-    b <- z_sum_all[compounds, , drop = FALSE]
-    u_all <- rowsum(mz_y, factor(compound, levels = c(control, compounds)), reorder = FALSE)
-    u <- as.numeric(u_all[compounds, , drop = TRUE])
-    names(u) <- compounds
+    z_sum_all <- rowsum(z, factor(perturbation, levels = c(control, perturbations)), reorder = FALSE)
+    b <- z_sum_all[perturbations, , drop = FALSE]
+    u_all <- rowsum(mz_y, factor(perturbation, levels = c(control, perturbations)), reorder = FALSE)
+    u <- as.numeric(u_all[perturbations, , drop = TRUE])
+    names(u) <- perturbations
 
-    n_inv <- 1 / n_compound
+    n_inv <- 1 / n_perturbation
     s <- solve(solve(ztz_inv) - crossprod(b, b * n_inv))
     w <- n_inv * u
     beta <- w + n_inv * as.numeric(b %*% (s %*% crossprod(b, w)))
@@ -456,14 +456,14 @@ fit_promoter_effects <- function(assay, technical, control) {
     if (is.finite(sse) && sse < 0 && abs(sse) < sqrt(.Machine$double.eps)) {
       sse <- 0
     }
-    df <- length(y) - ncol(z) - length(compounds)
+    df <- length(y) - ncol(z) - length(perturbations)
     sigma2 <- sse / df
     se <- sqrt(sigma2 * a_inv_diag)
     test <- wald_t_test(beta, se, df)
 
     data.frame(
-      promoter = promoter,
-      compound = compounds,
+      reporter = reporter,
+      perturbation = perturbations,
       total_effect = beta,
       total_se = se,
       total_statistic = test$statistic,
@@ -471,7 +471,7 @@ fit_promoter_effects <- function(assay, technical, control) {
       residual_df = df,
       sigma = sqrt(sigma2),
       n_observations = length(y),
-      n_coefficients = ncol(z) + length(compounds),
+      n_coefficients = ncol(z) + length(perturbations),
       stringsAsFactors = FALSE
     )
   })
@@ -483,10 +483,10 @@ fit_promoter_effects <- function(assay, technical, control) {
   out
 }
 
-promoter_effect_results <- function(fit, compounds = NULL, promoters = NULL) {
-  out <- fit$promoter_effects
-  if (!is.null(compounds)) {
-    out <- out[out$compound %in% compounds, , drop = FALSE]
+reporter_effect_results <- function(fit, perturbations = NULL, reporters = NULL) {
+  out <- fit$reporter_effects
+  if (!is.null(perturbations)) {
+    out <- out[out$perturbation %in% perturbations, , drop = FALSE]
   }
   if (nrow(out) == 0) {
     return(data.frame())
@@ -504,17 +504,17 @@ promoter_effect_results <- function(fit, compounds = NULL, promoters = NULL) {
   }
 
   out$total_var <- out$total_se^2
-  evc <- fit$empty_vector_promoter
+  evc <- fit$empty_vector_reporter
   if (!is.null(evc) && nzchar(evc)) {
-    evc_rows <- out[out$promoter == evc, c("compound", "total_effect", "total_var"), drop = FALSE]
+    evc_rows <- out[out$reporter == evc, c("perturbation", "total_effect", "total_var"), drop = FALSE]
     if (nrow(evc_rows) == 0) {
-      stop("No fitted effects found for `empty_vector_promoter = \"", evc, "\"`.", call. = FALSE)
+      stop("No fitted effects found for `empty_vector_reporter = \"", evc, "\"`.", call. = FALSE)
     }
-    names(evc_rows) <- c("compound", "empty_vector_effect", "empty_vector_var")
-    out <- merge(out, evc_rows, by = "compound", all.x = TRUE, sort = FALSE)
+    names(evc_rows) <- c("perturbation", "empty_vector_effect", "empty_vector_var")
+    out <- merge(out, evc_rows, by = "perturbation", all.x = TRUE, sort = FALSE)
     out$background_adjusted_effect <- out$total_effect - out$empty_vector_effect
     out$background_adjusted_var <- out$total_var + out$empty_vector_var
-    out <- out[out$promoter != evc, , drop = FALSE]
+    out <- out[out$reporter != evc, , drop = FALSE]
   } else {
     out$empty_vector_effect <- NA_real_
     out$empty_vector_var <- NA_real_
@@ -522,16 +522,16 @@ promoter_effect_results <- function(fit, compounds = NULL, promoters = NULL) {
     out$background_adjusted_var <- out$total_var
   }
 
-  if (!is.null(promoters)) {
-    out <- out[out$promoter %in% promoters, , drop = FALSE]
+  if (!is.null(reporters)) {
+    out <- out[out$reporter %in% reporters, , drop = FALSE]
   }
   if (nrow(out) == 0) {
     return(data.frame())
   }
 
-  global <- stats::aggregate(background_adjusted_effect ~ compound, out, mean, na.rm = TRUE)
+  global <- stats::aggregate(background_adjusted_effect ~ perturbation, out, mean, na.rm = TRUE)
   names(global)[2] <- "global_effect"
-  out <- merge(out, global, by = "compound", all.x = TRUE, sort = FALSE)
+  out <- merge(out, global, by = "perturbation", all.x = TRUE, sort = FALSE)
   out$centering_effect <- out$global_effect
   out$low_rank_effect <- low_rank_background_effect(
     out,
@@ -540,15 +540,15 @@ promoter_effect_results <- function(fit, compounds = NULL, promoters = NULL) {
   )
   out$rank_adjusted_total_effect <- out$background_adjusted_effect - out$low_rank_effect
 
-  variance_compounds <- unique(out$compound)
-  total_variance_split <- split(out$total_var, out$compound)
-  evc_variance_split <- split(out$empty_vector_var, out$compound)
-  background_variance_split <- split(out$background_adjusted_var, out$compound)
+  variance_perturbations <- unique(out$perturbation)
+  total_variance_split <- split(out$total_var, out$perturbation)
+  evc_variance_split <- split(out$empty_vector_var, out$perturbation)
+  background_variance_split <- split(out$background_adjusted_var, out$perturbation)
   variance_summary <- data.frame(
-    compound = variance_compounds,
-    sum_total_var = vapply(total_variance_split[variance_compounds], sum, numeric(1), na.rm = TRUE),
-    sum_background_adjusted_var = vapply(background_variance_split[variance_compounds], sum, numeric(1), na.rm = TRUE),
-    empty_vector_var_for_compound = vapply(evc_variance_split[variance_compounds], function(x) {
+    perturbation = variance_perturbations,
+    sum_total_var = vapply(total_variance_split[variance_perturbations], sum, numeric(1), na.rm = TRUE),
+    sum_background_adjusted_var = vapply(background_variance_split[variance_perturbations], sum, numeric(1), na.rm = TRUE),
+    empty_vector_var_for_perturbation = vapply(evc_variance_split[variance_perturbations], function(x) {
       vals <- unique(x[is.finite(x)])
       if (length(vals) == 0) {
         0
@@ -556,12 +556,12 @@ promoter_effect_results <- function(fit, compounds = NULL, promoters = NULL) {
         vals[1]
       }
     }, numeric(1)),
-    n_promoters_for_compound = vapply(total_variance_split[variance_compounds], function(x) sum(is.finite(x)), numeric(1)),
+    n_reporters_for_perturbation = vapply(total_variance_split[variance_perturbations], function(x) sum(is.finite(x)), numeric(1)),
     stringsAsFactors = FALSE
   )
-  out <- merge(out, variance_summary, by = "compound", all.x = TRUE, sort = FALSE)
-  m <- out$n_promoters_for_compound
-  out$global_se <- sqrt(out$sum_total_var / m^2 + out$empty_vector_var_for_compound)
+  out <- merge(out, variance_summary, by = "perturbation", all.x = TRUE, sort = FALSE)
+  m <- out$n_reporters_for_perturbation
+  out$global_se <- sqrt(out$sum_total_var / m^2 + out$empty_vector_var_for_perturbation)
   global_test <- wald_t_test(out$global_effect, out$global_se, df)
   out$global_statistic <- global_test$statistic
   out$global_pvalue <- global_test$pvalue
@@ -569,9 +569,9 @@ promoter_effect_results <- function(fit, compounds = NULL, promoters = NULL) {
   rank_adjusted_total_test <- wald_t_test(out$rank_adjusted_total_effect, out$rank_adjusted_total_se, df)
   out$rank_adjusted_total_statistic <- rank_adjusted_total_test$statistic
   out$rank_adjusted_total_pvalue <- rank_adjusted_total_test$pvalue
-  rank_adjusted_global <- stats::aggregate(rank_adjusted_total_effect ~ compound, out, mean, na.rm = TRUE)
+  rank_adjusted_global <- stats::aggregate(rank_adjusted_total_effect ~ perturbation, out, mean, na.rm = TRUE)
   names(rank_adjusted_global)[2] <- "rank_adjusted_global_effect"
-  out <- merge(out, rank_adjusted_global, by = "compound", all.x = TRUE, sort = FALSE)
+  out <- merge(out, rank_adjusted_global, by = "perturbation", all.x = TRUE, sort = FALSE)
   out$specific_effect <- out$rank_adjusted_total_effect - out$rank_adjusted_global_effect
   out$specific_var <- ((m - 1) / m)^2 * out$total_var +
     (out$sum_total_var - out$total_var) / m^2
@@ -587,18 +587,18 @@ promoter_effect_results <- function(fit, compounds = NULL, promoters = NULL) {
   out$specific_statistic <- specific_test$statistic
   out$specific_pvalue <- specific_test$pvalue
 
-  out$total_padj_global <- adjust_destress_pvalues(out$total_pvalue, out$promoter, "global")
-  out$total_padj_by_promoter <- adjust_destress_pvalues(out$total_pvalue, out$promoter, "by_promoter")
-  out$rank_adjusted_total_padj_global <- adjust_destress_pvalues(out$rank_adjusted_total_pvalue, out$promoter, "global")
-  out$rank_adjusted_total_padj_by_promoter <- adjust_destress_pvalues(out$rank_adjusted_total_pvalue, out$promoter, "by_promoter")
-  out$specific_padj_global <- adjust_destress_pvalues(out$specific_pvalue, out$promoter, "global")
-  out$specific_padj_by_promoter <- adjust_destress_pvalues(out$specific_pvalue, out$promoter, "by_promoter")
+  out$total_padj_global <- adjust_destress_pvalues(out$total_pvalue, out$reporter, "global")
+  out$total_padj_by_reporter <- adjust_destress_pvalues(out$total_pvalue, out$reporter, "by_reporter")
+  out$rank_adjusted_total_padj_global <- adjust_destress_pvalues(out$rank_adjusted_total_pvalue, out$reporter, "global")
+  out$rank_adjusted_total_padj_by_reporter <- adjust_destress_pvalues(out$rank_adjusted_total_pvalue, out$reporter, "by_reporter")
+  out$specific_padj_global <- adjust_destress_pvalues(out$specific_pvalue, out$reporter, "global")
+  out$specific_padj_by_reporter <- adjust_destress_pvalues(out$specific_pvalue, out$reporter, "by_reporter")
   adjustment <- if (is.null(fit$adjustment)) "global" else fit$adjustment
-  out$total_padj <- if (adjustment == "by_promoter") out$total_padj_by_promoter else if (adjustment == "none") out$total_pvalue else out$total_padj_global
-  out$specific_padj <- if (adjustment == "by_promoter") out$specific_padj_by_promoter else if (adjustment == "none") out$specific_pvalue else out$specific_padj_global
+  out$total_padj <- if (adjustment == "by_reporter") out$total_padj_by_reporter else if (adjustment == "none") out$total_pvalue else out$total_padj_global
+  out$specific_padj <- if (adjustment == "by_reporter") out$specific_padj_by_reporter else if (adjustment == "none") out$specific_pvalue else out$specific_padj_global
 
   out <- out[, c(
-    "promoter", "compound",
+    "reporter", "perturbation",
     "total_effect", "total_se", "total_statistic", "total_pvalue",
     "additive_total_effect", "additive_total_se",
     "empty_vector_effect", "background_adjusted_effect",
@@ -608,49 +608,49 @@ promoter_effect_results <- function(fit, compounds = NULL, promoters = NULL) {
     "rank_adjusted_total_statistic", "rank_adjusted_total_pvalue",
     "rank_adjusted_global_effect",
     "specific_effect", "specific_se", "specific_statistic", "specific_pvalue",
-    "total_padj_global", "total_padj_by_promoter",
-    "rank_adjusted_total_padj_global", "rank_adjusted_total_padj_by_promoter",
+    "total_padj_global", "total_padj_by_reporter",
+    "rank_adjusted_total_padj_global", "rank_adjusted_total_padj_by_reporter",
     "specific_padj_global",
-    "specific_padj_by_promoter", "total_padj", "specific_padj"
+    "specific_padj_by_reporter", "total_padj", "specific_padj"
   ), drop = FALSE]
-  out[order(out$promoter, out$compound), ]
+  out[order(out$reporter, out$perturbation), ]
 }
 
-promoter_lm_results <- function(fit, compounds = NULL, promoters = NULL) {
+reporter_lm_results <- function(fit, perturbations = NULL, reporters = NULL) {
   control <- fit$assay_info$control
-  all_promoters <- fit$levels$promoter
-  all_compounds <- setdiff(fit$levels$compound, control)
-  promoters <- if (is.null(promoters)) all_promoters else intersect(promoters, all_promoters)
-  compounds <- if (is.null(compounds)) all_compounds else intersect(compounds, all_compounds)
+  all_reporters <- fit$levels$reporter
+  all_perturbations <- setdiff(fit$levels$perturbation, control)
+  reporters <- if (is.null(reporters)) all_reporters else intersect(reporters, all_reporters)
+  perturbations <- if (is.null(perturbations)) all_perturbations else intersect(perturbations, all_perturbations)
 
-  if (length(promoters) == 0 || length(compounds) == 0) {
+  if (length(reporters) == 0 || length(perturbations) == 0) {
     return(data.frame())
   }
 
-  rows <- lapply(promoters, function(promoter) {
-    promoter_fit <- fit$promoter_fits[[promoter]]
-    promoter_data <- fit_model_frame(promoter_fit)
-    compound_levels <- levels(promoter_data$.compound)
-    promoter_compounds <- intersect(compounds, setdiff(compound_levels, control))
-    if (length(promoter_compounds) == 0) {
+  rows <- lapply(reporters, function(reporter) {
+    reporter_fit <- fit$reporter_fits[[reporter]]
+    reporter_data <- fit_model_frame(reporter_fit)
+    perturbation_levels <- levels(reporter_data$.perturbation)
+    reporter_perturbations <- intersect(perturbations, setdiff(perturbation_levels, control))
+    if (length(reporter_perturbations) == 0) {
       return(NULL)
     }
 
-    base <- data.frame(.compound = factor(control, levels = compound_levels))
-    base <- base[rep(1, length(promoter_compounds)), , drop = FALSE]
+    base <- data.frame(.perturbation = factor(control, levels = perturbation_levels))
+    base <- base[rep(1, length(reporter_perturbations)), , drop = FALSE]
     comp <- base
-    comp$.compound <- factor(promoter_compounds, levels = compound_levels)
+    comp$.perturbation <- factor(reporter_perturbations, levels = perturbation_levels)
     for (col in fit$technical) {
-      level <- modal_factor_level(promoter_data[[col]])
-      base[[col]] <- factor(level, levels = levels(promoter_data[[col]]))
+      level <- modal_factor_level(reporter_data[[col]])
+      base[[col]] <- factor(level, levels = levels(reporter_data[[col]]))
       comp[[col]] <- base[[col]]
     }
 
-    total <- contrast_estimates(promoter_fit, comp, base)
+    total <- contrast_estimates(reporter_fit, comp, base)
 
     data.frame(
-      promoter = promoter,
-      compound = promoter_compounds,
+      reporter = reporter,
+      perturbation = reporter_perturbations,
       total_effect = total[, "estimate"],
       total_se = total[, "std_error"],
       total_statistic = total[, "statistic"],
@@ -665,9 +665,9 @@ promoter_lm_results <- function(fit, compounds = NULL, promoters = NULL) {
     return(data.frame())
   }
 
-  global <- stats::aggregate(total_effect ~ compound, out, mean, na.rm = TRUE)
+  global <- stats::aggregate(total_effect ~ perturbation, out, mean, na.rm = TRUE)
   names(global)[2] <- "global_effect"
-  out <- merge(out, global, by = "compound", all.x = TRUE, sort = FALSE)
+  out <- merge(out, global, by = "perturbation", all.x = TRUE, sort = FALSE)
   out$low_rank_effect <- low_rank_background_effect(
     out,
     effect = "total_effect",
@@ -675,7 +675,7 @@ promoter_lm_results <- function(fit, compounds = NULL, promoters = NULL) {
   )
   out$rank_adjusted_total_effect <- out$total_effect - out$low_rank_effect
 
-  df <- min(vapply(fit$promoter_fits[promoters], fit_df_residual, numeric(1)), na.rm = TRUE)
+  df <- min(vapply(fit$reporter_fits[reporters], fit_df_residual, numeric(1)), na.rm = TRUE)
   if (isTRUE(fit$empirical_bayes)) {
     moderated <- eb_moderate_se(out$total_se, df)
     out$total_se <- moderated$se
@@ -690,22 +690,22 @@ promoter_lm_results <- function(fit, compounds = NULL, promoters = NULL) {
   out$rank_adjusted_total_statistic <- rank_adjusted_total_test$statistic
   out$rank_adjusted_total_pvalue <- rank_adjusted_total_test$pvalue
   variance_summary <- stats::aggregate(
-    total_var ~ compound,
+    total_var ~ perturbation,
     out,
     function(x) c(sum = sum(x, na.rm = TRUE), m = sum(is.finite(x)))
   )
   variance_summary <- do.call(data.frame, variance_summary)
-  names(variance_summary) <- c("compound", "sum_total_var", "n_promoters_for_compound")
-  out <- merge(out, variance_summary, by = "compound", all.x = TRUE, sort = FALSE)
+  names(variance_summary) <- c("perturbation", "sum_total_var", "n_reporters_for_perturbation")
+  out <- merge(out, variance_summary, by = "perturbation", all.x = TRUE, sort = FALSE)
 
-  m <- out$n_promoters_for_compound
+  m <- out$n_reporters_for_perturbation
   out$global_se <- sqrt(out$sum_total_var) / m
   global_test <- wald_t_test(out$global_effect, out$global_se, df)
   out$global_statistic <- global_test$statistic
   out$global_pvalue <- global_test$pvalue
-  rank_adjusted_global <- stats::aggregate(rank_adjusted_total_effect ~ compound, out, mean, na.rm = TRUE)
+  rank_adjusted_global <- stats::aggregate(rank_adjusted_total_effect ~ perturbation, out, mean, na.rm = TRUE)
   names(rank_adjusted_global)[2] <- "rank_adjusted_global_effect"
-  out <- merge(out, rank_adjusted_global, by = "compound", all.x = TRUE, sort = FALSE)
+  out <- merge(out, rank_adjusted_global, by = "perturbation", all.x = TRUE, sort = FALSE)
   out$specific_effect <- out$rank_adjusted_total_effect - out$rank_adjusted_global_effect
   out$specific_var <- ((m - 1) / m)^2 * out$total_var +
     (out$sum_total_var - out$total_var) / m^2
@@ -722,18 +722,18 @@ promoter_lm_results <- function(fit, compounds = NULL, promoters = NULL) {
   out$specific_statistic <- specific_test$statistic
   out$specific_pvalue <- specific_test$pvalue
 
-  out$total_padj_global <- adjust_destress_pvalues(out$total_pvalue, out$promoter, "global")
-  out$total_padj_by_promoter <- adjust_destress_pvalues(out$total_pvalue, out$promoter, "by_promoter")
-  out$rank_adjusted_total_padj_global <- adjust_destress_pvalues(out$rank_adjusted_total_pvalue, out$promoter, "global")
-  out$rank_adjusted_total_padj_by_promoter <- adjust_destress_pvalues(out$rank_adjusted_total_pvalue, out$promoter, "by_promoter")
-  out$specific_padj_global <- adjust_destress_pvalues(out$specific_pvalue, out$promoter, "global")
-  out$specific_padj_by_promoter <- adjust_destress_pvalues(out$specific_pvalue, out$promoter, "by_promoter")
+  out$total_padj_global <- adjust_destress_pvalues(out$total_pvalue, out$reporter, "global")
+  out$total_padj_by_reporter <- adjust_destress_pvalues(out$total_pvalue, out$reporter, "by_reporter")
+  out$rank_adjusted_total_padj_global <- adjust_destress_pvalues(out$rank_adjusted_total_pvalue, out$reporter, "global")
+  out$rank_adjusted_total_padj_by_reporter <- adjust_destress_pvalues(out$rank_adjusted_total_pvalue, out$reporter, "by_reporter")
+  out$specific_padj_global <- adjust_destress_pvalues(out$specific_pvalue, out$reporter, "global")
+  out$specific_padj_by_reporter <- adjust_destress_pvalues(out$specific_pvalue, out$reporter, "by_reporter")
   adjustment <- if (is.null(fit$adjustment)) "global" else fit$adjustment
-  out$total_padj <- if (adjustment == "by_promoter") out$total_padj_by_promoter else if (adjustment == "none") out$total_pvalue else out$total_padj_global
-  out$specific_padj <- if (adjustment == "by_promoter") out$specific_padj_by_promoter else if (adjustment == "none") out$specific_pvalue else out$specific_padj_global
+  out$total_padj <- if (adjustment == "by_reporter") out$total_padj_by_reporter else if (adjustment == "none") out$total_pvalue else out$total_padj_global
+  out$specific_padj <- if (adjustment == "by_reporter") out$specific_padj_by_reporter else if (adjustment == "none") out$specific_pvalue else out$specific_padj_global
 
   out <- out[, c(
-    "promoter", "compound",
+    "reporter", "perturbation",
     "total_effect", "total_se", "total_statistic", "total_pvalue",
     "additive_total_effect", "additive_total_se",
     "global_effect", "global_se", "global_statistic", "global_pvalue",
@@ -742,23 +742,23 @@ promoter_lm_results <- function(fit, compounds = NULL, promoters = NULL) {
     "rank_adjusted_total_statistic", "rank_adjusted_total_pvalue",
     "rank_adjusted_global_effect",
     "specific_effect", "specific_se", "specific_statistic", "specific_pvalue",
-    "total_padj_global", "total_padj_by_promoter",
-    "rank_adjusted_total_padj_global", "rank_adjusted_total_padj_by_promoter",
+    "total_padj_global", "total_padj_by_reporter",
+    "rank_adjusted_total_padj_global", "rank_adjusted_total_padj_by_reporter",
     "specific_padj_global",
-    "specific_padj_by_promoter", "total_padj", "specific_padj"
+    "specific_padj_by_reporter", "total_padj", "specific_padj"
   ), drop = FALSE]
-  out[order(out$promoter, out$compound), ]
+  out[order(out$reporter, out$perturbation), ]
 }
 
-observed_mean_results <- function(fit, compounds = NULL, promoters = NULL) {
+observed_mean_results <- function(fit, perturbations = NULL, reporters = NULL) {
   assay <- fit$assay_data
   control <- fit$assay_info$control
-  all_promoters <- fit$levels$promoter
-  promoters <- if (is.null(promoters)) all_promoters else intersect(promoters, all_promoters)
+  all_reporters <- fit$levels$reporter
+  reporters <- if (is.null(reporters)) all_reporters else intersect(reporters, all_reporters)
 
-  d <- assay[assay$.promoter %in% promoters, , drop = FALSE]
-  if (!is.null(compounds)) {
-    d <- d[d$.compound %in% c(control, compounds), , drop = FALSE]
+  d <- assay[assay$.reporter %in% reporters, , drop = FALSE]
+  if (!is.null(perturbations)) {
+    d <- d[d$.perturbation %in% c(control, perturbations), , drop = FALSE]
   }
   if (nrow(d) == 0) {
     return(data.frame())
@@ -766,19 +766,19 @@ observed_mean_results <- function(fit, compounds = NULL, promoters = NULL) {
 
   d$.adjusted_response <- technical_adjusted_response(fit$total_fit, d, fit$technical)
   cell_mean <- stats::aggregate(
-    .adjusted_response ~ .promoter + .compound,
+    .adjusted_response ~ .reporter + .perturbation,
     d,
     function(x) c(mean = mean(x, na.rm = TRUE), n = sum(is.finite(x)))
   )
   cell_mean <- do.call(data.frame, cell_mean)
-  names(cell_mean) <- c("promoter", "compound", "mean_response", "n")
-  cell_mean$promoter <- as.character(cell_mean$promoter)
-  cell_mean$compound <- as.character(cell_mean$compound)
+  names(cell_mean) <- c("reporter", "perturbation", "mean_response", "n")
+  cell_mean$reporter <- as.character(cell_mean$reporter)
+  cell_mean$perturbation <- as.character(cell_mean$perturbation)
   cell_mean$n <- as.numeric(cell_mean$n)
 
-  cell_key <- paste(cell_mean$promoter, cell_mean$compound, sep = "\r")
+  cell_key <- paste(cell_mean$reporter, cell_mean$perturbation, sep = "\r")
   mean_by_cell <- stats::setNames(cell_mean$mean_response, cell_key)
-  d_key <- paste(as.character(d$.promoter), as.character(d$.compound), sep = "\r")
+  d_key <- paste(as.character(d$.reporter), as.character(d$.perturbation), sep = "\r")
   within_residual <- d$.adjusted_response - mean_by_cell[d_key]
   residual_df <- sum(is.finite(within_residual)) - nrow(cell_mean)
   if (!is.finite(residual_df) || residual_df <= 0) {
@@ -786,19 +786,19 @@ observed_mean_results <- function(fit, compounds = NULL, promoters = NULL) {
   }
   residual_sigma <- fit_sigma(fit$total_fit)
 
-  control_mean <- cell_mean[cell_mean$compound == control, c("promoter", "mean_response", "n"), drop = FALSE]
-  names(control_mean) <- c("promoter", "control_mean_response", "control_n")
+  control_mean <- cell_mean[cell_mean$perturbation == control, c("reporter", "mean_response", "n"), drop = FALSE]
+  names(control_mean) <- c("reporter", "control_mean_response", "control_n")
 
   out <- merge(
-    cell_mean[cell_mean$compound != control, , drop = FALSE],
+    cell_mean[cell_mean$perturbation != control, , drop = FALSE],
     control_mean,
-    by = "promoter",
+    by = "reporter",
     all.x = TRUE,
     sort = FALSE
   )
   out <- out[is.finite(out$mean_response) & is.finite(out$control_mean_response), , drop = FALSE]
-  if (!is.null(compounds)) {
-    out <- out[out$compound %in% compounds, , drop = FALSE]
+  if (!is.null(perturbations)) {
+    out <- out[out$perturbation %in% perturbations, , drop = FALSE]
   }
   if (nrow(out) == 0) {
     return(data.frame())
@@ -806,9 +806,9 @@ observed_mean_results <- function(fit, compounds = NULL, promoters = NULL) {
 
   out$total_effect <- out$mean_response - out$control_mean_response
   out$total_var <- residual_sigma^2 * (1 / out$n + 1 / out$control_n)
-  global <- stats::aggregate(total_effect ~ compound, out, mean, na.rm = TRUE)
+  global <- stats::aggregate(total_effect ~ perturbation, out, mean, na.rm = TRUE)
   names(global)[2] <- "global_effect"
-  out <- merge(out, global, by = "compound", all.x = TRUE, sort = FALSE)
+  out <- merge(out, global, by = "perturbation", all.x = TRUE, sort = FALSE)
   out$low_rank_effect <- low_rank_background_effect(
     out,
     effect = "total_effect",
@@ -817,23 +817,23 @@ observed_mean_results <- function(fit, compounds = NULL, promoters = NULL) {
   out$rank_adjusted_total_effect <- out$total_effect - out$low_rank_effect
 
   variance_summary <- stats::aggregate(
-    total_var ~ compound,
+    total_var ~ perturbation,
     out,
     function(x) c(sum = sum(x, na.rm = TRUE), m = sum(is.finite(x)))
   )
   variance_summary <- do.call(data.frame, variance_summary)
-  names(variance_summary) <- c("compound", "sum_total_var", "n_promoters_for_compound")
-  out <- merge(out, variance_summary, by = "compound", all.x = TRUE, sort = FALSE)
+  names(variance_summary) <- c("perturbation", "sum_total_var", "n_reporters_for_perturbation")
+  out <- merge(out, variance_summary, by = "perturbation", all.x = TRUE, sort = FALSE)
 
   out$total_se <- sqrt(out$total_var)
   out$rank_adjusted_total_se <- out$total_se
   rank_adjusted_total_test <- wald_t_test(out$rank_adjusted_total_effect, out$rank_adjusted_total_se, residual_df)
   out$rank_adjusted_total_statistic <- rank_adjusted_total_test$statistic
   out$rank_adjusted_total_pvalue <- rank_adjusted_total_test$pvalue
-  m <- out$n_promoters_for_compound
-  rank_adjusted_global <- stats::aggregate(rank_adjusted_total_effect ~ compound, out, mean, na.rm = TRUE)
+  m <- out$n_reporters_for_perturbation
+  rank_adjusted_global <- stats::aggregate(rank_adjusted_total_effect ~ perturbation, out, mean, na.rm = TRUE)
   names(rank_adjusted_global)[2] <- "rank_adjusted_global_effect"
-  out <- merge(out, rank_adjusted_global, by = "compound", all.x = TRUE, sort = FALSE)
+  out <- merge(out, rank_adjusted_global, by = "perturbation", all.x = TRUE, sort = FALSE)
   out$specific_effect <- out$rank_adjusted_total_effect - out$rank_adjusted_global_effect
   out$specific_var <- ((m - 1) / m)^2 * out$total_var +
     (out$sum_total_var - out$total_var) / m^2
@@ -860,18 +860,18 @@ observed_mean_results <- function(fit, compounds = NULL, promoters = NULL) {
   out$additive_total_effect <- NA_real_
   out$additive_total_se <- NA_real_
 
-  out$total_padj_global <- adjust_destress_pvalues(out$total_pvalue, out$promoter, "global")
-  out$total_padj_by_promoter <- adjust_destress_pvalues(out$total_pvalue, out$promoter, "by_promoter")
-  out$rank_adjusted_total_padj_global <- adjust_destress_pvalues(out$rank_adjusted_total_pvalue, out$promoter, "global")
-  out$rank_adjusted_total_padj_by_promoter <- adjust_destress_pvalues(out$rank_adjusted_total_pvalue, out$promoter, "by_promoter")
-  out$specific_padj_global <- adjust_destress_pvalues(out$specific_pvalue, out$promoter, "global")
-  out$specific_padj_by_promoter <- adjust_destress_pvalues(out$specific_pvalue, out$promoter, "by_promoter")
+  out$total_padj_global <- adjust_destress_pvalues(out$total_pvalue, out$reporter, "global")
+  out$total_padj_by_reporter <- adjust_destress_pvalues(out$total_pvalue, out$reporter, "by_reporter")
+  out$rank_adjusted_total_padj_global <- adjust_destress_pvalues(out$rank_adjusted_total_pvalue, out$reporter, "global")
+  out$rank_adjusted_total_padj_by_reporter <- adjust_destress_pvalues(out$rank_adjusted_total_pvalue, out$reporter, "by_reporter")
+  out$specific_padj_global <- adjust_destress_pvalues(out$specific_pvalue, out$reporter, "global")
+  out$specific_padj_by_reporter <- adjust_destress_pvalues(out$specific_pvalue, out$reporter, "by_reporter")
   adjustment <- if (is.null(fit$adjustment)) "global" else fit$adjustment
-  out$total_padj <- if (adjustment == "by_promoter") out$total_padj_by_promoter else if (adjustment == "none") out$total_pvalue else out$total_padj_global
-  out$specific_padj <- if (adjustment == "by_promoter") out$specific_padj_by_promoter else if (adjustment == "none") out$specific_pvalue else out$specific_padj_global
+  out$total_padj <- if (adjustment == "by_reporter") out$total_padj_by_reporter else if (adjustment == "none") out$total_pvalue else out$total_padj_global
+  out$specific_padj <- if (adjustment == "by_reporter") out$specific_padj_by_reporter else if (adjustment == "none") out$specific_pvalue else out$specific_padj_global
 
   out <- out[, c(
-    "promoter", "compound",
+    "reporter", "perturbation",
     "total_effect", "total_se", "total_statistic", "total_pvalue",
     "additive_total_effect", "additive_total_se",
     "global_effect", "low_rank_effect",
@@ -880,12 +880,12 @@ observed_mean_results <- function(fit, compounds = NULL, promoters = NULL) {
     "rank_adjusted_global_effect",
     "specific_effect", "specific_se", "specific_statistic",
     "specific_pvalue",
-    "total_padj_global", "total_padj_by_promoter",
-    "rank_adjusted_total_padj_global", "rank_adjusted_total_padj_by_promoter",
+    "total_padj_global", "total_padj_by_reporter",
+    "rank_adjusted_total_padj_global", "rank_adjusted_total_padj_by_reporter",
     "specific_padj_global",
-    "specific_padj_by_promoter", "total_padj", "specific_padj"
+    "specific_padj_by_reporter", "total_padj", "specific_padj"
   ), drop = FALSE]
-  out[order(out$promoter, out$compound), ]
+  out[order(out$reporter, out$perturbation), ]
 }
 
 #' List available DStressR presets
@@ -961,13 +961,13 @@ destress_preset_stages <- function(preset, empirical_bayes = TRUE) {
       normalization = "median_polish",
       testing = "gaussian_z",
       aggregation = "max_p",
-      adjustment = "by_promoter"
+      adjustment = "by_reporter"
     ),
     empty_vector_control = list(
       normalization = "empty_vector",
       testing = "gaussian_z",
       aggregation = "max_p",
-      adjustment = "by_promoter"
+      adjustment = "by_reporter"
     )
   )
 }
@@ -1016,8 +1016,8 @@ resolve_destress_stages <- function(preset,
   if (!is.null(adjustment)) {
     stages$adjustment <- normalize_stage_choice(
       adjustment,
-      choices = c("global", "by_promoter", "none"),
-      aliases = c(promoter = "by_promoter", within_promoter = "by_promoter"),
+      choices = c("global", "by_reporter", "none"),
+      aliases = c(reporter = "by_reporter", within_reporter = "by_reporter"),
       name = "adjustment"
     )
   }
@@ -1031,11 +1031,11 @@ resolve_destress_stages <- function(preset,
     }
   } else {
     expected <- if (stages$normalization == "median_polish") "median-polish" else "empty-vector"
-    if (stages$testing != "gaussian_z" || stages$aggregation != "max_p" || stages$adjustment != "by_promoter") {
+    if (stages$testing != "gaussian_z" || stages$aggregation != "max_p" || stages$adjustment != "by_reporter") {
       stop(
         "The ", expected, " compatibility path currently requires ",
         "`testing = \"gaussian_z\"`, `aggregation = \"max_p\"`, and ",
-        "`adjustment = \"by_promoter\"`.",
+        "`adjustment = \"by_reporter\"`.",
         call. = FALSE
       )
     }
@@ -1054,7 +1054,7 @@ resolve_destress_stages <- function(preset,
 #' and p-value adjustment. Only implemented combinations are accepted. For the
 #' model-based path, growth-response normalization is performed upstream by
 #' [prepare_assay()], where `growth_exponent` can be fixed, estimated, or
-#' supplied as promoter-specific values.
+#' supplied as reporter-specific values.
 #'
 #' @param assay A `destress_assay` produced by [prepare_assay()] or a raw assay
 #'   data frame for `normalization = "linear_model"`, or a long expression
@@ -1065,27 +1065,27 @@ resolve_destress_stages <- function(preset,
 #'   empirical prior variance with prior degrees of freedom estimated from the
 #'   observed variance distribution. This maps to `testing = "moderated_t"` for
 #'   the model path; `FALSE` maps to `testing = "student_t"`.
-#' @param empty_vector_promoter Optional promoter/control strain used as an
+#' @param empty_vector_reporter Optional reporter/control strain used as an
 #'   empty-vector reporter in the model-based path. When supplied, its
-#'   reference-relative compound effect is subtracted from every promoter's
-#'   reference-relative compound effect before promoter-library centering.
-#'   For new analyses, prefer `background_promoter` in [prepare_assay()], which
+#'   reference-relative perturbation effect is subtracted from every reporter's
+#'   reference-relative perturbation effect before reporter-library centering.
+#'   For new analyses, prefer `background_reporter` in [prepare_assay()], which
 #'   performs explicit response-level background calibration before model
 #'   fitting.
 #' @param background_rank Non-negative integer. The default `0` removes no
 #'   latent background. Values `1` or `2` additionally subtract a low-rank
 #'   background term from the reference-relative total-effect matrix before
-#'   testing rank-adjusted total and promoter-specific residual effects.
+#'   testing rank-adjusted total and reporter-specific residual effects.
 #' @param normalization One of `"linear_model"`, `"median_polish"`, or
 #'   `"empty_vector"`. `"model"` and `"evc"` are accepted aliases.
 #' @param testing One of `"student_t"`, `"moderated_t"`, or `"gaussian_z"`.
 #' @param aggregation One of `"none"` or `"max_p"`.
-#' @param adjustment One of `"global"`, `"by_promoter"`, or `"none"`.
+#' @param adjustment One of `"global"`, `"by_reporter"`, or `"none"`.
 #' @param interaction If `FALSE`, fit one Gaussian linear
-#'   model per promoter with the control compound as reference and the supplied
+#'   model per reporter with the control perturbation as reference and the supplied
 #'   technical covariates as design terms. The latter is the scalable path for
-#'   promoter-specific compound effects. If `TRUE`, fit the historical full
-#'   promoter-by-compound interaction model.
+#'   reporter-specific perturbation effects. If `TRUE`, fit the historical full
+#'   reporter-by-perturbation interaction model.
 #' @param preset Optional named preset: `"model"`, `"median_polish_legacy"`, or
 #'   `"empty_vector_control"`. Common aliases such as `"median_polish"` and
 #'   `"evc"` are accepted.
@@ -1098,7 +1098,7 @@ resolve_destress_stages <- function(preset,
 fit_destress <- function(assay,
                          technical = NULL,
                          empirical_bayes = TRUE,
-                         empty_vector_promoter = NULL,
+                         empty_vector_reporter = NULL,
                          background_rank = 0,
                          normalization = NULL,
                          testing = NULL,
@@ -1138,11 +1138,11 @@ fit_destress <- function(assay,
     }
     assay <- prepare_assay(assay, ...)
   }
-  background_promoter <- attr(assay, "destress")$background_promoter
-  if (!is.null(background_promoter) && nzchar(background_promoter)) {
-    assay_for_model <- assay[as.character(assay$.promoter) != background_promoter, , drop = FALSE]
-    assay_for_model$.promoter <- droplevels(assay_for_model$.promoter)
-    assay_for_model$.compound <- droplevels(assay_for_model$.compound)
+  background_reporter <- attr(assay, "destress")$background_reporter
+  if (!is.null(background_reporter) && nzchar(background_reporter)) {
+    assay_for_model <- assay[as.character(assay$.reporter) != background_reporter, , drop = FALSE]
+    assay_for_model$.reporter <- droplevels(assay_for_model$.reporter)
+    assay_for_model$.perturbation <- droplevels(assay_for_model$.perturbation)
   } else {
     assay_for_model <- assay
   }
@@ -1152,13 +1152,13 @@ fit_destress <- function(assay,
     stop("Unknown technical columns: ", paste(missing_technical, collapse = ", "), call. = FALSE)
   }
   interaction <- isTRUE(interaction)
-  if (!is.null(empty_vector_promoter)) {
-    empty_vector_promoter <- as.character(empty_vector_promoter)
-    if (length(empty_vector_promoter) != 1 || is.na(empty_vector_promoter) || !nzchar(empty_vector_promoter)) {
-      stop("`empty_vector_promoter` must be one promoter label.", call. = FALSE)
+  if (!is.null(empty_vector_reporter)) {
+    empty_vector_reporter <- as.character(empty_vector_reporter)
+    if (length(empty_vector_reporter) != 1 || is.na(empty_vector_reporter) || !nzchar(empty_vector_reporter)) {
+      stop("`empty_vector_reporter` must be one reporter label.", call. = FALSE)
     }
-    if (!empty_vector_promoter %in% levels(assay$.promoter)) {
-      stop("Empty-vector promoter '", empty_vector_promoter, "' was not found in the assay.", call. = FALSE)
+    if (!empty_vector_reporter %in% levels(assay$.reporter)) {
+      stop("Empty-vector reporter '", empty_vector_reporter, "' was not found in the assay.", call. = FALSE)
     }
   }
   formulas <- make_formulas(technical)
@@ -1177,16 +1177,16 @@ fit_destress <- function(assay,
   } else {
     assay_for_model
   }
-  promoter_formula <- stats::as.formula(paste(".response ~ .compound +", technical_formula(technical)))
-  promoter_fits <- if (interaction) {
+  reporter_formula <- stats::as.formula(paste(".response ~ .perturbation +", technical_formula(technical)))
+  reporter_fits <- if (interaction) {
     NULL
   } else {
     NULL
   }
-  promoter_effects <- if (interaction) {
+  reporter_effects <- if (interaction) {
     NULL
   } else {
-    fit_promoter_effects(assay_for_model, technical, attr(assay, "destress")$control)
+    fit_reporter_effects(assay_for_model, technical, attr(assay, "destress")$control)
   }
 
   structure(
@@ -1195,18 +1195,18 @@ fit_destress <- function(assay,
       full_fit = full_fit,
       interaction = interaction,
       assay_data = assay_data,
-      promoter_fits = promoter_fits,
-      promoter_effects = promoter_effects,
+      reporter_fits = reporter_fits,
+      reporter_effects = reporter_effects,
       growth_exponents = attr(assay, "destress")$growth_exponent_fit,
       assay_info = attr(assay, "destress"),
       levels = list(
-        promoter = levels(assay_for_model$.promoter),
-        compound = levels(assay_for_model$.compound)
+        reporter = levels(assay_for_model$.reporter),
+        perturbation = levels(assay_for_model$.perturbation)
       ),
       technical = technical,
       empirical_bayes = empirical_bayes,
-      empty_vector_promoter = empty_vector_promoter,
-      background_promoter = background_promoter,
+      empty_vector_reporter = empty_vector_reporter,
+      background_reporter = background_reporter,
       background_rank = background_rank,
       stages = stages,
       preset = if (is.null(preset)) "model" else preset,
@@ -1220,8 +1220,8 @@ fit_destress <- function(assay,
 #'
 #' @param fit A `destress_fit` object.
 #' @return A named list of estimated parameter tables available for the fitted
-#'   model. The scalable model path includes promoter-specific growth
-#'   normalization estimates and promoter-compound effect estimates.
+#'   model. The scalable model path includes reporter-specific growth
+#'   normalization estimates and reporter-perturbation effect estimates.
 #' @export
 model_parameters <- function(fit) {
   if (!inherits(fit, "destress_fit")) {
@@ -1231,12 +1231,12 @@ model_parameters <- function(fit) {
   out <- list(
     background = data.frame(
       background_rank = validate_background_rank(fit$background_rank),
-      background_promoter = if (is.null(fit$background_promoter)) NA_character_ else fit$background_promoter,
+      background_reporter = if (is.null(fit$background_reporter)) NA_character_ else fit$background_reporter,
       background_method = if (is.null(fit$assay_info$background_method)) "none" else fit$assay_info$background_method
     ),
     growth_exponents = fit$growth_exponents,
     background_calibration = fit$assay_info$background_fit,
-    promoter_effects = fit$promoter_effects
+    reporter_effects = fit$reporter_effects
   )
 
   if (isTRUE(fit$interaction)) {
@@ -1266,7 +1266,7 @@ adjust_destress_pvalues <- function(pvalue, groups = NULL, adjustment = "global"
     out[finite] <- pvalue[finite]
   } else if (adjustment == "global") {
     out[finite] <- stats::p.adjust(pvalue[finite], method = "BH")
-  } else if (adjustment == "by_promoter") {
+  } else if (adjustment == "by_reporter") {
     split_idx <- split(seq_along(pvalue), groups)
     for (idx in split_idx) {
       finite_idx <- idx[is.finite(pvalue[idx])]
@@ -1279,29 +1279,29 @@ adjust_destress_pvalues <- function(pvalue, groups = NULL, adjustment = "global"
 #' Extract model results
 #'
 #' @param fit A `destress_fit` object.
-#' @param compounds Optional compound subset.
-#' @param promoters Optional promoter subset.
-#' @return A data frame with total and promoter-specific effects.
+#' @param perturbations Optional perturbation subset.
+#' @param reporters Optional reporter subset.
+#' @return A data frame with total and reporter-specific effects.
 #' @export
-results <- function(fit, compounds = NULL, promoters = NULL) {
+results <- function(fit, perturbations = NULL, reporters = NULL) {
   if (!inherits(fit, "destress_fit")) {
     stop("`fit` must be a destress_fit.", call. = FALSE)
   }
   if (!isTRUE(fit$interaction)) {
-    return(promoter_effect_results(fit, compounds = compounds, promoters = promoters))
+    return(reporter_effect_results(fit, perturbations = perturbations, reporters = reporters))
   }
-  if (!is.null(fit$empty_vector_promoter)) {
-    stop("Model-based empty-vector adjustment is currently implemented for the scalable promoter-specific path.", call. = FALSE)
+  if (!is.null(fit$empty_vector_reporter)) {
+    stop("Model-based empty-vector adjustment is currently implemented for the scalable reporter-specific path.", call. = FALSE)
   }
   control <- fit$assay_info$control
-  all_promoters <- fit$levels$promoter
-  all_compounds <- setdiff(fit$levels$compound, control)
-  promoters <- if (is.null(promoters)) all_promoters else intersect(promoters, all_promoters)
-  compounds <- if (is.null(compounds)) all_compounds else intersect(compounds, all_compounds)
+  all_reporters <- fit$levels$reporter
+  all_perturbations <- setdiff(fit$levels$perturbation, control)
+  reporters <- if (is.null(reporters)) all_reporters else intersect(reporters, all_reporters)
+  perturbations <- if (is.null(perturbations)) all_perturbations else intersect(perturbations, all_perturbations)
 
   grid <- expand.grid(
-    promoter = promoters,
-    compound = compounds,
+    reporter = reporters,
+    perturbation = perturbations,
     stringsAsFactors = FALSE
   )
   if (nrow(grid) == 0) {
@@ -1309,11 +1309,11 @@ results <- function(fit, compounds = NULL, promoters = NULL) {
   }
 
   base <- data.frame(
-    .promoter = factor(grid$promoter, levels = fit$levels$promoter),
-    .compound = factor(control, levels = fit$levels$compound)
+    .reporter = factor(grid$reporter, levels = fit$levels$reporter),
+    .perturbation = factor(control, levels = fit$levels$perturbation)
   )
   comp <- base
-  comp$.compound <- factor(grid$compound, levels = fit$levels$compound)
+  comp$.perturbation <- factor(grid$perturbation, levels = fit$levels$perturbation)
 
   full_model_frame <- fit_model_frame(fit$full_fit)
   for (col in fit$technical) {
@@ -1338,19 +1338,19 @@ results <- function(fit, compounds = NULL, promoters = NULL) {
     contrast_estimate(fit$full_fit, comp[i, , drop = FALSE], base[i, , drop = FALSE])
   }, numeric(4)))
 
-  global <- t(vapply(compounds, function(cmp) {
-    rows <- comp[grid$compound == cmp, , drop = FALSE]
-    refs <- base[grid$compound == cmp, , drop = FALSE]
+  global <- t(vapply(perturbations, function(cmp) {
+    rows <- comp[grid$perturbation == cmp, , drop = FALSE]
+    refs <- base[grid$perturbation == cmp, , drop = FALSE]
     vals <- t(vapply(seq_len(nrow(rows)), function(i) {
       contrast_estimate(fit$full_fit, rows[i, , drop = FALSE], refs[i, , drop = FALSE])
     }, numeric(4)))
     colMeans(vals, na.rm = TRUE)
   }, numeric(4)))
-  global_df <- data.frame(compound = compounds, global_effect = global[, "estimate"])
+  global_df <- data.frame(perturbation = perturbations, global_effect = global[, "estimate"])
 
   out <- data.frame(
-    promoter = grid$promoter,
-    compound = grid$compound,
+    reporter = grid$reporter,
+    perturbation = grid$perturbation,
     total_effect = full_total[, "estimate"],
     total_se = full_total[, "std_error"],
     total_statistic = full_total[, "statistic"],
@@ -1359,7 +1359,7 @@ results <- function(fit, compounds = NULL, promoters = NULL) {
     additive_total_se = total[, "std_error"],
     stringsAsFactors = FALSE
   )
-  out <- merge(out, global_df, by = "compound", sort = FALSE)
+  out <- merge(out, global_df, by = "perturbation", sort = FALSE)
   out$low_rank_effect <- low_rank_background_effect(
     out,
     effect = "total_effect",
@@ -1370,9 +1370,9 @@ results <- function(fit, compounds = NULL, promoters = NULL) {
   rank_adjusted_total_test <- wald_t_test(out$rank_adjusted_total_effect, out$rank_adjusted_total_se, fit_df_residual(fit$full_fit))
   out$rank_adjusted_total_statistic <- rank_adjusted_total_test$statistic
   out$rank_adjusted_total_pvalue <- rank_adjusted_total_test$pvalue
-  rank_adjusted_global <- stats::aggregate(rank_adjusted_total_effect ~ compound, out, mean, na.rm = TRUE)
+  rank_adjusted_global <- stats::aggregate(rank_adjusted_total_effect ~ perturbation, out, mean, na.rm = TRUE)
   names(rank_adjusted_global)[2] <- "rank_adjusted_global_effect"
-  out <- merge(out, rank_adjusted_global, by = "compound", all.x = TRUE, sort = FALSE)
+  out <- merge(out, rank_adjusted_global, by = "perturbation", all.x = TRUE, sort = FALSE)
   out$specific_effect <- out$rank_adjusted_total_effect - out$rank_adjusted_global_effect
   out$specific_se <- out$total_se
   specific_df <- fit_df_residual(fit$full_fit)
@@ -1385,17 +1385,17 @@ results <- function(fit, compounds = NULL, promoters = NULL) {
   out$specific_pvalue <- 2 * stats::pt(abs(out$specific_statistic),
                                        df = specific_df,
                                        lower.tail = FALSE)
-  out$total_padj_global <- adjust_destress_pvalues(out$total_pvalue, out$promoter, "global")
-  out$total_padj_by_promoter <- adjust_destress_pvalues(out$total_pvalue, out$promoter, "by_promoter")
-  out$rank_adjusted_total_padj_global <- adjust_destress_pvalues(out$rank_adjusted_total_pvalue, out$promoter, "global")
-  out$rank_adjusted_total_padj_by_promoter <- adjust_destress_pvalues(out$rank_adjusted_total_pvalue, out$promoter, "by_promoter")
-  out$specific_padj_global <- adjust_destress_pvalues(out$specific_pvalue, out$promoter, "global")
-  out$specific_padj_by_promoter <- adjust_destress_pvalues(out$specific_pvalue, out$promoter, "by_promoter")
+  out$total_padj_global <- adjust_destress_pvalues(out$total_pvalue, out$reporter, "global")
+  out$total_padj_by_reporter <- adjust_destress_pvalues(out$total_pvalue, out$reporter, "by_reporter")
+  out$rank_adjusted_total_padj_global <- adjust_destress_pvalues(out$rank_adjusted_total_pvalue, out$reporter, "global")
+  out$rank_adjusted_total_padj_by_reporter <- adjust_destress_pvalues(out$rank_adjusted_total_pvalue, out$reporter, "by_reporter")
+  out$specific_padj_global <- adjust_destress_pvalues(out$specific_pvalue, out$reporter, "global")
+  out$specific_padj_by_reporter <- adjust_destress_pvalues(out$specific_pvalue, out$reporter, "by_reporter")
   adjustment <- if (is.null(fit$adjustment)) "global" else fit$adjustment
-  out$total_padj <- if (adjustment == "by_promoter") out$total_padj_by_promoter else if (adjustment == "none") out$total_pvalue else out$total_padj_global
-  out$specific_padj <- if (adjustment == "by_promoter") out$specific_padj_by_promoter else if (adjustment == "none") out$specific_pvalue else out$specific_padj_global
+  out$total_padj <- if (adjustment == "by_reporter") out$total_padj_by_reporter else if (adjustment == "none") out$total_pvalue else out$total_padj_global
+  out$specific_padj <- if (adjustment == "by_reporter") out$specific_padj_by_reporter else if (adjustment == "none") out$specific_pvalue else out$specific_padj_global
   out <- out[, c(
-    "promoter", "compound",
+    "reporter", "perturbation",
     "total_effect", "total_se", "total_statistic", "total_pvalue",
     "additive_total_effect", "additive_total_se",
     "global_effect", "low_rank_effect",
@@ -1403,24 +1403,24 @@ results <- function(fit, compounds = NULL, promoters = NULL) {
     "rank_adjusted_total_statistic", "rank_adjusted_total_pvalue",
     "rank_adjusted_global_effect",
     "specific_effect", "specific_se", "specific_statistic", "specific_pvalue",
-    "total_padj_global", "total_padj_by_promoter",
-    "rank_adjusted_total_padj_global", "rank_adjusted_total_padj_by_promoter",
+    "total_padj_global", "total_padj_by_reporter",
+    "rank_adjusted_total_padj_global", "rank_adjusted_total_padj_by_reporter",
     "specific_padj_global",
-    "specific_padj_by_promoter", "total_padj", "specific_padj"
+    "specific_padj_by_reporter", "total_padj", "specific_padj"
   ), drop = FALSE]
-  out[order(out$promoter, out$compound), ]
+  out[order(out$reporter, out$perturbation), ]
 }
 
-#' Adjust p-values within promoter
+#' Adjust p-values within reporter
 #'
 #' @param table Result table from [results()].
 #' @param pvalue P-value column.
 #' @param output Name of adjusted p-value column.
 #' @param method Passed to [stats::p.adjust()].
 #' @export
-adjust_pvalues <- function(table, pvalue = "specific_pvalue", output = "specific_padj_by_promoter",
+adjust_pvalues <- function(table, pvalue = "specific_pvalue", output = "specific_padj_by_reporter",
                            method = "BH") {
-  split_idx <- split(seq_len(nrow(table)), table$promoter)
+  split_idx <- split(seq_len(nrow(table)), table$reporter)
   table[[output]] <- NA_real_
   for (idx in split_idx) {
     table[[output]][idx] <- stats::p.adjust(table[[pvalue]][idx], method = method)
@@ -1453,11 +1453,11 @@ call_hits <- function(table, fdr = 0.05, lfc = 0, effect = "specific_effect",
 model_matrix_report <- function(fit) {
   if (!isTRUE(fit$interaction)) {
     return(data.frame(
-      model = "promoter_glm",
-      n_observations = sum(unique(fit$promoter_effects[c("promoter", "n_observations")])$n_observations),
-      n_coefficients = sum(unique(fit$promoter_effects[c("promoter", "n_coefficients")])$n_coefficients),
-      residual_df = sum(unique(fit$promoter_effects[c("promoter", "residual_df")])$residual_df),
-      sigma = stats::median(unique(fit$promoter_effects[c("promoter", "sigma")])$sigma, na.rm = TRUE)
+      model = "reporter_lm",
+      n_observations = sum(unique(fit$reporter_effects[c("reporter", "n_observations")])$n_observations),
+      n_coefficients = sum(unique(fit$reporter_effects[c("reporter", "n_coefficients")])$n_coefficients),
+      residual_df = sum(unique(fit$reporter_effects[c("reporter", "residual_df")])$residual_df),
+      sigma = stats::median(unique(fit$reporter_effects[c("reporter", "sigma")])$sigma, na.rm = TRUE)
     ))
   }
   data.frame(

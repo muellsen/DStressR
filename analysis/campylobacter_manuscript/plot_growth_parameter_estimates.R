@@ -36,7 +36,7 @@ if (length(missing) > 0) {
 }
 
 params <- params[order(params$a_raw), , drop = FALSE]
-promoter_order <- params$promoter
+reporter_order <- params$promoter
 
 make_panel <- function(parameter, estimate, se, reference = NA_real_) {
   data.frame(
@@ -57,7 +57,7 @@ plot_data <- rbind(
 )
 plot_data$ci_low <- plot_data$estimate - 1.96 * plot_data$se
 plot_data$ci_high <- plot_data$estimate + 1.96 * plot_data$se
-plot_data$promoter <- factor(plot_data$promoter, levels = promoter_order)
+plot_data$promoter <- factor(plot_data$promoter, levels = reporter_order)
 plot_data$parameter <- factor(plot_data$parameter, levels = c("a_raw", "alpha_raw", "alpha_shrunk"))
 
 reference_data <- data.frame(

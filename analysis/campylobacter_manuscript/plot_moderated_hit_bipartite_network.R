@@ -29,7 +29,7 @@ if (nrow(hits) == 0) {
 }
 
 hits <- merge(hits, compound_lookup, by = "compound", all.x = TRUE, sort = FALSE)
-hits$compound_label <- ifelse(
+hits$perturbation_label <- ifelse(
   is.na(hits$ProductName) | hits$ProductName == "" | hits$ProductName == "NA",
   hits$compound,
   hits$ProductName
@@ -111,15 +111,15 @@ edge_plot$x <- edge_plot$x_promoter + 0.02
 edge_plot$xend <- edge_plot$x_compound - 0.02
 edge_plot$alpha <- pmin(0.6, pmax(0.09, -log10(pmax(edge_plot$padj, .Machine$double.xmin)) / 15))
 
-compound_label_nodes <- compound_nodes[compound_nodes$label_compound, , drop = FALSE]
-compound_label_nodes$label_short <- iconv(compound_label_nodes$label, from = "", to = "ASCII//TRANSLIT")
-compound_label_nodes$label_short[is.na(compound_label_nodes$label_short)] <- compound_label_nodes$label[is.na(compound_label_nodes$label_short)]
-compound_label_nodes$label_short <- gsub("\u03b3", "gamma", compound_label_nodes$label_short, fixed = TRUE)
-too_long <- nchar(compound_label_nodes$label_short) > 42
-compound_label_nodes$label_short[too_long] <- paste0(substr(compound_label_nodes$label_short[too_long], 1, 39), "...")
-compound_label_nodes$label_x <- 1.12
-compound_label_nodes$label_y <- seq(0.985, 0.025, length.out = nrow(compound_label_nodes))
-compound_label_nodes$rank_label <- paste0(seq_len(nrow(compound_label_nodes)), ". ", compound_label_nodes$label_short)
+perturbation_label_nodes <- compound_nodes[compound_nodes$label_compound, , drop = FALSE]
+perturbation_label_nodes$label_short <- iconv(perturbation_label_nodes$label, from = "", to = "ASCII//TRANSLIT")
+perturbation_label_nodes$label_short[is.na(perturbation_label_nodes$label_short)] <- perturbation_label_nodes$label[is.na(perturbation_label_nodes$label_short)]
+perturbation_label_nodes$label_short <- gsub("\u03b3", "gamma", perturbation_label_nodes$label_short, fixed = TRUE)
+too_long <- nchar(perturbation_label_nodes$label_short) > 42
+perturbation_label_nodes$label_short[too_long] <- paste0(substr(perturbation_label_nodes$label_short[too_long], 1, 39), "...")
+perturbation_label_nodes$label_x <- 1.12
+perturbation_label_nodes$label_y <- seq(0.985, 0.025, length.out = nrow(perturbation_label_nodes))
+perturbation_label_nodes$rank_label <- paste0(seq_len(nrow(perturbation_label_nodes)), ". ", perturbation_label_nodes$label_short)
 
 p <- ggplot() +
   geom_segment(
@@ -129,7 +129,7 @@ p <- ggplot() +
     lineend = "round"
   ) +
   geom_segment(
-    data = compound_label_nodes,
+    data = perturbation_label_nodes,
     aes(x = x + 0.012, y = y, xend = label_x - 0.012, yend = label_y),
     color = "#64748b",
     linewidth = 0.18,
@@ -159,7 +159,7 @@ p <- ggplot() +
     fontface = "bold"
   ) +
   geom_text(
-    data = compound_label_nodes,
+    data = perturbation_label_nodes,
     aes(x = label_x, y = label_y, label = rank_label),
     hjust = 0,
     size = 2.45,

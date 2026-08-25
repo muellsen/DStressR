@@ -25,9 +25,9 @@ names(libmap)[names(libmap) == "Well"] <- "well"
 out <- merge(pair_table, libmap, by = "compound", all.x = TRUE, sort = FALSE)
 
 out$default_destress_hit_global <- out$destress_moderated_padj_global < 0.05
-out$default_destress_hit_by_promoter <- out$destress_moderated_padj_by_promoter < 0.05
+out$default_destress_hit_by_reporter <- out$destress_moderated_padj_by_reporter < 0.05
 out$median_polish_hit_global <- out$median_polish_padj_global < 0.05
-out$median_polish_hit_by_promoter <- out$median_polish_padj_by_promoter < 0.05
+out$median_polish_hit_by_reporter <- out$median_polish_padj_by_reporter < 0.05
 out$hit_pairing <- "not_significant"
 out$hit_pairing[out$default_destress_hit_global & !out$median_polish_hit_global] <- "default_destress_only"
 out$hit_pairing[!out$default_destress_hit_global & out$median_polish_hit_global] <- "median_polish_only"
@@ -45,16 +45,16 @@ clean <- out[, c(
   "hit_pairing",
   "default_destress_hit_global",
   "median_polish_hit_global",
-  "default_destress_hit_by_promoter",
-  "median_polish_hit_by_promoter",
+  "default_destress_hit_by_reporter",
+  "median_polish_hit_by_reporter",
   "destress_moderated_effect",
   "destress_moderated_pvalue",
   "destress_moderated_padj_global",
-  "destress_moderated_padj_by_promoter",
+  "destress_moderated_padj_by_reporter",
   "median_polish_effect",
   "median_polish_pvalue",
   "median_polish_padj_global",
-  "median_polish_padj_by_promoter"
+  "median_polish_padj_by_reporter"
 ), drop = FALSE]
 
 names(clean) <- c(
@@ -74,11 +74,11 @@ names(clean) <- c(
   "default_destress_effect",
   "default_destress_pvalue",
   "default_destress_padj_global",
-  "default_destress_padj_by_promoter",
+  "default_destress_padj_by_reporter",
   "median_polish_effect",
   "median_polish_pvalue",
   "median_polish_padj_global",
-  "median_polish_padj_by_promoter"
+  "median_polish_padj_by_reporter"
 )
 
 clean <- clean[order(

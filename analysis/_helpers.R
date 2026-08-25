@@ -72,6 +72,36 @@ read_tsv_base <- function(path) {
   read.delim(path, sep = "\t", check.names = FALSE, stringsAsFactors = FALSE)
 }
 
+load_binsfeld_paper_data <- function(envir = parent.frame()) {
+  auc_file <- analysis_path("data", "binsfeld_reporter_auc.rda")
+  score_file <- analysis_path("data", "binsfeld_reporter_scores.rda")
+  if (!file.exists(auc_file) || !file.exists(score_file)) {
+    stop("Missing packaged Binsfeld data files in `data/`.", call. = FALSE)
+  }
+
+  load(auc_file, envir = envir)
+  load(score_file, envir = envir)
+  auc <- get("binsfeld_reporter_auc", envir = envir)
+  scores <- get("binsfeld_reporter_scores", envir = envir)
+
+  if (!"promoter" %in% names(auc) && "reporter" %in% names(auc)) {
+    auc$promoter <- auc$reporter
+  }
+  if (!"compound" %in% names(auc) && "perturbation" %in% names(auc)) {
+    auc$compound <- auc$perturbation
+  }
+  if (!"promoter" %in% names(scores) && "reporter" %in% names(scores)) {
+    scores$promoter <- scores$reporter
+  }
+  if (!"compound" %in% names(scores) && "perturbation" %in% names(scores)) {
+    scores$compound <- scores$perturbation
+  }
+
+  assign("binsfeld_reporter_auc", auc, envir = envir)
+  assign("binsfeld_reporter_scores", scores, envir = envir)
+  invisible(TRUE)
+}
+
 libmap_path <- function() {
   file.path(analysis_data_root(), "00-import", "Campylobacter", "LibMap.txt")
 }
@@ -93,7 +123,7 @@ read_package_pair_results <- function(method, path = package_pair_result_path(me
     stop(
       "Missing DStressR package output for method `", method, "`: ", path,
       "\nExpected a TSV with columns: promoter, compound, effect, pvalue, ",
-      "padj_global, padj_by_promoter.",
+      "padj_global, padj_by_reporter.",
       "\nGenerate/export this table from the package first; analysis scripts ",
       "must not compute estimators or p-values.",
       call. = FALSE
@@ -101,7 +131,7 @@ read_package_pair_results <- function(method, path = package_pair_result_path(me
   }
 
   tab <- read_tsv_base(path)
-  required <- c("promoter", "compound", "effect", "pvalue", "padj_global", "padj_by_promoter")
+  required <- c("promoter", "compound", "effect", "pvalue", "padj_global", "padj_by_reporter")
   missing <- setdiff(required, names(tab))
   if (length(missing)) {
     stop(
@@ -117,7 +147,7 @@ read_package_pair_results <- function(method, path = package_pair_result_path(me
   tab$effect <- as.numeric(tab$effect)
   tab$pvalue <- as.numeric(tab$pvalue)
   tab$padj_global <- as.numeric(tab$padj_global)
-  tab$padj_by_promoter <- as.numeric(tab$padj_by_promoter)
+  tab$padj_by_reporter <- as.numeric(tab$padj_by_reporter)
   tab$pair_id <- paste(tab$promoter, tab$compound, sep = "__")
 
   if (anyDuplicated(tab$pair_id)) {
@@ -130,8 +160,8 @@ read_package_pair_results <- function(method, path = package_pair_result_path(me
     )
   }
 
-  names(tab)[names(tab) %in% c("effect", "pvalue", "padj_global", "padj_by_promoter")] <-
-    paste(method, c("effect", "pvalue", "padj_global", "padj_by_promoter"), sep = "_")
+  names(tab)[names(tab) %in% c("effect", "pvalue", "padj_global", "padj_by_reporter")] <-
+    paste(method, c("effect", "pvalue", "padj_global", "padj_by_reporter"), sep = "_")
   tab
 }
 
@@ -164,12 +194,12 @@ method_hit_column <- function(method) {
 comparison_adjustment <- function() {
   adjustment <- Sys.getenv("DSTRESSR_COMPARISON_ADJUSTMENT", unset = "global")
   adjustment <- gsub("-", "_", tolower(adjustment), fixed = TRUE)
-  if (adjustment %in% c("promoter", "within_promoter")) {
-    adjustment <- "by_promoter"
+  if (adjustment %in% c("promoter", "within_promoter", "reporter", "within_reporter")) {
+    adjustment <- "by_reporter"
   }
-  if (!adjustment %in% c("global", "by_promoter")) {
+  if (!adjustment %in% c("global", "by_reporter")) {
     stop(
-      "DSTRESSR_COMPARISON_ADJUSTMENT must be `global` or `by_promoter`.",
+      "DSTRESSR_COMPARISON_ADJUSTMENT must be `global` or `by_reporter`.",
       call. = FALSE
     )
   }

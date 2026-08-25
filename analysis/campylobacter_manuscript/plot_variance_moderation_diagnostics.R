@@ -25,8 +25,8 @@ expr$compound_model <- ifelse(expr$ProductName == "DMSO", "DMSO", expr$srn_code)
 
 assay <- prepare_assay(
   expr,
-  promoter = "promoter",
-  compound = "compound_model",
+  reporter = "promoter",
+  perturbation = "compound_model",
   control = "DMSO",
   lux = "lux_auc_until16h",
   growth = "od_at_16h",
@@ -51,7 +51,7 @@ raw_fit <- fit_pair_results(empirical_bayes = FALSE)
 moderated_fit <- fit_pair_results(empirical_bayes = TRUE)
 raw <- raw_fit$results
 moderated <- moderated_fit$results
-residual_df <- min(raw_fit$fit$promoter_effects$residual_df, na.rm = TRUE)
+residual_df <- min(raw_fit$fit$reporter_effects$residual_df, na.rm = TRUE)
 prior <- estimate_eb_prior_variance(raw$specific_se^2, residual_df)
 
 diagnostics <- data.frame(

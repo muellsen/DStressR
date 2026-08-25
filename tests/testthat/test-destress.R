@@ -1,19 +1,19 @@
 test_that("prepare_assay reproduces log2 lux over growth", {
   dat <- data.frame(
-    promoter = c("P1", "P1"),
-    compound = c("DMSO", "C1"),
+    reporter = c("P1", "P1"),
+    perturbation = c("DMSO", "C1"),
     lux = c(16, 32),
     growth = c(2, 2)
   )
-  assay <- prepare_assay(dat, promoter = "promoter", compound = "compound",
+  assay <- prepare_assay(dat, reporter = "reporter", perturbation = "perturbation",
                          lux = "lux", growth = "growth", growth_exponent = 1)
   expect_equal(assay$.response, c(3, 4), tolerance = 1e-6)
 })
 
 test_that("prepare_assay preserves requested numeric covariates", {
   dat <- data.frame(
-    promoter = rep("P1", 4),
-    compound = c("DMSO", "C1", "C1", "DMSO"),
+    reporter = rep("P1", 4),
+    perturbation = c("DMSO", "C1", "C1", "DMSO"),
     lux = c(16, 32, 64, 16),
     growth = c(2, 2, 2, 2),
     replicate = c(1, 1, 2, 2),
@@ -21,8 +21,8 @@ test_that("prepare_assay preserves requested numeric covariates", {
   )
   assay <- prepare_assay(
     dat,
-    promoter = "promoter",
-    compound = "compound",
+    reporter = "reporter",
+    perturbation = "perturbation",
     lux = "lux",
     growth = "growth",
     growth_exponent = 1,
@@ -37,13 +37,13 @@ test_that("prepare_assay preserves requested numeric covariates", {
 
 test_that("growth-exponent estimation accepts numeric covariates", {
   dat <- expand.grid(
-    promoter = c("P1", "P2"),
+    reporter = c("P1", "P2"),
     dose_level = 0:3,
     replicate = 1:2,
     KEEP.OUT.ATTRS = FALSE,
     stringsAsFactors = FALSE
   )
-  dat$compound <- "DMSO"
+  dat$perturbation <- "DMSO"
   dat$growth <- 2^(1 + 0.1 * dat$dose_level + 0.05 * dat$replicate +
     c(0.00, 0.04, -0.02, 0.03, -0.01, 0.05, -0.03, 0.02,
       0.01, -0.04, 0.02, -0.03, 0.04, -0.01, 0.03, -0.02))
@@ -61,39 +61,39 @@ test_that("growth-exponent estimation accepts numeric covariates", {
   expect_true(all(grepl("dose_level", fit$alpha_covariates)))
 })
 
-test_that("estimate_growth_exponents recovers promoter-specific scaling", {
+test_that("estimate_growth_exponents recovers reporter-specific scaling", {
   dat <- expand.grid(
-    promoter = c("P1", "P2"),
+    reporter = c("P1", "P2"),
     growth = c(1, 2, 4, 8, 16),
     replicate = seq_len(3),
     stringsAsFactors = FALSE
   )
-  dat$compound <- "DMSO"
-  dat$lux <- ifelse(dat$promoter == "P1", 8 * dat$growth^1, 4 * dat$growth^0.5)
-  est <- estimate_growth_exponents(dat, promoter = "promoter", compound = "compound",
+  dat$perturbation <- "DMSO"
+  dat$lux <- ifelse(dat$reporter == "P1", 8 * dat$growth^1, 4 * dat$growth^0.5)
+  est <- estimate_growth_exponents(dat, reporter = "reporter", perturbation = "perturbation",
                                    lux = "lux", growth = "growth", min_control_n = 5,
                                    shrink = FALSE)
   expect_true(all(c("a_raw", "a_raw_se", "a_raw_df") %in% names(est)))
-  expect_equal(est$alpha_raw[match("P1", est$promoter)], 1, tolerance = 1e-6)
-  expect_equal(est$alpha_raw[match("P2", est$promoter)], 0.5, tolerance = 1e-6)
+  expect_equal(est$alpha_raw[match("P1", est$reporter)], 1, tolerance = 1e-6)
+  expect_equal(est$alpha_raw[match("P2", est$reporter)], 0.5, tolerance = 1e-6)
 })
 
 test_that("growth exponent estimation adjusts technical covariates", {
   dat <- expand.grid(
-    promoter = "P1",
+    reporter = "P1",
     plate = c("A", "B"),
     replicate = seq_len(12),
     stringsAsFactors = FALSE
   )
-  dat$compound <- "DMSO"
+  dat$perturbation <- "DMSO"
   dat$growth <- ifelse(dat$plate == "A", 1, 8) * rep(c(1, 1.2, 1.4, 1.6), length.out = nrow(dat))
   plate_effect <- ifelse(dat$plate == "A", 0.25, 8)
   dat$lux <- 4 * dat$growth^0.5 * plate_effect
 
   unadjusted <- estimate_growth_exponents(
     dat,
-    promoter = "promoter",
-    compound = "compound",
+    reporter = "reporter",
+    perturbation = "perturbation",
     lux = "lux",
     growth = "growth",
     min_control_n = 8,
@@ -101,8 +101,8 @@ test_that("growth exponent estimation adjusts technical covariates", {
   )
   adjusted <- estimate_growth_exponents(
     dat,
-    promoter = "promoter",
-    compound = "compound",
+    reporter = "reporter",
+    perturbation = "perturbation",
     lux = "lux",
     growth = "growth",
     covariates = "plate",
@@ -116,23 +116,23 @@ test_that("growth exponent estimation adjusts technical covariates", {
 })
 
 test_that("fit_destress detects simulated specific effects", {
-  dat <- simulate_screen(seed = 1, n_promoters = 8, n_compounds = 12, n_replicates = 3)
-  assay <- prepare_assay(dat, promoter = "promoter", compound = "compound",
+  dat <- simulate_screen(seed = 1, n_reporters = 8, n_perturbations = 12, n_replicates = 3)
+  assay <- prepare_assay(dat, reporter = "reporter", perturbation = "perturbation",
                          lux = "LUX.AUC_16", growth = "od_16h.measured",
                          batch = "batch", replicate = "replicate")
   fit <- fit_destress(assay, technical = c("batch", "replicate"))
   res <- results(fit)
   expect_true(all(c("specific_effect", "global_effect", "total_effect") %in% names(res)))
-  truth <- unique(dat[dat$compound != "DMSO", c("promoter", "compound", "truth_specific")])
-  joined <- merge(res, truth, by = c("promoter", "compound"))
+  truth <- unique(dat[dat$perturbation != "DMSO", c("reporter", "perturbation", "truth_specific")])
+  joined <- merge(res, truth, by = c("reporter", "perturbation"))
   active <- abs(joined$truth_specific) > 0
   expect_gt(stats::cor(joined$specific_effect[active], joined$truth_specific[active]), 0.7)
 })
 
 test_that("perturbation diagnostics rank mean effects and variance residuals", {
   tab <- data.frame(
-    promoter = rep(paste0("P", 1:4), times = 3),
-    compound = rep(c("quiet", "global", "mixed"), each = 4),
+    reporter = rep(paste0("P", 1:4), times = 3),
+    perturbation = rep(c("quiet", "global", "mixed"), each = 4),
     total_effect = c(
       0.01, -0.01, 0.02, 0.00,
       1.00, 0.90, 1.10, 1.00,
@@ -157,8 +157,8 @@ test_that("perturbation diagnostics rank mean effects and variance residuals", {
 test_that("mean-variance diagnostic plot stores its diagnostic table", {
   skip_if_not_installed("ggplot2")
   tab <- data.frame(
-    promoter = rep(paste0("P", 1:4), times = 5),
-    compound = rep(paste0("C", 1:5), each = 4),
+    reporter = rep(paste0("P", 1:4), times = 5),
+    perturbation = rep(paste0("C", 1:5), each = 4),
     total_effect = c(
       0, 0.1, -0.1, 0,
       0.3, 0.4, 0.2, 0.3,
@@ -224,10 +224,10 @@ test_that("Binsfeld reporter data support DStressR model analysis", {
 
   expect_equal(nrow(binsfeld_reporter_auc), 24576)
   expect_true(all(c(
-    "strain", "promoter", "compound", "dose_level", "od_auc", "lux_auc", "removed"
+    "strain", "reporter", "perturbation", "dose_level", "od_auc", "lux_auc", "removed"
   ) %in% names(binsfeld_reporter_auc)))
   expect_equal(
-    sort(unique(binsfeld_reporter_auc$compound[grepl("^Water_", binsfeld_reporter_auc$drug)])),
+    sort(unique(binsfeld_reporter_auc$perturbation[grepl("^Water_", binsfeld_reporter_auc$drug)])),
     "Water"
   )
   expect_true(all(c("Scores", "Z_scores") %in% unique(binsfeld_reporter_scores$statistic)))
@@ -235,12 +235,12 @@ test_that("Binsfeld reporter data support DStressR model analysis", {
   wt_auc <- binsfeld_reporter_auc[
     binsfeld_reporter_auc$strain == "WT" &
       binsfeld_reporter_auc$removed == "No" &
-      binsfeld_reporter_auc$compound %in% c("Water", "Azithromycin", "Clarithromycin"),
+      binsfeld_reporter_auc$perturbation %in% c("Water", "Azithromycin", "Clarithromycin"),
   ]
   assay <- prepare_assay(
     wt_auc,
-    promoter = "promoter",
-    compound = "compound",
+    reporter = "reporter",
+    perturbation = "perturbation",
     control = "Water",
     lux = "lux_auc",
     growth = "od_auc",
@@ -256,9 +256,9 @@ test_that("Binsfeld reporter data support DStressR model analysis", {
     assay,
     technical = c("replicate", "dose_level"),
     empirical_bayes = TRUE,
-    adjustment = "by_promoter",
+    adjustment = "by_reporter",
     interaction = FALSE,
-    empty_vector_promoter = "EVC"
+    empty_vector_reporter = "EVC"
   )
   res <- results(fit)
 
@@ -269,8 +269,8 @@ test_that("Binsfeld reporter data support DStressR model analysis", {
 })
 
 test_that("fit_workflow dispatches to the model workflow", {
-  dat <- simulate_screen(seed = 3, n_promoters = 5, n_compounds = 6, n_replicates = 2)
-  assay <- prepare_assay(dat, promoter = "promoter", compound = "compound",
+  dat <- simulate_screen(seed = 3, n_reporters = 5, n_perturbations = 6, n_replicates = 2)
+  assay <- prepare_assay(dat, reporter = "reporter", perturbation = "perturbation",
                          lux = "LUX.AUC_16", growth = "od_16h.measured",
                          batch = "batch", replicate = "replicate")
 
@@ -283,8 +283,8 @@ test_that("fit_workflow dispatches to the model workflow", {
 })
 
 test_that("fit_destress exposes staged model options", {
-  dat <- simulate_screen(seed = 4, n_promoters = 5, n_compounds = 6, n_replicates = 2)
-  assay <- prepare_assay(dat, promoter = "promoter", compound = "compound",
+  dat <- simulate_screen(seed = 4, n_reporters = 5, n_perturbations = 6, n_replicates = 2)
+  assay <- prepare_assay(dat, reporter = "reporter", perturbation = "perturbation",
                          lux = "LUX.AUC_16", growth = "od_16h.measured",
                          batch = "batch", replicate = "replicate")
 
@@ -294,7 +294,7 @@ test_that("fit_destress exposes staged model options", {
     normalization = "model",
     testing = "student_t",
     aggregation = "none",
-    adjustment = "by_promoter"
+    adjustment = "by_reporter"
   )
   res <- results(fit)
   expected <- adjust_pvalues(res, pvalue = "specific_pvalue", output = "expected_specific_padj")
@@ -303,7 +303,7 @@ test_that("fit_destress exposes staged model options", {
   expect_false(fit$empirical_bayes)
   expect_equal(fit$stages$normalization, "linear_model")
   expect_equal(fit$stages$testing, "student_t")
-  expect_equal(fit$stages$adjustment, "by_promoter")
+  expect_equal(fit$stages$adjustment, "by_reporter")
   expect_equal(res$specific_padj, expected$expected_specific_padj, tolerance = 1e-12)
 })
 
@@ -317,9 +317,9 @@ test_that("empirical-Bayes moderation estimates prior degrees of freedom", {
   expect_false(isTRUE(all.equal(moderated$se, raw_se)))
 })
 
-test_that("fit_destress can fit scalable promoter-specific models", {
-  dat <- simulate_screen(seed = 7, n_promoters = 5, n_compounds = 6, n_replicates = 3)
-  assay <- prepare_assay(dat, promoter = "promoter", compound = "compound",
+test_that("fit_destress can fit scalable reporter-specific models", {
+  dat <- simulate_screen(seed = 7, n_reporters = 5, n_perturbations = 6, n_replicates = 3)
+  assay <- prepare_assay(dat, reporter = "reporter", perturbation = "perturbation",
                          lux = "LUX.AUC_16", growth = "od_16h.measured",
                          batch = "batch", replicate = "replicate")
 
@@ -328,15 +328,15 @@ test_that("fit_destress can fit scalable promoter-specific models", {
     technical = c("batch", "replicate"),
     interaction = FALSE,
     empirical_bayes = FALSE,
-    adjustment = "by_promoter"
+    adjustment = "by_reporter"
   )
   res <- results(fit)
 
   expect_s3_class(fit, "destress_fit")
   expect_false(fit$interaction)
   expect_null(fit$full_fit)
-  expect_equal(length(unique(fit$promoter_effects$promoter)), length(unique(dat$promoter)))
-  expect_equal(nrow(res), length(unique(dat$promoter)) * length(setdiff(unique(dat$compound), "DMSO")))
+  expect_equal(length(unique(fit$reporter_effects$reporter)), length(unique(dat$reporter)))
+  expect_equal(nrow(res), length(unique(dat$reporter)) * length(setdiff(unique(dat$perturbation), "DMSO")))
   expect_true(all(c("specific_effect", "specific_pvalue", "specific_padj") %in% names(res)))
   expect_true(all(c("total_effect", "total_pvalue", "total_padj") %in% names(res)))
   expect_true(all(is.finite(res$total_pvalue)))
@@ -344,21 +344,21 @@ test_that("fit_destress can fit scalable promoter-specific models", {
   expect_true(all(is.finite(res$specific_pvalue)))
   expect_true(all(res$specific_padj >= 0 & res$specific_padj <= 1))
 
-  truth <- unique(dat[dat$compound != "DMSO", c("promoter", "compound", "truth_specific")])
-  joined <- merge(res, truth, by = c("promoter", "compound"))
+  truth <- unique(dat[dat$perturbation != "DMSO", c("reporter", "perturbation", "truth_specific")])
+  joined <- merge(res, truth, by = c("reporter", "perturbation"))
   active <- abs(joined$truth_specific) > 0
   expect_gt(stats::cor(joined$specific_effect[active], joined$truth_specific[active]), 0.7)
 })
 
 test_that("fit_destress interaction model supports numeric technical covariates", {
-  dat <- simulate_screen(seed = 11, n_promoters = 4, n_compounds = 5, n_replicates = 3)
+  dat <- simulate_screen(seed = 11, n_reporters = 4, n_perturbations = 5, n_replicates = 3)
   dat$dose_level <- rep(c(1, 2, 3), length.out = nrow(dat))
   dat$LUX.AUC_16 <- dat$LUX.AUC_16 + 0.03 * dat$dose_level
 
   assay <- prepare_assay(
     dat,
-    promoter = "promoter",
-    compound = "compound",
+    reporter = "reporter",
+    perturbation = "perturbation",
     lux = "LUX.AUC_16",
     growth = "od_16h.measured",
     batch = "dose_level",
@@ -371,7 +371,7 @@ test_that("fit_destress interaction model supports numeric technical covariates"
     technical = c("replicate", "dose_level"),
     interaction = TRUE,
     empirical_bayes = FALSE,
-    adjustment = "by_promoter"
+    adjustment = "by_reporter"
   )
   res <- results(fit)
 
@@ -379,25 +379,25 @@ test_that("fit_destress interaction model supports numeric technical covariates"
   expect_equal(nrow(res), 4 * 5)
   expect_true(all(is.finite(res$specific_effect)))
   expect_true(all(is.finite(res$specific_pvalue)))
-  expect_true(all(res$specific_padj_by_promoter >= 0 & res$specific_padj_by_promoter <= 1))
+  expect_true(all(res$specific_padj_by_reporter >= 0 & res$specific_padj_by_reporter <= 1))
 })
 
-test_that("fit_destress separates global compound effects from promoter-specific effects", {
+test_that("fit_destress separates global perturbation effects from reporter-specific effects", {
   dat <- expand.grid(
-    promoter = paste0("P", seq_len(6)),
-    compound = c("DMSO", "C_global", "C_specific"),
+    reporter = paste0("P", seq_len(6)),
+    perturbation = c("DMSO", "C_global", "C_specific"),
     replicate = paste0("r", seq_len(6)),
     stringsAsFactors = FALSE
   )
   baseline <- stats::setNames(seq(9.5, 10.5, length.out = 6), paste0("P", seq_len(6)))
-  dat$value <- baseline[dat$promoter] +
-    ifelse(dat$compound == "C_global", 1.5, 0) +
-    ifelse(dat$compound == "C_specific" & dat$promoter == "P3", 1.5, 0)
+  dat$value <- baseline[dat$reporter] +
+    ifelse(dat$perturbation == "C_global", 1.5, 0) +
+    ifelse(dat$perturbation == "C_specific" & dat$reporter == "P3", 1.5, 0)
 
   assay <- prepare_assay(
     dat,
-    promoter = "promoter",
-    compound = "compound",
+    reporter = "reporter",
+    perturbation = "perturbation",
     control = "DMSO",
     response = "value",
     replicate = "replicate"
@@ -405,40 +405,40 @@ test_that("fit_destress separates global compound effects from promoter-specific
   fit <- fit_destress(assay, technical = "replicate", empirical_bayes = FALSE)
   res <- results(fit)
 
-  global_rows <- res[res$compound == "C_global", ]
+  global_rows <- res[res$perturbation == "C_global", ]
   expect_equal(global_rows$total_effect, rep(1.5, nrow(global_rows)), tolerance = 1e-8)
   expect_equal(unique(global_rows$global_effect), 1.5, tolerance = 1e-8)
   expect_equal(global_rows$specific_effect, rep(0, nrow(global_rows)), tolerance = 1e-8)
   expect_true(all(global_rows$specific_pvalue > 0.9))
   expect_true(all(global_rows$global_pvalue < 1e-8))
 
-  specific_row <- res[res$compound == "C_specific" & res$promoter == "P3", ]
+  specific_row <- res[res$perturbation == "C_specific" & res$reporter == "P3", ]
   expect_gt(specific_row$specific_effect, 1)
   expect_lt(specific_row$specific_pvalue, 1e-8)
 })
 
-test_that("fit_destress can remove a low-rank compound background", {
-  promoters <- paste0("P", seq_len(6))
-  compounds <- c("DMSO", "C_factor1", "C_factor2", "C_specific")
+test_that("fit_destress can remove a low-rank perturbation background", {
+  reporters <- paste0("P", seq_len(6))
+  perturbations <- c("DMSO", "C_factor1", "C_factor2", "C_specific")
   dat <- expand.grid(
-    promoter = promoters,
-    compound = compounds,
+    reporter = reporters,
+    perturbation = perturbations,
     replicate = paste0("r", seq_len(5)),
     stringsAsFactors = FALSE
   )
 
-  baseline <- stats::setNames(seq(9.5, 10.5, length.out = length(promoters)), promoters)
-  loading <- stats::setNames(c(-2, -1, 0, 0, 1, 2), promoters)
+  baseline <- stats::setNames(seq(9.5, 10.5, length.out = length(reporters)), reporters)
+  loading <- stats::setNames(c(-2, -1, 0, 0, 1, 2), reporters)
   score <- c(DMSO = 0, C_factor1 = 1.2, C_factor2 = -0.8, C_specific = 0)
-  sparse_specific <- stats::setNames(c(1, -2, 1, 1, -2, 1), promoters)
-  dat$value <- baseline[dat$promoter] +
-    loading[dat$promoter] * score[dat$compound] +
-    ifelse(dat$compound == "C_specific", sparse_specific[dat$promoter], 0)
+  sparse_specific <- stats::setNames(c(1, -2, 1, 1, -2, 1), reporters)
+  dat$value <- baseline[dat$reporter] +
+    loading[dat$reporter] * score[dat$perturbation] +
+    ifelse(dat$perturbation == "C_specific", sparse_specific[dat$reporter], 0)
 
   assay <- prepare_assay(
     dat,
-    promoter = "promoter",
-    compound = "compound",
+    reporter = "reporter",
+    perturbation = "perturbation",
     control = "DMSO",
     response = "value",
     replicate = "replicate"
@@ -451,29 +451,29 @@ test_that("fit_destress can remove a low-rank compound background", {
     background_rank = 1
   ))
 
-  factor0 <- rank0[rank0$compound %in% c("C_factor1", "C_factor2"), ]
-  factor1 <- rank1[rank1$compound %in% c("C_factor1", "C_factor2"), ]
+  factor0 <- rank0[rank0$perturbation %in% c("C_factor1", "C_factor2"), ]
+  factor1 <- rank1[rank1$perturbation %in% c("C_factor1", "C_factor2"), ]
   expect_gt(stats::sd(factor0$specific_effect), 0.5)
   expect_lt(max(abs(factor1$rank_adjusted_total_effect)), 1e-8)
   expect_lt(max(abs(factor1$specific_effect)), 1e-8)
   expect_gt(max(abs(factor1$low_rank_effect)), 0.5)
 
-  sparse1 <- rank1[rank1$compound == "C_specific", ]
-  expected_sparse <- sparse_specific[sparse1$promoter]
+  sparse1 <- rank1[rank1$perturbation == "C_specific", ]
+  expected_sparse <- sparse_specific[sparse1$reporter]
   expect_equal(sparse1$specific_effect, unname(expected_sparse), tolerance = 1e-8)
 })
 
 test_that("background_rank_diagnostics detects broad low-rank structure", {
-  promoters <- paste0("P", seq_len(8))
-  compounds <- paste0("C", seq_len(10))
-  loading <- stats::setNames(seq(-1, 1, length.out = length(promoters)), promoters)
-  score <- stats::setNames(c(seq(-2, 2, length.out = 6), rep(0, 4)), compounds)
+  reporters <- paste0("P", seq_len(8))
+  perturbations <- paste0("C", seq_len(10))
+  loading <- stats::setNames(seq(-1, 1, length.out = length(reporters)), reporters)
+  score <- stats::setNames(c(seq(-2, 2, length.out = 6), rep(0, 4)), perturbations)
   tab <- expand.grid(
-    promoter = promoters,
-    compound = compounds,
+    reporter = reporters,
+    perturbation = perturbations,
     stringsAsFactors = FALSE
   )
-  tab$total_effect <- loading[tab$promoter] * score[tab$compound]
+  tab$total_effect <- loading[tab$reporter] * score[tab$perturbation]
 
   diag <- background_rank_diagnostics(
     tab,
@@ -489,20 +489,20 @@ test_that("background_rank_diagnostics detects broad low-rank structure", {
 
 test_that("fit_destress subtracts model-based empty-vector background before centering", {
   dat <- expand.grid(
-    promoter = c("EVC", "P1", "P2"),
-    compound = c("DMSO", "C_background", "C_specific"),
+    reporter = c("EVC", "P1", "P2"),
+    perturbation = c("DMSO", "C_background", "C_specific"),
     replicate = paste0("r", seq_len(5)),
     stringsAsFactors = FALSE
   )
   baseline <- c(EVC = 8, P1 = 10, P2 = 12)
   background <- c(DMSO = 0, C_background = 1, C_specific = 0)
-  dat$value <- baseline[dat$promoter] + background[dat$compound] +
-    ifelse(dat$promoter == "P2" & dat$compound == "C_specific", 2, 0)
+  dat$value <- baseline[dat$reporter] + background[dat$perturbation] +
+    ifelse(dat$reporter == "P2" & dat$perturbation == "C_specific", 2, 0)
 
   assay <- prepare_assay(
     dat,
-    promoter = "promoter",
-    compound = "compound",
+    reporter = "reporter",
+    perturbation = "perturbation",
     control = "DMSO",
     response = "value",
     replicate = "replicate"
@@ -511,7 +511,7 @@ test_that("fit_destress subtracts model-based empty-vector background before cen
     assay,
     technical = "replicate",
     empirical_bayes = FALSE,
-    empty_vector_promoter = "EVC"
+    empty_vector_reporter = "EVC"
   )
   res <- results(fit)
   fit_no_evc <- fit_destress(
@@ -519,101 +519,101 @@ test_that("fit_destress subtracts model-based empty-vector background before cen
     technical = "replicate",
     empirical_bayes = FALSE
   )
-  res_no_evc <- results(fit_no_evc, promoters = c("P1", "P2"))
+  res_no_evc <- results(fit_no_evc, reporters = c("P1", "P2"))
 
-  expect_false("EVC" %in% res$promoter)
-  bg <- res[res$compound == "C_background", ]
+  expect_false("EVC" %in% res$reporter)
+  bg <- res[res$perturbation == "C_background", ]
   expect_equal(bg$empty_vector_effect, rep(1, nrow(bg)), tolerance = 1e-8)
   expect_equal(bg$background_adjusted_effect, rep(0, nrow(bg)), tolerance = 1e-8)
   expect_equal(bg$specific_effect, rep(0, nrow(bg)), tolerance = 1e-8)
 
-  sig <- res[res$compound == "C_specific", ]
-  expect_equal(sig$background_adjusted_effect[match(c("P1", "P2"), sig$promoter)], c(0, 2), tolerance = 1e-8)
-  expect_equal(sig$specific_effect[match(c("P1", "P2"), sig$promoter)], c(-1, 1), tolerance = 1e-8)
+  sig <- res[res$perturbation == "C_specific", ]
+  expect_equal(sig$background_adjusted_effect[match(c("P1", "P2"), sig$reporter)], c(0, 2), tolerance = 1e-8)
+  expect_equal(sig$specific_effect[match(c("P1", "P2"), sig$reporter)], c(-1, 1), tolerance = 1e-8)
 
   merged <- merge(
-    res[, c("promoter", "compound", "specific_effect", "specific_se")],
-    res_no_evc[, c("promoter", "compound", "specific_effect", "specific_se")],
-    by = c("promoter", "compound"),
+    res[, c("reporter", "perturbation", "specific_effect", "specific_se")],
+    res_no_evc[, c("reporter", "perturbation", "specific_effect", "specific_se")],
+    by = c("reporter", "perturbation"),
     suffixes = c("_evc", "_no_evc")
   )
   expect_equal(merged$specific_effect_evc, merged$specific_effect_no_evc, tolerance = 1e-8)
   expect_equal(merged$specific_se_evc, merged$specific_se_no_evc, tolerance = 1e-8)
 })
 
-test_that("prepare_assay can calibrate responses against a background promoter", {
-  compounds <- c("DMSO", paste0("C_bg", seq_len(6)), "C_specific")
+test_that("prepare_assay can calibrate responses against a background reporter", {
+  perturbations <- c("DMSO", paste0("C_bg", seq_len(6)), "C_specific")
   dat <- expand.grid(
-    promoter = c("EVC", "P1", "P2"),
-    compound = compounds,
+    reporter = c("EVC", "P1", "P2"),
+    perturbation = perturbations,
     replicate = paste0("r", seq_len(5)),
     stringsAsFactors = FALSE
   )
-  background_score <- stats::setNames(c(0, seq(-1.5, 1.5, length.out = 6), 0.5), compounds)
+  background_score <- stats::setNames(c(0, seq(-1.5, 1.5, length.out = 6), 0.5), perturbations)
   dat$value <- ifelse(
-    dat$promoter == "EVC",
-    5 + background_score[dat$compound],
-    ifelse(dat$promoter == "P1", 10 + 2 * background_score[dat$compound], 12 - background_score[dat$compound])
+    dat$reporter == "EVC",
+    5 + background_score[dat$perturbation],
+    ifelse(dat$reporter == "P1", 10 + 2 * background_score[dat$perturbation], 12 - background_score[dat$perturbation])
   )
-  dat$value <- dat$value + ifelse(dat$promoter == "P2" & dat$compound == "C_specific", 2, 0)
+  dat$value <- dat$value + ifelse(dat$reporter == "P2" & dat$perturbation == "C_specific", 2, 0)
 
   plain <- prepare_assay(
     dat,
-    promoter = "promoter",
-    compound = "compound",
+    reporter = "reporter",
+    perturbation = "perturbation",
     control = "DMSO",
     response = "value",
     replicate = "replicate"
   )
   calibrated <- prepare_assay(
     dat,
-    promoter = "promoter",
-    compound = "compound",
+    reporter = "reporter",
+    perturbation = "perturbation",
     control = "DMSO",
     response = "value",
     replicate = "replicate",
-    background_promoter = "EVC",
+    background_reporter = "EVC",
     background_method = "lm",
-    background_by = c("compound", "replicate")
+    background_by = c("perturbation", "replicate")
   )
 
   fit_plain <- fit_destress(plain, technical = "replicate", empirical_bayes = FALSE)
   fit_calibrated <- fit_destress(calibrated, technical = "replicate", empirical_bayes = FALSE)
-  res_plain <- results(fit_plain, promoters = c("P1", "P2"))
+  res_plain <- results(fit_plain, reporters = c("P1", "P2"))
   res_calibrated <- results(fit_calibrated)
   params <- model_parameters(fit_calibrated)
 
-  expect_false("EVC" %in% res_calibrated$promoter)
+  expect_false("EVC" %in% res_calibrated$reporter)
   expect_true(all(c(".background_response", ".response_uncalibrated") %in% names(calibrated)))
-  expect_true(all(c("P1", "P2") %in% params$background_calibration$promoter))
-  expect_gt(max(abs(res_plain$specific_effect[res_plain$compound %in% paste0("C_bg", seq_len(6))])), 0.5)
-  expect_lt(max(abs(res_calibrated$specific_effect[res_calibrated$compound %in% paste0("C_bg", seq_len(6))])), 0.25)
+  expect_true(all(c("P1", "P2") %in% params$background_calibration$reporter))
+  expect_gt(max(abs(res_plain$specific_effect[res_plain$perturbation %in% paste0("C_bg", seq_len(6))])), 0.5)
+  expect_lt(max(abs(res_calibrated$specific_effect[res_calibrated$perturbation %in% paste0("C_bg", seq_len(6))])), 0.25)
 
-  specific <- res_calibrated[res_calibrated$compound == "C_specific", ]
-  expect_gt(specific$specific_effect[match("P2", specific$promoter)], 0.8)
-  expect_lt(specific$specific_effect[match("P1", specific$promoter)], -0.8)
+  specific <- res_calibrated[res_calibrated$perturbation == "C_specific", ]
+  expect_gt(specific$specific_effect[match("P2", specific$reporter)], 0.8)
+  expect_lt(specific$specific_effect[match("P1", specific$reporter)], -0.8)
 })
 
-test_that("prepare_assay defaults to Huber calibration when a background promoter is supplied", {
+test_that("prepare_assay defaults to Huber calibration when a background reporter is supplied", {
   skip_if_not_installed("MASS")
   dat <- expand.grid(
-    promoter = c("EVC", "P1"),
-    compound = c("DMSO", "C1", "C2"),
+    reporter = c("EVC", "P1"),
+    perturbation = c("DMSO", "C1", "C2"),
     replicate = paste0("r", seq_len(3)),
     stringsAsFactors = FALSE
   )
-  score <- stats::setNames(c(0, 1, 2), unique(dat$compound))
-  dat$value <- ifelse(dat$promoter == "EVC", 5 + score[dat$compound], 10 + 2 * score[dat$compound])
+  score <- stats::setNames(c(0, 1, 2), unique(dat$perturbation))
+  dat$value <- ifelse(dat$reporter == "EVC", 5 + score[dat$perturbation], 10 + 2 * score[dat$perturbation])
 
   assay <- prepare_assay(
     dat,
-    promoter = "promoter",
-    compound = "compound",
+    reporter = "reporter",
+    perturbation = "perturbation",
     control = "DMSO",
     response = "value",
     replicate = "replicate",
-    background_promoter = "EVC",
-    background_by = c("compound", "replicate")
+    background_reporter = "EVC",
+    background_by = c("perturbation", "replicate")
   )
 
   expect_equal(attr(assay, "destress")$background_method, "huber")
@@ -623,25 +623,25 @@ test_that("prepare_assay defaults to Huber calibration when a background promote
 test_that("prepare_assay supports Huber background calibration when MASS is available", {
   skip_if_not_installed("MASS")
   dat <- expand.grid(
-    promoter = c("EVC", "P1"),
-    compound = c("DMSO", paste0("C", seq_len(5))),
+    reporter = c("EVC", "P1"),
+    perturbation = c("DMSO", paste0("C", seq_len(5))),
     replicate = paste0("r", seq_len(4)),
     stringsAsFactors = FALSE
   )
-  score <- stats::setNames(c(0, -2, -1, 0.5, 1, 2), unique(dat$compound))
-  dat$value <- ifelse(dat$promoter == "EVC", 5 + score[dat$compound], 10 + 2 * score[dat$compound])
-  dat$value[dat$promoter == "P1" & dat$compound == "C5" & dat$replicate == "r4"] <- 30
+  score <- stats::setNames(c(0, -2, -1, 0.5, 1, 2), unique(dat$perturbation))
+  dat$value <- ifelse(dat$reporter == "EVC", 5 + score[dat$perturbation], 10 + 2 * score[dat$perturbation])
+  dat$value[dat$reporter == "P1" & dat$perturbation == "C5" & dat$replicate == "r4"] <- 30
 
   assay <- prepare_assay(
     dat,
-    promoter = "promoter",
-    compound = "compound",
+    reporter = "reporter",
+    perturbation = "perturbation",
     control = "DMSO",
     response = "value",
     replicate = "replicate",
-    background_promoter = "EVC",
+    background_reporter = "EVC",
     background_method = "huber",
-    background_by = c("compound", "replicate")
+    background_by = c("perturbation", "replicate")
   )
   params <- attr(assay, "destress")$background_fit
 
@@ -651,13 +651,13 @@ test_that("prepare_assay supports Huber background calibration when MASS is avai
 })
 
 test_that("fit_destress can prepare raw model data with growth-exponent options", {
-  dat <- simulate_screen(seed = 6, n_promoters = 5, n_compounds = 6, n_replicates = 2)
+  dat <- simulate_screen(seed = 6, n_reporters = 5, n_perturbations = 6, n_replicates = 2)
 
   direct <- fit_destress(
     dat,
     preset = "model",
-    promoter = "promoter",
-    compound = "compound",
+    reporter = "reporter",
+    perturbation = "perturbation",
     control = "DMSO",
     lux = "LUX.AUC_16",
     growth = "od_16h.measured",
@@ -668,8 +668,8 @@ test_that("fit_destress can prepare raw model data with growth-exponent options"
   )
   assay <- prepare_assay(
     dat,
-    promoter = "promoter",
-    compound = "compound",
+    reporter = "reporter",
+    perturbation = "perturbation",
     control = "DMSO",
     lux = "LUX.AUC_16",
     growth = "od_16h.measured",
@@ -686,8 +686,8 @@ test_that("fit_destress can prepare raw model data with growth-exponent options"
   estimated <- fit_destress(
     dat,
     preset = "model",
-    promoter = "promoter",
-    compound = "compound",
+    reporter = "reporter",
+    perturbation = "perturbation",
     control = "DMSO",
     lux = "LUX.AUC_16",
     growth = "od_16h.measured",
@@ -697,13 +697,13 @@ test_that("fit_destress can prepare raw model data with growth-exponent options"
     technical = c("batch", "replicate")
   )
   params <- model_parameters(estimated)
-  expect_true(all(c("growth_exponents", "promoter_effects") %in% names(params)))
+  expect_true(all(c("growth_exponents", "reporter_effects") %in% names(params)))
   expect_true(all(c("a_raw", "alpha_raw", "alpha_shrunk") %in% names(params$growth_exponents)))
 })
 
 test_that("fit_destress rejects unimplemented stage combinations", {
-  dat <- simulate_screen(seed = 5, n_promoters = 4, n_compounds = 5, n_replicates = 2)
-  assay <- prepare_assay(dat, promoter = "promoter", compound = "compound",
+  dat <- simulate_screen(seed = 5, n_reporters = 4, n_perturbations = 5, n_replicates = 2)
+  assay <- prepare_assay(dat, reporter = "reporter", perturbation = "perturbation",
                          lux = "LUX.AUC_16", growth = "od_16h.measured")
 
   expect_error(
@@ -724,8 +724,8 @@ test_that("call_hits adds interpretable classes", {
 test_that("fit_effect_mixture separates three effect classes", {
   set.seed(2)
   tab <- data.frame(
-    promoter = "P1",
-    compound = paste0("C", seq_len(180)),
+    reporter = "P1",
+    perturbation = paste0("C", seq_len(180)),
     truth = rep(c("repressed", "null", "activated"), c(35, 110, 35)),
     stringsAsFactors = FALSE
   )
@@ -744,19 +744,19 @@ test_that("fit_effect_mixture separates three effect classes", {
     "prob_activated",
     "local_fdr",
     "posterior_nonnull",
-    "local_fdr_qvalue_by_promoter"
+    "local_fdr_qvalue_by_reporter"
   ) %in% names(out)))
   expect_equal(nrow(summary), 1)
   expect_lt(summary$location_repressed, summary$location_null)
   expect_lt(summary$location_null, summary$location_activated)
   expect_gt(mean(out$posterior_class == out$truth), 0.85)
-  expect_true(all(out$empirical_null_padj_by_promoter >= 0 & out$empirical_null_padj_by_promoter <= 1))
-  expect_true(all(out$local_fdr_qvalue_by_promoter >= 0 & out$local_fdr_qvalue_by_promoter <= 1))
+  expect_true(all(out$empirical_null_padj_by_reporter >= 0 & out$empirical_null_padj_by_reporter <= 1))
+  expect_true(all(out$local_fdr_qvalue_by_reporter >= 0 & out$local_fdr_qvalue_by_reporter <= 1))
 })
 
 test_that("fit_median_polish reproduces legacy median-polish residuals", {
   dat <- expand.grid(
-    promoter = c("P1", "P2"),
+    reporter = c("P1", "P2"),
     libplate = "lp1",
     replicate = c("r1", "r2"),
     srn_code = c("DMSO1", "DMSO2", "C1", "C2"),
@@ -776,7 +776,7 @@ test_that("fit_median_polish reproduces legacy median-polish residuals", {
     eps = 1e-8
   )
 
-  group <- paste(dat$promoter, dat$libplate, dat$replicate, sep = "_")
+  group <- paste(dat$reporter, dat$libplate, dat$replicate, sep = "_")
   dmso_lookup <- tapply(
     dat$log2.auc.16hmeasured.normed[dat$srn_code %in% c("DMSO1", "DMSO2")],
     group[dat$srn_code %in% c("DMSO1", "DMSO2")],
@@ -800,7 +800,7 @@ test_that("fit_median_polish reproduces legacy median-polish residuals", {
 
 test_that("fit_median_polish can return DMSO normality tests", {
   dat <- expand.grid(
-    promoter = "P1",
+    reporter = "P1",
     libplate = "lp1",
     replicate = "r1",
     srn_code = c(paste0("DMSO", seq_len(5)), "C1"),
@@ -817,7 +817,7 @@ test_that("fit_median_polish can return DMSO normality tests", {
 
   expect_true(all(c(
     "promoter_libplate_replicate",
-    "promoter",
+    "reporter",
     "libplate",
     "replicate",
     "n",
@@ -831,7 +831,7 @@ test_that("fit_median_polish can return DMSO normality tests", {
 
 test_that("fit_workflow dispatches to the median-polish workflow", {
   dat <- expand.grid(
-    promoter = c("P1", "P2"),
+    reporter = c("P1", "P2"),
     libplate = "lp1",
     replicate = c("r1", "r2"),
     srn_code = c("DMSO1", "DMSO2", "C1", "C2"),
@@ -854,7 +854,7 @@ test_that("fit_workflow dispatches to the median-polish workflow", {
 
 test_that("fit_destress can run the median-polish preset", {
   dat <- expand.grid(
-    promoter = c("P1", "P2"),
+    reporter = c("P1", "P2"),
     libplate = "lp1",
     replicate = c("r1", "r2"),
     srn_code = c("DMSO1", "DMSO2", "C1", "C2"),
@@ -877,7 +877,7 @@ test_that("fit_destress can run the median-polish preset", {
 
 test_that("fit_median_polish keeps the conservative replicate p-value", {
   dat <- expand.grid(
-    promoter = "P1",
+    reporter = "P1",
     libplate = "lp1",
     replicate = c("r1", "r2"),
     srn_code = c("DMSO1", "DMSO2", "C1"),
@@ -892,23 +892,23 @@ test_that("fit_median_polish keeps the conservative replicate p-value", {
   expect_equal(c1_pair$pvalue, max(c1_replicates$pvalue), tolerance = 1e-12)
 })
 
-test_that("fit_empty_vector_control subtracts compound-specific EVC averages", {
+test_that("fit_empty_vector_control subtracts perturbation-specific EVC averages", {
   dat <- expand.grid(
-    promoter = c("PEVC3", "P1", "P2"),
+    reporter = c("PEVC3", "P1", "P2"),
     replicate = c("r1", "r2"),
     srn_code = c("DMSO1", "DMSO2", "C1"),
     stringsAsFactors = FALSE
   )
   dat$value <- NA_real_
-  dat$value[dat$promoter == "PEVC3" & dat$srn_code == "DMSO1"] <- c(1.0, 1.2)
-  dat$value[dat$promoter == "PEVC3" & dat$srn_code == "DMSO2"] <- c(1.1, 1.3)
-  dat$value[dat$promoter == "PEVC3" & dat$srn_code == "C1"] <- c(2.0, 2.2)
-  dat$value[dat$promoter == "P1" & dat$srn_code == "DMSO1"] <- c(1.5, 1.7)
-  dat$value[dat$promoter == "P1" & dat$srn_code == "DMSO2"] <- c(1.6, 1.8)
-  dat$value[dat$promoter == "P1" & dat$srn_code == "C1"] <- c(4.5, 4.7)
-  dat$value[dat$promoter == "P2" & dat$srn_code == "DMSO1"] <- c(0.8, 1.0)
-  dat$value[dat$promoter == "P2" & dat$srn_code == "DMSO2"] <- c(0.9, 1.1)
-  dat$value[dat$promoter == "P2" & dat$srn_code == "C1"] <- c(1.5, 1.7)
+  dat$value[dat$reporter == "PEVC3" & dat$srn_code == "DMSO1"] <- c(1.0, 1.2)
+  dat$value[dat$reporter == "PEVC3" & dat$srn_code == "DMSO2"] <- c(1.1, 1.3)
+  dat$value[dat$reporter == "PEVC3" & dat$srn_code == "C1"] <- c(2.0, 2.2)
+  dat$value[dat$reporter == "P1" & dat$srn_code == "DMSO1"] <- c(1.5, 1.7)
+  dat$value[dat$reporter == "P1" & dat$srn_code == "DMSO2"] <- c(1.6, 1.8)
+  dat$value[dat$reporter == "P1" & dat$srn_code == "C1"] <- c(4.5, 4.7)
+  dat$value[dat$reporter == "P2" & dat$srn_code == "DMSO1"] <- c(0.8, 1.0)
+  dat$value[dat$reporter == "P2" & dat$srn_code == "DMSO2"] <- c(0.9, 1.1)
+  dat$value[dat$reporter == "P2" & dat$srn_code == "C1"] <- c(1.5, 1.7)
 
   out <- fit_empty_vector_control(
     dat,
@@ -917,7 +917,7 @@ test_that("fit_empty_vector_control subtracts compound-specific EVC averages", {
   )
 
   p1_c1 <- out$replicate_results[
-    out$replicate_results$promoter == "P1" &
+    out$replicate_results$reporter == "P1" &
       out$replicate_results$srn_code == "C1",
     ,
     drop = FALSE
@@ -925,27 +925,27 @@ test_that("fit_empty_vector_control subtracts compound-specific EVC averages", {
 
   expect_equal(p1_c1$empty_vector_mean, c(2.1, 2.1), tolerance = 1e-12)
   expect_equal(p1_c1$log.evcfc, c(2.4, 2.6), tolerance = 1e-12)
-  expect_false(any(out$replicate_results$promoter == "PEVC3"))
+  expect_false(any(out$replicate_results$reporter == "PEVC3"))
   expect_true(all(c("pvalue.adj", "hit") %in% names(out$pair_results)))
 })
 
 test_that("fit_workflow dispatches to the empty-vector workflow", {
   dat <- expand.grid(
-    promoter = c("PEVC3", "P1", "P2"),
+    reporter = c("PEVC3", "P1", "P2"),
     replicate = c("r1", "r2"),
     srn_code = c("DMSO1", "DMSO2", "C1"),
     stringsAsFactors = FALSE
   )
   dat$value <- NA_real_
-  dat$value[dat$promoter == "PEVC3" & dat$srn_code == "DMSO1"] <- c(1.0, 1.2)
-  dat$value[dat$promoter == "PEVC3" & dat$srn_code == "DMSO2"] <- c(1.1, 1.3)
-  dat$value[dat$promoter == "PEVC3" & dat$srn_code == "C1"] <- c(2.0, 2.2)
-  dat$value[dat$promoter == "P1" & dat$srn_code == "DMSO1"] <- c(1.5, 1.7)
-  dat$value[dat$promoter == "P1" & dat$srn_code == "DMSO2"] <- c(1.6, 1.8)
-  dat$value[dat$promoter == "P1" & dat$srn_code == "C1"] <- c(4.5, 4.7)
-  dat$value[dat$promoter == "P2" & dat$srn_code == "DMSO1"] <- c(0.8, 1.0)
-  dat$value[dat$promoter == "P2" & dat$srn_code == "DMSO2"] <- c(0.9, 1.1)
-  dat$value[dat$promoter == "P2" & dat$srn_code == "C1"] <- c(1.5, 1.7)
+  dat$value[dat$reporter == "PEVC3" & dat$srn_code == "DMSO1"] <- c(1.0, 1.2)
+  dat$value[dat$reporter == "PEVC3" & dat$srn_code == "DMSO2"] <- c(1.1, 1.3)
+  dat$value[dat$reporter == "PEVC3" & dat$srn_code == "C1"] <- c(2.0, 2.2)
+  dat$value[dat$reporter == "P1" & dat$srn_code == "DMSO1"] <- c(1.5, 1.7)
+  dat$value[dat$reporter == "P1" & dat$srn_code == "DMSO2"] <- c(1.6, 1.8)
+  dat$value[dat$reporter == "P1" & dat$srn_code == "C1"] <- c(4.5, 4.7)
+  dat$value[dat$reporter == "P2" & dat$srn_code == "DMSO1"] <- c(0.8, 1.0)
+  dat$value[dat$reporter == "P2" & dat$srn_code == "DMSO2"] <- c(0.9, 1.1)
+  dat$value[dat$reporter == "P2" & dat$srn_code == "C1"] <- c(1.5, 1.7)
 
   direct <- fit_empty_vector_control(dat, response = "value", control = c("DMSO1", "DMSO2"))
   via_workflow <- fit_workflow(dat, workflow = "evc", response = "value", control = c("DMSO1", "DMSO2"))
@@ -957,21 +957,21 @@ test_that("fit_workflow dispatches to the empty-vector workflow", {
 
 test_that("fit_destress can run the empty-vector preset", {
   dat <- expand.grid(
-    promoter = c("PEVC3", "P1", "P2"),
+    reporter = c("PEVC3", "P1", "P2"),
     replicate = c("r1", "r2"),
     srn_code = c("DMSO1", "DMSO2", "C1"),
     stringsAsFactors = FALSE
   )
   dat$value <- NA_real_
-  dat$value[dat$promoter == "PEVC3" & dat$srn_code == "DMSO1"] <- c(1.0, 1.2)
-  dat$value[dat$promoter == "PEVC3" & dat$srn_code == "DMSO2"] <- c(1.1, 1.3)
-  dat$value[dat$promoter == "PEVC3" & dat$srn_code == "C1"] <- c(2.0, 2.2)
-  dat$value[dat$promoter == "P1" & dat$srn_code == "DMSO1"] <- c(1.5, 1.7)
-  dat$value[dat$promoter == "P1" & dat$srn_code == "DMSO2"] <- c(1.6, 1.8)
-  dat$value[dat$promoter == "P1" & dat$srn_code == "C1"] <- c(4.5, 4.7)
-  dat$value[dat$promoter == "P2" & dat$srn_code == "DMSO1"] <- c(0.8, 1.0)
-  dat$value[dat$promoter == "P2" & dat$srn_code == "DMSO2"] <- c(0.9, 1.1)
-  dat$value[dat$promoter == "P2" & dat$srn_code == "C1"] <- c(1.5, 1.7)
+  dat$value[dat$reporter == "PEVC3" & dat$srn_code == "DMSO1"] <- c(1.0, 1.2)
+  dat$value[dat$reporter == "PEVC3" & dat$srn_code == "DMSO2"] <- c(1.1, 1.3)
+  dat$value[dat$reporter == "PEVC3" & dat$srn_code == "C1"] <- c(2.0, 2.2)
+  dat$value[dat$reporter == "P1" & dat$srn_code == "DMSO1"] <- c(1.5, 1.7)
+  dat$value[dat$reporter == "P1" & dat$srn_code == "DMSO2"] <- c(1.6, 1.8)
+  dat$value[dat$reporter == "P1" & dat$srn_code == "C1"] <- c(4.5, 4.7)
+  dat$value[dat$reporter == "P2" & dat$srn_code == "DMSO1"] <- c(0.8, 1.0)
+  dat$value[dat$reporter == "P2" & dat$srn_code == "DMSO2"] <- c(0.9, 1.1)
+  dat$value[dat$reporter == "P2" & dat$srn_code == "C1"] <- c(1.5, 1.7)
 
   out <- fit_destress(dat, preset = "evc", response = "value", control = c("DMSO1", "DMSO2"))
 
@@ -983,7 +983,7 @@ test_that("fit_destress can run the empty-vector preset", {
 
 test_that("fit_empty_vector_control keeps the conservative replicate p-value", {
   dat <- expand.grid(
-    promoter = c("PEVC3", "P1"),
+    reporter = c("PEVC3", "P1"),
     replicate = c("r1", "r2"),
     srn_code = c("DMSO1", "DMSO2", "C1"),
     stringsAsFactors = FALSE
@@ -1002,26 +1002,26 @@ test_that("fit_empty_vector_control keeps the conservative replicate p-value", {
 
 test_that("empirical_replicate_pvalues compares replicate averages to matched controls", {
   dat <- expand.grid(
-    promoter = "P1",
+    reporter = "P1",
     libplate = "lp1",
     replicate = c("r1", "r2"),
-    compound = c(paste0("DMSO", seq_len(6)), "C_high", "C_mid"),
+    perturbation = c(paste0("DMSO", seq_len(6)), "C_high", "C_mid"),
     stringsAsFactors = FALSE
   )
   control_means <- c(-0.2, -0.1, -0.05, 0.05, 0.1, 0.2)
   dat$value <- 0
   for (i in seq_along(control_means)) {
-    dat$value[dat$compound == paste0("DMSO", i)] <- control_means[i] +
-      ifelse(dat$replicate[dat$compound == paste0("DMSO", i)] == "r1", -0.01, 0.01)
+    dat$value[dat$perturbation == paste0("DMSO", i)] <- control_means[i] +
+      ifelse(dat$replicate[dat$perturbation == paste0("DMSO", i)] == "r1", -0.01, 0.01)
   }
-  dat$value[dat$compound == "C_high"] <- c(0.95, 1.05)
-  dat$value[dat$compound == "C_mid"] <- c(0.04, 0.06)
+  dat$value[dat$perturbation == "C_high"] <- c(0.95, 1.05)
+  dat$value[dat$perturbation == "C_mid"] <- c(0.04, 0.06)
 
   out <- empirical_replicate_pvalues(
     dat,
     value = "value",
-    promoter = "promoter",
-    compound = "compound",
+    reporter = "reporter",
+    perturbation = "perturbation",
     control = paste0("DMSO", seq_len(6)),
     replicate = "replicate",
     strata = "libplate",
@@ -1033,10 +1033,10 @@ test_that("empirical_replicate_pvalues compares replicate averages to matched co
   )
 
   expect_equal(nrow(out), 2)
-  expect_lt(out$empirical_pvalue[out$compound == "C_high"], out$empirical_pvalue[out$compound == "C_mid"])
-  expect_lt(out$permutation_pvalue[out$compound == "C_high"], out$permutation_pvalue[out$compound == "C_mid"])
-  expect_equal(out$n_replicates[out$compound == "C_high"], 2)
-  expect_equal(out$null_n[out$compound == "C_high"], 6)
+  expect_lt(out$empirical_pvalue[out$perturbation == "C_high"], out$empirical_pvalue[out$perturbation == "C_mid"])
+  expect_lt(out$permutation_pvalue[out$perturbation == "C_high"], out$permutation_pvalue[out$perturbation == "C_mid"])
+  expect_equal(out$n_replicates[out$perturbation == "C_high"], 2)
+  expect_equal(out$null_n[out$perturbation == "C_high"], 6)
   expect_true(all(out$permutation_pvalue >= 1 / 201 & out$permutation_pvalue <= 1))
 })
 
@@ -1083,15 +1083,15 @@ test_that("add_dgrowthr_growth joins DGrowthR growth parameters", {
 test_that("plot_volcano returns a ggplot object", {
   skip_if_not_installed("ggplot2")
   tab <- data.frame(
-    promoter = c("P1", "P1", "P2", "P3"),
-    compound = c("C1", "C2", "C1", "C3"),
+    reporter = c("P1", "P1", "P2", "P3"),
+    perturbation = c("C1", "C2", "C1", "C3"),
     compound_name = c("Drug A", "Drug B", "Drug A", "Drug C"),
     specific_effect = c(2.1, -0.3, -1.8, 0.5),
     specific_padj = c(0.001, 0.7, 0.02, 0.4),
     stringsAsFactors = FALSE
   )
 
-  p <- plot_volcano(tab, compound_label = "compound_name", top_n = 2, top_promoters = 2)
+  p <- plot_volcano(tab, perturbation_label = "compound_name", top_n = 2, top_reporters = 2)
 
   expect_s3_class(p, "ggplot")
 })
@@ -1099,8 +1099,8 @@ test_that("plot_volcano returns a ggplot object", {
 test_that("plot_response_heatmap returns a ggplot with matrix attribute", {
   skip_if_not_installed("ggplot2")
   tab <- expand.grid(
-    promoter = c("P1", "P2"),
-    compound = c("C1", "C2", "C3"),
+    reporter = c("P1", "P2"),
+    perturbation = c("C1", "C2", "C3"),
     stringsAsFactors = FALSE
   )
   tab$compound_name <- c("Drug A", "Drug A", "Drug B", "Drug B", "Drug C", "Drug C")
@@ -1108,8 +1108,8 @@ test_that("plot_response_heatmap returns a ggplot with matrix attribute", {
 
   p <- plot_response_heatmap(
     tab,
-    compound_label = "compound_name",
-    top_n_compounds = Inf,
+    perturbation_label = "compound_name",
+    top_n_perturbations = Inf,
     cluster_rows = FALSE,
     cluster_cols = FALSE
   )
@@ -1120,60 +1120,60 @@ test_that("plot_response_heatmap returns a ggplot with matrix attribute", {
   expect_equal(rownames(mat), c("P1", "P2"))
 })
 
-test_that("plot_response_heatmap uses global promoter order unless clustered", {
+test_that("plot_response_heatmap uses global reporter order unless clustered", {
   skip_if_not_installed("ggplot2")
   tab <- expand.grid(
-    promoter = c("soxSp", "acrABp", "robp"),
-    compound = c("C1", "C2"),
+    reporter = c("soxSp", "acrABp", "robp"),
+    perturbation = c("C1", "C2"),
     stringsAsFactors = FALSE
   )
   tab$specific_effect <- seq_len(nrow(tab))
 
   p <- plot_response_heatmap(
     tab,
-    top_n_compounds = Inf,
+    top_n_perturbations = Inf,
     cluster_cols = FALSE
   )
 
   expect_equal(rownames(attr(p, "response_matrix")), c("acrABp", "robp", "soxSp"))
 })
 
-test_that("summarize_hits returns pair, promoter, and compound summaries", {
+test_that("summarize_hits returns pair, reporter, and perturbation summaries", {
   tab <- expand.grid(
-    promoter = c("P1", "P2"),
-    compound = c("C1", "C2", "C3"),
+    reporter = c("P1", "P2"),
+    perturbation = c("C1", "C2", "C3"),
     stringsAsFactors = FALSE
   )
   tab$compound_name <- c("Drug A", "Drug A", "Drug B", "Drug B", "Drug C", "Drug C")
   tab$specific_effect <- c(1.4, -0.4, 0.2, -1.3, 1.8, 0.1)
-  tab$specific_padj_by_promoter <- c(0.01, 0.4, 0.7, 0.03, 0.001, 0.9)
+  tab$specific_padj_by_reporter <- c(0.01, 0.4, 0.7, 0.03, 0.001, 0.9)
 
-  hit_summary <- summarize_hits(tab, compound_label = "compound_name", fdr = 0.05)
+  hit_summary <- summarize_hits(tab, perturbation_label = "compound_name", fdr = 0.05)
 
   expect_s3_class(hit_summary, "destress_hit_summary")
   expect_equal(sum(hit_summary$pairs$hit), 3)
-  expect_equal(hit_summary$promoters$n_hits[hit_summary$promoters$promoter == "P1"], 2)
-  expect_equal(hit_summary$compounds$n_hits[hit_summary$compounds$compound_label == "Drug B"], 1)
+  expect_equal(hit_summary$reporters$n_hits[hit_summary$reporters$reporter == "P1"], 2)
+  expect_equal(hit_summary$perturbations$n_hits[hit_summary$perturbations$perturbation_label == "Drug B"], 1)
 })
 
 test_that("plot_hit_heatmap returns a ggplot with hit summaries", {
   skip_if_not_installed("ggplot2")
   tab <- expand.grid(
-    promoter = c("P1", "P2"),
-    compound = c("C1", "C2", "C3"),
+    reporter = c("P1", "P2"),
+    perturbation = c("C1", "C2", "C3"),
     stringsAsFactors = FALSE
   )
   tab$compound_name <- c("Drug A", "Drug A", "Drug B", "Drug B", "Drug C", "Drug C")
   tab$specific_effect <- c(1.4, -0.4, 0.2, -1.3, 1.8, 0.1)
-  tab$specific_padj_by_promoter <- c(0.01, 0.4, 0.7, 0.03, 0.001, 0.9)
+  tab$specific_padj_by_reporter <- c(0.01, 0.4, 0.7, 0.03, 0.001, 0.9)
 
   p <- plot_hit_heatmap(
     tab,
-    compound_label = "compound_name",
-    top_n_compounds = Inf,
+    perturbation_label = "compound_name",
+    top_n_perturbations = Inf,
     order_rows = "input",
     order_cols = "input",
-    show_compound_labels = TRUE
+    show_perturbation_labels = TRUE
   )
 
   expect_s3_class(p, "ggplot")
@@ -1182,56 +1182,56 @@ test_that("plot_hit_heatmap returns a ggplot with hit summaries", {
   expect_equal(sum(attr(p, "hit_matrix") != 0), 3)
 })
 
-test_that("plot_hit_heatmap uses global promoter order by default", {
+test_that("plot_hit_heatmap uses global reporter order by default", {
   skip_if_not_installed("ggplot2")
   tab <- expand.grid(
-    promoter = c("soxSp", "acrABp", "robp"),
-    compound = c("C1", "C2"),
+    reporter = c("soxSp", "acrABp", "robp"),
+    perturbation = c("C1", "C2"),
     stringsAsFactors = FALSE
   )
   tab$specific_effect <- c(1, -1, 0.5, -0.5, 1.2, -1.2)
-  tab$specific_padj_by_promoter <- c(0.01, 0.02, 0.6, 0.7, 0.03, 0.04)
+  tab$specific_padj_by_reporter <- c(0.01, 0.02, 0.6, 0.7, 0.03, 0.04)
 
   p <- plot_hit_heatmap(
     tab,
-    top_n_compounds = Inf,
+    top_n_perturbations = Inf,
     order_cols = "input"
   )
 
   expect_equal(rownames(attr(p, "hit_matrix")), c("acrABp", "robp", "soxSp"))
 })
 
-test_that("plot_hit_heatmap drops compounds without hits by default", {
+test_that("plot_hit_heatmap drops perturbations without hits by default", {
   skip_if_not_installed("ggplot2")
   tab <- expand.grid(
-    promoter = c("P1", "P2"),
-    compound = c("C1", "C2", "C3"),
+    reporter = c("P1", "P2"),
+    perturbation = c("C1", "C2", "C3"),
     stringsAsFactors = FALSE
   )
   tab$specific_effect <- c(1, -1, 0.2, -0.2, 1.2, -1.2)
-  tab$specific_padj_by_promoter <- c(0.01, 0.02, 0.8, 0.9, 0.03, 0.04)
+  tab$specific_padj_by_reporter <- c(0.01, 0.02, 0.8, 0.9, 0.03, 0.04)
 
-  p <- plot_hit_heatmap(tab, top_n_compounds = Inf, order_cols = "input")
+  p <- plot_hit_heatmap(tab, top_n_perturbations = Inf, order_cols = "input")
 
   expect_equal(colnames(attr(p, "hit_matrix")), c("C1 [C1]", "C3 [C3]"))
 })
 
-test_that("heatmaps label top compounds by absolute column sum", {
+test_that("heatmaps label top perturbations by absolute column sum", {
   skip_if_not_installed("ggplot2")
   tab <- expand.grid(
-    promoter = c("P1", "P2"),
-    compound = paste0("C", 1:5),
+    reporter = c("P1", "P2"),
+    perturbation = paste0("C", 1:5),
     stringsAsFactors = FALSE
   )
   tab$specific_effect <- 0.1
-  tab$specific_effect[tab$compound == "C5"] <- 10
+  tab$specific_effect[tab$perturbation == "C5"] <- 10
 
   p <- plot_response_heatmap(
     tab,
-    top_n_compounds = Inf,
+    top_n_perturbations = Inf,
     cluster_rows = FALSE,
     cluster_cols = FALSE,
-    top_compound_labels = 2
+    top_perturbation_labels = 2
   )
   built <- ggplot2::ggplot_build(p)
   axis_labels <- built$layout$panel_params[[1]]$x$get_labels()
@@ -1240,25 +1240,25 @@ test_that("heatmaps label top compounds by absolute column sum", {
   expect_equal(sum(nzchar(axis_labels)), 2)
 })
 
-test_that("automatic compound labels enforce spacing", {
+test_that("automatic perturbation labels enforce spacing", {
   skip_if_not_installed("ggplot2")
   tab <- expand.grid(
-    promoter = c("P1", "P2"),
-    compound = paste0("C", 1:8),
+    reporter = c("P1", "P2"),
+    perturbation = paste0("C", 1:8),
     stringsAsFactors = FALSE
   )
   tab$specific_effect <- 0.1
-  tab$specific_effect[tab$compound == "C4"] <- 5
-  tab$specific_effect[tab$compound == "C5"] <- 6
-  tab$specific_effect[tab$compound == "C6"] <- 4
+  tab$specific_effect[tab$perturbation == "C4"] <- 5
+  tab$specific_effect[tab$perturbation == "C5"] <- 6
+  tab$specific_effect[tab$perturbation == "C6"] <- 4
 
   p <- plot_response_heatmap(
     tab,
-    top_n_compounds = Inf,
+    top_n_perturbations = Inf,
     cluster_rows = FALSE,
     cluster_cols = FALSE,
-    top_compound_labels = 3,
-    compound_label_min_gap = 2
+    top_perturbation_labels = 3,
+    perturbation_label_min_gap = 2
   )
   built <- ggplot2::ggplot_build(p)
   axis_labels <- built$layout$panel_params[[1]]$x$get_labels()
@@ -1267,15 +1267,15 @@ test_that("automatic compound labels enforce spacing", {
   expect_lt(sum(nzchar(axis_labels[4:6])), 3)
 })
 
-test_that("plot_effect_histogram returns pooled and promoter-faceted plots", {
+test_that("plot_effect_histogram returns pooled and reporter-faceted plots", {
   skip_if_not_installed("ggplot2")
   tab <- data.frame(
-    promoter = rep(c("P1", "P2"), each = 6),
+    reporter = rep(c("P1", "P2"), each = 6),
     specific_effect = c(-1, -0.5, -0.1, 0, 0.3, 1.2, -0.2, 0, 0.1, 0.4, 0.9, 1.4)
   )
 
   pooled <- plot_effect_histogram(tab, bins = 10)
-  per_promoter <- plot_effect_histogram(tab, by = "promoter", bins = 10)
+  per_promoter <- plot_effect_histogram(tab, by = "reporter", bins = 10)
 
   expect_s3_class(pooled, "ggplot")
   expect_s3_class(per_promoter, "ggplot")
@@ -1284,11 +1284,11 @@ test_that("plot_effect_histogram returns pooled and promoter-faceted plots", {
 test_that("plot_response_cluster_blocks returns cluster summaries", {
   skip_if_not_installed("ggplot2")
   tab <- expand.grid(
-    promoter = c("P1", "P2", "P3", "P4"),
-    compound = c("C1", "C2", "C3", "C4", "C5"),
+    reporter = c("P1", "P2", "P3", "P4"),
+    perturbation = c("C1", "C2", "C3", "C4", "C5"),
     stringsAsFactors = FALSE
   )
-  tab$compound_name <- paste("Drug", tab$compound)
+  tab$compound_name <- paste("Drug", tab$perturbation)
   tab$specific_effect <- c(
     1.2, 1.1, -0.1, -0.2,
     1.0, 0.9, -0.2, -0.1,
@@ -1299,25 +1299,25 @@ test_that("plot_response_cluster_blocks returns cluster summaries", {
 
   p <- plot_response_cluster_blocks(
     tab,
-    compound_label = "compound_name",
-    n_promoter_clusters = 2,
-    n_compound_clusters = 2
+    perturbation_label = "compound_name",
+    n_reporter_clusters = 2,
+    n_perturbation_clusters = 2
   )
 
   expect_s3_class(p, "ggplot")
   expect_equal(dim(attr(p, "response_matrix")), c(4, 5))
-  expect_equal(nrow(attr(p, "promoter_clusters")), 4)
-  expect_equal(nrow(attr(p, "compound_clusters")), 5)
+  expect_equal(nrow(attr(p, "reporter_clusters")), 4)
+  expect_equal(nrow(attr(p, "perturbation_clusters")), 5)
   expect_equal(nrow(attr(p, "block_summary")), 4)
 })
 
 test_that("plot_response_clustered_heatmap writes clustered heatmap output", {
   tab <- expand.grid(
-    promoter = c("P1", "P2", "P3", "P4"),
-    compound = c("C1", "C2", "C3", "C4", "C5"),
+    reporter = c("P1", "P2", "P3", "P4"),
+    perturbation = c("C1", "C2", "C3", "C4", "C5"),
     stringsAsFactors = FALSE
   )
-  tab$compound_name <- paste("Drug", tab$compound)
+  tab$compound_name <- paste("Drug", tab$perturbation)
   tab$specific_effect <- c(
     1.2, 1.1, -0.1, -0.2,
     1.0, 0.9, -0.2, -0.1,
@@ -1329,9 +1329,9 @@ test_that("plot_response_clustered_heatmap writes clustered heatmap output", {
 
   out <- plot_response_clustered_heatmap(
     tab,
-    compound_label = "compound_name",
-    n_promoter_clusters = 2,
-    n_compound_clusters = 2,
+    perturbation_label = "compound_name",
+    n_reporter_clusters = 2,
+    n_perturbation_clusters = 2,
     file = out_file,
     width = 8,
     height = 6,
@@ -1340,6 +1340,6 @@ test_that("plot_response_clustered_heatmap writes clustered heatmap output", {
 
   expect_true(file.exists(out_file))
   expect_equal(dim(out$response_matrix), c(4, 5))
-  expect_equal(nrow(out$promoter_clusters), 4)
-  expect_equal(nrow(out$compound_clusters), 5)
+  expect_equal(nrow(out$reporter_clusters), 4)
+  expect_equal(nrow(out$perturbation_clusters), 5)
 })

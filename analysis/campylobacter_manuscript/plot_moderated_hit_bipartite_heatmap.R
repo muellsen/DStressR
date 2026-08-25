@@ -72,20 +72,20 @@ col_order <- names(sort(compound_degree, decreasing = TRUE))
 compound_lookup <- unique(libmap[, c("compound", "ProductName", "Catalog Number", "Target"), drop = FALSE])
 
 moderated_matrix <- moderated_matrix[row_order, col_order, drop = FALSE]
-compound_labels <- data.frame(compound = col_order, stringsAsFactors = FALSE)
-compound_labels <- merge(compound_labels, compound_lookup, by = "compound", all.x = TRUE, sort = FALSE)
-compound_labels <- compound_labels[match(col_order, compound_labels$compound), , drop = FALSE]
-compound_labels$label <- ifelse(
-  is.na(compound_labels$ProductName) | compound_labels$ProductName == "" | compound_labels$ProductName == "NA",
-  compound_labels$compound,
-  compound_labels$ProductName
+perturbation_labels <- data.frame(compound = col_order, stringsAsFactors = FALSE)
+perturbation_labels <- merge(perturbation_labels, compound_lookup, by = "compound", all.x = TRUE, sort = FALSE)
+perturbation_labels <- perturbation_labels[match(col_order, perturbation_labels$compound), , drop = FALSE]
+perturbation_labels$label <- ifelse(
+  is.na(perturbation_labels$ProductName) | perturbation_labels$ProductName == "" | perturbation_labels$ProductName == "NA",
+  perturbation_labels$compound,
+  perturbation_labels$ProductName
 )
-compound_labels$label <- iconv(compound_labels$label, from = "", to = "ASCII//TRANSLIT")
-compound_labels$label[is.na(compound_labels$label)] <- compound_labels$compound[is.na(compound_labels$label)]
-compound_labels$label <- gsub("\u03b3", "gamma", compound_labels$label, fixed = TRUE)
-too_long <- nchar(compound_labels$label) > 36
-compound_labels$label[too_long] <- paste0(substr(compound_labels$label[too_long], 1, 33), "...")
-compound_axis_labels <- stats::setNames(compound_labels$label, compound_labels$compound)
+perturbation_labels$label <- iconv(perturbation_labels$label, from = "", to = "ASCII//TRANSLIT")
+perturbation_labels$label[is.na(perturbation_labels$label)] <- perturbation_labels$compound[is.na(perturbation_labels$label)]
+perturbation_labels$label <- gsub("\u03b3", "gamma", perturbation_labels$label, fixed = TRUE)
+too_long <- nchar(perturbation_labels$label) > 36
+perturbation_labels$label[too_long] <- paste0(substr(perturbation_labels$label[too_long], 1, 33), "...")
+compound_axis_labels <- stats::setNames(perturbation_labels$label, perturbation_labels$compound)
 
 make_matrix <- function(tab, method) {
   m <- xtabs(hit ~ promoter + compound, tab)
@@ -124,17 +124,17 @@ compound_order <- data.frame(
 compound_order <- merge(compound_order, compound_lookup, by = "compound", all.x = TRUE, sort = FALSE)
 compound_order <- compound_order[order(compound_order$compound_order), , drop = FALSE]
 
-promoter_order <- data.frame(
+reporter_order <- data.frame(
   promoter = row_order,
-  promoter_order = seq_along(row_order),
+  reporter_order = seq_along(row_order),
   moderated_compound_hits = rowSums(moderated_matrix[row_order, col_order, drop = FALSE]),
   stringsAsFactors = FALSE
 )
 
 summary <- aggregate(hit ~ method, plot_data, sum)
 names(summary)[2] <- "hit_pairs"
-summary$n_promoters <- length(row_order)
-summary$n_compounds <- length(col_order)
+summary$n_reporters <- length(row_order)
+summary$n_perturbations <- length(col_order)
 summary$adjustment <- adjustment
 effect_limit <- max(abs(plot_data$hit_effect), na.rm = TRUE)
 if (!is.finite(effect_limit) || effect_limit == 0) {
@@ -186,7 +186,7 @@ write.table(
   quote = FALSE
 )
 write.table(
-  promoter_order,
+  reporter_order,
   file.path(out_dir, "moderated_order_promoters.tsv"),
   sep = "\t",
   row.names = FALSE,

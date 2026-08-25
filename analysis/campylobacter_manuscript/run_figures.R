@@ -18,7 +18,7 @@ for (script in scripts) {
   }
 }
 
-message("Generating Campylobacter manuscript figures from package outputs.")
+message("Generating Campylobacter downstream analysis figures from package outputs.")
 message("Project root: ", project_root)
 message("Adjusted p-value family: ", comparison_adjustment())
 
