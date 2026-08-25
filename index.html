@@ -39,6 +39,7 @@
 <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Get started</h6></li>
     <li><a class="dropdown-item" href="articles/ecoli-promoter-screen.html">E. coli reporter-perturbation screen</a></li>
+    <li><a class="dropdown-item" href="articles/ecoli-fluorescence-stress-screen.html">E. coli fluorescence stress screen</a></li>
     <li><a class="dropdown-item" href="articles/median-polish-workflow.html">Original median-polish workflow</a></li>
     <li><a class="dropdown-item" href="articles/salmonella-empty-vector-workflow.html">Salmonella Empty Vector workflow</a></li>
   </ul>
@@ -65,9 +66,7 @@
   </div>
 </nav><div class="container template-home">
 <div class="row">
-  <main id="main" class="col-md-9"><div class="float">
-<img src="reference/figures/Logo-DStressR.svg?v=20260824" alt="DStressR logo"><div class="figcaption">DStressR logo</div>
-</div>
+  <main id="main" class="col-md-9"><p><img src="reference/figures/Logo-DStressR.svg"></p>
 <div class="section level1">
 <div class="page-header"><h1 id="dstressr-differential-stress-response-modeling-for-chemical-genomics-screens">DStressR: Differential stress-response modeling for chemical genomics screens<a class="anchor" aria-label="anchor" href="#dstressr-differential-stress-response-modeling-for-chemical-genomics-screens"></a>
 </h1></div>
@@ -151,8 +150,8 @@
 <span><span class="va">assay</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/prepare_assay.html">prepare_assay</a></span><span class="op">(</span></span>
 <span>  <span class="va">wt_auc</span>,</span>
 <span>  reporter <span class="op">=</span> <span class="st">"reporter"</span>,</span>
-<span>  perturbation <span class="op">=</span> <span class="st">"perturbation"</span>,</span>
-<span>  control <span class="op">=</span> <span class="st">"Water"</span>,</span>
+<span>  perturbation <span class="op">=</span> <span class="st">"drug"</span>,</span>
+<span>  control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Water_1"</span>, <span class="st">"Water_2"</span><span class="op">)</span>,</span>
 <span>  lux <span class="op">=</span> <span class="st">"lux_auc"</span>,</span>
 <span>  growth <span class="op">=</span> <span class="st">"od_auc"</span>,</span>
 <span>  growth_exponent <span class="op">=</span> <span class="st">"estimate"</span>,</span>
@@ -161,7 +160,7 @@
 <span>  growth_covariates <span class="op">=</span> <span class="st">"replicate"</span>,</span>
 <span>  numeric_covariates <span class="op">=</span> <span class="st">"dose_level"</span>,</span>
 <span>  background_reporter <span class="op">=</span> <span class="st">"EVC"</span>,</span>
-<span>  background_by <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"perturbation"</span>, <span class="st">"dose_level"</span>, <span class="st">"replicate"</span><span class="op">)</span></span>
+<span>  background_by <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"drug"</span>, <span class="st">"dose_level"</span>, <span class="st">"replicate"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/fit_destress.html">fit_destress</a></span><span class="op">(</span></span>

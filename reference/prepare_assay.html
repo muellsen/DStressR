@@ -32,6 +32,7 @@ response."></head><body>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Get started</h6></li>
     <li><a class="dropdown-item" href="../articles/ecoli-promoter-screen.html">E. coli reporter-perturbation screen</a></li>
+    <li><a class="dropdown-item" href="../articles/ecoli-fluorescence-stress-screen.html">E. coli fluorescence stress screen</a></li>
     <li><a class="dropdown-item" href="../articles/median-polish-workflow.html">Original median-polish workflow</a></li>
     <li><a class="dropdown-item" href="../articles/salmonella-empty-vector-workflow.html">Salmonella Empty Vector workflow</a></li>
   </ul></li>
@@ -104,7 +105,10 @@ response.</p>
 
 
 <dt id="arg-control">control<a class="anchor" aria-label="anchor" href="#arg-control"></a></dt>
-<dd><p>Label in <code>perturbation</code> for the negative control, usually DMSO.</p></dd>
+<dd><p>Label or labels in <code>perturbation</code> for the negative control,
+usually DMSO. If several labels are supplied, they are pooled into the
+first label as the model reference while the original input column is kept
+unchanged.</p></dd>
 
 
 <dt id="arg-lux-growth">lux, growth<a class="anchor" aria-label="anchor" href="#arg-lux-growth"></a></dt>

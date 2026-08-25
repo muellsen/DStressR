@@ -3,10 +3,12 @@
 A public *E. coli* reporter-screen data set from Binsfeld et al. (2025),
 prepared as an AUC-level long table for DStressR examples and tests. The
 rows are reporter/strain/replicate/well observations from the PLOS
-Biology S3 Data supplement. `perturbation` collapses the water control
-wells (`Water_1`, `Water_2`) to `Water`; the original label remains in
-`drug`. `dose_level` is derived from `concentration_index` so that
-larger values correspond to higher perturbation concentration.
+Biology S3 Data supplement. `drug` keeps the original Binsfeld
+perturbation labels, including `Water_1` and `Water_2`. `compound` is a
+derived grouping column that collapses the water control wells to
+`Water` for summaries. `dose_level` is derived from
+`concentration_index` so that larger values correspond to higher
+compound concentration.
 
 ## Usage
 
@@ -16,7 +18,7 @@ binsfeld_reporter_auc
 
 ## Format
 
-A data frame with 24,576 rows and 12 columns:
+A data frame with 24,576 rows and 13 columns:
 
 - strain:
 
@@ -24,7 +26,7 @@ A data frame with 24,576 rows and 12 columns:
 
 - reporter:
 
-  Reporter reporter, including `EVC`.
+  Reporter label, including `EVC`.
 
 - replicate:
 
@@ -36,11 +38,11 @@ A data frame with 24,576 rows and 12 columns:
 
 - drug:
 
-  Original perturbation/control label.
+  Original drug/control label from the source table.
 
-- perturbation:
+- compound:
 
-  DStressR perturbation label, with water controls collapsed.
+  Derived drug/control grouping label, with water controls collapsed.
 
 - concentration_index:
 
@@ -53,7 +55,7 @@ A data frame with 24,576 rows and 12 columns:
 
 - concentration_ug_ml:
 
-  Perturbation concentration in micrograms per ml.
+  Compound concentration in micrograms per ml.
 
 - od_auc:
 

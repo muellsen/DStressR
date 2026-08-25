@@ -1,8 +1,6 @@
 # DStressR: Differential stress-response modeling for chemical genomics screens
 
-![DStressR logo](reference/figures/Logo-DStressR.svg?v=20260824)
-
-DStressR logo
+![](reference/figures/Logo-DStressR.svg)
 
 This repository hosts the `DStressR` R package and companion analysis
 workflow for high-throughput reporter-perturbation screens. `DStressR`
@@ -114,8 +112,8 @@ wt_auc <- subset(
 assay <- prepare_assay(
   wt_auc,
   reporter = "reporter",
-  perturbation = "perturbation",
-  control = "Water",
+  perturbation = "drug",
+  control = c("Water_1", "Water_2"),
   lux = "lux_auc",
   growth = "od_auc",
   growth_exponent = "estimate",
@@ -124,7 +122,7 @@ assay <- prepare_assay(
   growth_covariates = "replicate",
   numeric_covariates = "dose_level",
   background_reporter = "EVC",
-  background_by = c("perturbation", "dose_level", "replicate")
+  background_by = c("drug", "dose_level", "replicate")
 )
 
 fit <- fit_destress(

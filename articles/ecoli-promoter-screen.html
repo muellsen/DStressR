@@ -37,6 +37,7 @@
 <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Get started</h6></li>
     <li><a class="dropdown-item" href="../articles/ecoli-promoter-screen.html">E. coli reporter-perturbation screen</a></li>
+    <li><a class="dropdown-item" href="../articles/ecoli-fluorescence-stress-screen.html">E. coli fluorescence stress screen</a></li>
     <li><a class="dropdown-item" href="../articles/median-polish-workflow.html">Original median-polish workflow</a></li>
     <li><a class="dropdown-item" href="../articles/salmonella-empty-vector-workflow.html">Salmonella Empty Vector workflow</a></li>
   </ul>
@@ -107,22 +108,22 @@ associated Zenodo archive:</p>
 <span><span class="co">#&gt;  6144  6144  6144  6144</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">binsfeld_reporter_auc</span><span class="op">$</span><span class="va">reporter</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 8</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">binsfeld_reporter_auc</span><span class="op">$</span><span class="va">perturbation</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] 95</span></span></code></pre></div>
-<p>The AUC table is a long table with one row per strain, reporter,
-perturbation or control, replicate, and serial-dilution observation. The
-package-level <code>perturbation</code> column keeps the original
-perturbation labels, except that the water control wells are collapsed
-to <code>Water</code>. The original label remains in <code>drug</code>.
-The source <code>concentration_index</code> increases with dilution;
-<code>dose_level</code> reverses this coding so that larger values
-correspond to higher concentration for non-water perturbation wells. For
-water controls, the same column records the matched concentration-index
-position in the screen layout.</p>
+<span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">binsfeld_reporter_auc</span><span class="op">$</span><span class="va">drug</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] 96</span></span></code></pre></div>
+<p>The AUC table is a long table with one row per strain, reporter, drug
+or control, replicate, and serial-dilution observation. The
+<code>drug</code> column keeps the original Binsfeld labels, including
+<code>Water_1</code> and <code>Water_2</code>. The derived
+<code>compound</code> column is retained only as a convenience grouping
+variable for summaries. The source <code>concentration_index</code>
+increases with dilution; <code>dose_level</code> reverses this coding so
+that larger values correspond to higher concentration for non-water
+compound wells. For water controls, the same column records the matched
+concentration-index position in the screen layout.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">binsfeld_reporter_auc</span><span class="op">)</span></span>
 <span><span class="co">#&gt;  [1] "strain"              "reporter"            "replicate"          </span></span>
-<span><span class="co">#&gt;  [4] "well"                "drug"                "perturbation"       </span></span>
+<span><span class="co">#&gt;  [4] "well"                "drug"                "compound"           </span></span>
 <span><span class="co">#&gt;  [7] "concentration_index" "dose_level"          "concentration_ug_ml"</span></span>
 <span><span class="co">#&gt; [10] "od_auc"              "lux_auc"             "od_auc_per_lux_auc" </span></span>
 <span><span class="co">#&gt; [13] "removed"</span></span></code></pre></div>
@@ -131,7 +132,7 @@ form. It is used by the reproducibility workflow to reconstruct the
 reference hit rule.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">binsfeld_reporter_scores</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] "well"                "drug"                "perturbation"       </span></span>
+<span><span class="co">#&gt; [1] "well"                "drug"                "compound"           </span></span>
 <span><span class="co">#&gt; [4] "concentration_ug_ml" "strain"              "statistic"          </span></span>
 <span><span class="co">#&gt; [7] "reporter"            "replicate"           "value"</span></span></code></pre></div>
 </div>
@@ -139,11 +140,12 @@ reference hit rule.</p>
 <h2 id="dstressr-analysis">DStressR analysis<a class="anchor" aria-label="anchor" href="#dstressr-analysis"></a>
 </h2>
 <p>For the package application, the wild-type reporter data are filtered
-to rows that passed the original quality-control flag. Water is used as
-the reference condition. The Empty Vector Control reporter is supplied
-to <code><a href="../reference/prepare_assay.html">prepare_assay()</a></code> as a matched background reporter, so the
-default response model performs Huber-calibrated background adjustment
-before model-based testing.</p>
+to rows that passed the original quality-control flag. The original
+<code>Water_1</code> and <code>Water_2</code> labels are supplied
+together as the reference condition. The Empty Vector Control reporter
+is supplied to <code><a href="../reference/prepare_assay.html">prepare_assay()</a></code> as a matched background
+reporter, so the default response model performs Huber-calibrated
+background adjustment before model-based testing.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">wt_auc</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/subset.html" class="external-link">subset</a></span><span class="op">(</span></span>
 <span>  <span class="va">binsfeld_reporter_auc</span>,</span>
@@ -153,8 +155,8 @@ before model-based testing.</p>
 <span><span class="va">assay</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/prepare_assay.html">prepare_assay</a></span><span class="op">(</span></span>
 <span>  <span class="va">wt_auc</span>,</span>
 <span>  reporter <span class="op">=</span> <span class="st">"reporter"</span>,</span>
-<span>  perturbation <span class="op">=</span> <span class="st">"perturbation"</span>,</span>
-<span>  control <span class="op">=</span> <span class="st">"Water"</span>,</span>
+<span>  perturbation <span class="op">=</span> <span class="st">"drug"</span>,</span>
+<span>  control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Water_1"</span>, <span class="st">"Water_2"</span><span class="op">)</span>,</span>
 <span>  lux <span class="op">=</span> <span class="st">"lux_auc"</span>,</span>
 <span>  growth <span class="op">=</span> <span class="st">"od_auc"</span>,</span>
 <span>  growth_exponent <span class="op">=</span> <span class="st">"estimate"</span>,</span>
@@ -163,7 +165,7 @@ before model-based testing.</p>
 <span>  growth_covariates <span class="op">=</span> <span class="st">"replicate"</span>,</span>
 <span>  numeric_covariates <span class="op">=</span> <span class="st">"dose_level"</span>,</span>
 <span>  background_reporter <span class="op">=</span> <span class="st">"EVC"</span>,</span>
-<span>  background_by <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"perturbation"</span>, <span class="st">"dose_level"</span>, <span class="st">"replicate"</span><span class="op">)</span></span>
+<span>  background_by <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"drug"</span>, <span class="st">"dose_level"</span>, <span class="st">"replicate"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fit_destress.html">fit_destress</a></span><span class="op">(</span></span>

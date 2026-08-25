@@ -28,25 +28,25 @@ table(binsfeld_reporter_auc$strain)
 #>  6144  6144  6144  6144
 length(unique(binsfeld_reporter_auc$reporter))
 #> [1] 8
-length(unique(binsfeld_reporter_auc$perturbation))
-#> [1] 95
+length(unique(binsfeld_reporter_auc$drug))
+#> [1] 96
 ```
 
-The AUC table is a long table with one row per strain, reporter,
-perturbation or control, replicate, and serial-dilution observation. The
-package-level `perturbation` column keeps the original perturbation
-labels, except that the water control wells are collapsed to `Water`.
-The original label remains in `drug`. The source `concentration_index`
-increases with dilution; `dose_level` reverses this coding so that
-larger values correspond to higher concentration for non-water
-perturbation wells. For water controls, the same column records the
-matched concentration-index position in the screen layout.
+The AUC table is a long table with one row per strain, reporter, drug or
+control, replicate, and serial-dilution observation. The `drug` column
+keeps the original Binsfeld labels, including `Water_1` and `Water_2`.
+The derived `compound` column is retained only as a convenience grouping
+variable for summaries. The source `concentration_index` increases with
+dilution; `dose_level` reverses this coding so that larger values
+correspond to higher concentration for non-water compound wells. For
+water controls, the same column records the matched concentration-index
+position in the screen layout.
 
 ``` r
 
 names(binsfeld_reporter_auc)
 #>  [1] "strain"              "reporter"            "replicate"          
-#>  [4] "well"                "drug"                "perturbation"       
+#>  [4] "well"                "drug"                "compound"           
 #>  [7] "concentration_index" "dose_level"          "concentration_ug_ml"
 #> [10] "od_auc"              "lux_auc"             "od_auc_per_lux_auc" 
 #> [13] "removed"
@@ -59,7 +59,7 @@ reference hit rule.
 ``` r
 
 names(binsfeld_reporter_scores)
-#> [1] "well"                "drug"                "perturbation"       
+#> [1] "well"                "drug"                "compound"           
 #> [4] "concentration_ug_ml" "strain"              "statistic"          
 #> [7] "reporter"            "replicate"           "value"
 ```
@@ -67,8 +67,9 @@ names(binsfeld_reporter_scores)
 ## DStressR analysis
 
 For the package application, the wild-type reporter data are filtered to
-rows that passed the original quality-control flag. Water is used as the
-reference condition. The Empty Vector Control reporter is supplied to
+rows that passed the original quality-control flag. The original
+`Water_1` and `Water_2` labels are supplied together as the reference
+condition. The Empty Vector Control reporter is supplied to
 [`prepare_assay()`](https://muellsen.github.io/DStressR/reference/prepare_assay.md)
 as a matched background reporter, so the default response model performs
 Huber-calibrated background adjustment before model-based testing.
@@ -83,8 +84,8 @@ wt_auc <- subset(
 assay <- prepare_assay(
   wt_auc,
   reporter = "reporter",
-  perturbation = "perturbation",
-  control = "Water",
+  perturbation = "drug",
+  control = c("Water_1", "Water_2"),
   lux = "lux_auc",
   growth = "od_auc",
   growth_exponent = "estimate",
@@ -93,7 +94,7 @@ assay <- prepare_assay(
   growth_covariates = "replicate",
   numeric_covariates = "dose_level",
   background_reporter = "EVC",
-  background_by = c("perturbation", "dose_level", "replicate")
+  background_by = c("drug", "dose_level", "replicate")
 )
 
 fit <- fit_destress(

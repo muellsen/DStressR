@@ -44,7 +44,10 @@ prepare_assay(
 
 - control:
 
-  Label in `perturbation` for the negative control, usually DMSO.
+  Label or labels in `perturbation` for the negative control, usually
+  DMSO. If several labels are supplied, they are pooled into the first
+  label as the model reference while the original input column is kept
+  unchanged.
 
 - lux, growth:
 

@@ -15,7 +15,7 @@ binsfeld_reporter_scores
 ## Format
 
 A data frame with one row per well, strain, statistic, reporter, and
-replicate. Columns are `well`, `drug`, `perturbation`,
+replicate. Columns are `well`, `drug`, `compound`,
 `concentration_ug_ml`, `strain`, `statistic`, `reporter`, `replicate`,
 and `value`.
 
