@@ -1,8 +1,8 @@
-# Clustered heatmap with promoter and compound dendrograms
+# Clustered heatmap with reporter and perturbation dendrograms
 
-Draws a clustered promoter-by-compound response heatmap with
+Draws a clustered reporter-by-perturbation response heatmap with
 hierarchical trees on both axes. Unlike
-[`plot_response_cluster_blocks`](https://muellsen.github.io/DStressR/reference/plot_response_cluster_blocks.md),
+[`plot_response_cluster_blocks()`](https://muellsen.github.io/DStressR/reference/plot_response_cluster_blocks.md),
 this keeps the individual matrix cells visible and uses the dendrograms
 to reveal structure without collapsing the data into coarse blocks.
 
@@ -12,13 +12,13 @@ to reveal structure without collapsing the data into coarse blocks.
 plot_response_clustered_heatmap(
   table,
   value = "specific_effect",
-  promoter = "promoter",
-  compound = "compound",
-  compound_label = compound,
-  show_compound_ids = TRUE,
-  top_n_compounds = 400,
-  n_promoter_clusters = 6,
-  n_compound_clusters = 14,
+  reporter = "reporter",
+  perturbation = "perturbation",
+  perturbation_label = perturbation,
+  show_perturbation_ids = TRUE,
+  top_n_perturbations = 400,
+  n_reporter_clusters = 6,
+  n_perturbation_clusters = 14,
   missing_value = 0,
   clip_quantile = 0.98,
   file = NULL,
@@ -39,31 +39,32 @@ plot_response_clustered_heatmap(
 
 - table:
 
-  A data frame with one row per promoter-compound pair.
+  A data frame with one row per reporter-perturbation pair.
 
 - value:
 
   Numeric response/effect column to show in the heatmap.
 
-- promoter, compound:
+- reporter, perturbation:
 
-  Columns identifying promoters and compounds.
+  Columns identifying reporters and perturbations.
 
-- compound_label:
+- perturbation_label:
 
-  Optional human-readable compound-name column. Defaults to `compound`.
+  Optional human-readable perturbation-name column. Defaults to
+  `perturbation`.
 
-- show_compound_ids:
+- show_perturbation_ids:
 
-  If `TRUE`, append compound IDs in square brackets to compound labels
-  before clustering.
+  If `TRUE`, append perturbation IDs in square brackets to perturbation
+  labels before clustering.
 
-- top_n_compounds:
+- top_n_perturbations:
 
-  If finite, show only the top compounds by mean absolute response. Use
-  `Inf` to show all compounds.
+  If finite, show only the top perturbations by mean absolute response.
+  Use `Inf` to show all perturbations.
 
-- n_promoter_clusters, n_compound_clusters:
+- n_reporter_clusters, n_perturbation_clusters:
 
   Number of dendrogram clusters returned in the cluster assignment
   tables.

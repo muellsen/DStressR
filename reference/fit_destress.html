@@ -25,7 +25,7 @@ legacy median-polish and Empty Vector Control analyses."></head><body>
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Get started</h6></li>
-    <li><a class="dropdown-item" href="../articles/ecoli-promoter-screen.html">E. coli promoter-compound screen</a></li>
+    <li><a class="dropdown-item" href="../articles/ecoli-promoter-screen.html">E. coli reporter-perturbation screen</a></li>
     <li><a class="dropdown-item" href="../articles/median-polish-workflow.html">Original median-polish workflow</a></li>
     <li><a class="dropdown-item" href="../articles/salmonella-empty-vector-workflow.html">Salmonella Empty Vector workflow</a></li>
   </ul></li>
@@ -64,7 +64,7 @@ legacy median-polish and Empty Vector Control analyses.</p>
 <span>  <span class="va">assay</span>,</span>
 <span>  technical <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  empirical_bayes <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  empty_vector_promoter <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  empty_vector_reporter <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  background_rank <span class="op">=</span> <span class="fl">0</span>,</span>
 <span>  normalization <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  testing <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -98,12 +98,12 @@ observed variance distribution. This maps to <code>testing = "moderated_t"</code
 the model path; <code>FALSE</code> maps to <code>testing = "student_t"</code>.</p></dd>
 
 
-<dt id="arg-empty-vector-promoter">empty_vector_promoter<a class="anchor" aria-label="anchor" href="#arg-empty-vector-promoter"></a></dt>
-<dd><p>Optional promoter/control strain used as an
+<dt id="arg-empty-vector-reporter">empty_vector_reporter<a class="anchor" aria-label="anchor" href="#arg-empty-vector-reporter"></a></dt>
+<dd><p>Optional reporter/control strain used as an
 empty-vector reporter in the model-based path. When supplied, its
-reference-relative compound effect is subtracted from every promoter's
-reference-relative compound effect before promoter-library centering.
-For new analyses, prefer <code>background_promoter</code> in <code><a href="prepare_assay.html">prepare_assay()</a></code>, which
+reference-relative perturbation effect is subtracted from every reporter's
+reference-relative perturbation effect before reporter-library centering.
+For new analyses, prefer <code>background_reporter</code> in <code><a href="prepare_assay.html">prepare_assay()</a></code>, which
 performs explicit response-level background calibration before model
 fitting.</p></dd>
 
@@ -112,7 +112,7 @@ fitting.</p></dd>
 <dd><p>Non-negative integer. The default <code>0</code> removes no
 latent background. Values <code>1</code> or <code>2</code> additionally subtract a low-rank
 background term from the reference-relative total-effect matrix before
-testing rank-adjusted total and promoter-specific residual effects.</p></dd>
+testing rank-adjusted total and reporter-specific residual effects.</p></dd>
 
 
 <dt id="arg-normalization">normalization<a class="anchor" aria-label="anchor" href="#arg-normalization"></a></dt>
@@ -129,15 +129,15 @@ testing rank-adjusted total and promoter-specific residual effects.</p></dd>
 
 
 <dt id="arg-adjustment">adjustment<a class="anchor" aria-label="anchor" href="#arg-adjustment"></a></dt>
-<dd><p>One of <code>"global"</code>, <code>"by_promoter"</code>, or <code>"none"</code>.</p></dd>
+<dd><p>One of <code>"global"</code>, <code>"by_reporter"</code>, or <code>"none"</code>.</p></dd>
 
 
 <dt id="arg-interaction">interaction<a class="anchor" aria-label="anchor" href="#arg-interaction"></a></dt>
 <dd><p>If <code>FALSE</code>, fit one Gaussian linear
-model per promoter with the control compound as reference and the supplied
+model per reporter with the control perturbation as reference and the supplied
 technical covariates as design terms. The latter is the scalable path for
-promoter-specific compound effects. If <code>TRUE</code>, fit the historical full
-promoter-by-compound interaction model.</p></dd>
+reporter-specific perturbation effects. If <code>TRUE</code>, fit the historical full
+reporter-by-perturbation interaction model.</p></dd>
 
 
 <dt id="arg-preset">preset<a class="anchor" aria-label="anchor" href="#arg-preset"></a></dt>
@@ -164,7 +164,7 @@ normalization, test statistic and p-value calculation, replicate aggregation,
 and p-value adjustment. Only implemented combinations are accepted. For the
 model-based path, growth-response normalization is performed upstream by
 <code><a href="prepare_assay.html">prepare_assay()</a></code>, where <code>growth_exponent</code> can be fixed, estimated, or
-supplied as promoter-specific values.</p>
+supplied as reporter-specific values.</p>
     </div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

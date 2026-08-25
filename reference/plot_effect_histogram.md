@@ -1,7 +1,7 @@
-# Histogram of DStressR promoter-compound effects
+# Histogram of DStressR reporter-perturbation effects
 
-Shows the empirical distribution of normalized promoter-compound
-effects, either over all matrix entries or faceted by promoter.
+Shows the empirical distribution of normalized reporter-perturbation
+effects, either over all matrix entries or faceted by reporter.
 
 ## Usage
 
@@ -9,8 +9,8 @@ effects, either over all matrix entries or faceted by promoter.
 plot_effect_histogram(
   table,
   value = "specific_effect",
-  promoter = "promoter",
-  by = c("all", "promoter"),
+  reporter = "reporter",
+  by = c("all", "reporter"),
   bins = 80,
   xlim = NULL,
   scales = "fixed",
@@ -27,20 +27,20 @@ plot_effect_histogram(
 
 - table:
 
-  A data frame with one row per promoter-compound pair.
+  A data frame with one row per reporter-perturbation pair.
 
 - value:
 
   Numeric effect column to plot.
 
-- promoter:
+- reporter:
 
-  Column identifying promoters, used when `by = "promoter"`.
+  Column identifying reporters, used when `by = "reporter"`.
 
 - by:
 
-  Plot one pooled histogram (`"all"`) or promoter-faceted histograms
-  (`"promoter"`).
+  Plot one pooled histogram (`"all"`) or reporter-faceted histograms
+  (`"reporter"`).
 
 - bins:
 
@@ -52,7 +52,7 @@ plot_effect_histogram(
 
 - scales:
 
-  Facet scale behavior for `by = "promoter"`.
+  Facet scale behavior for `by = "reporter"`.
 
 - title, subtitle, xlab, ylab:
 

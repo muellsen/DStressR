@@ -1,9 +1,10 @@
 # Diagnose low-rank background structure
 
-Computes singular values of a promoter-by-compound effect matrix and
+Computes singular values of a reporter-by-perturbation effect matrix and
 compares them with a permutation null. The default permutation shuffles
-promoter labels within each compound, preserving the compound-wise
-marginal distribution while breaking shared promoter-loading structure.
+reporter labels within each perturbation, preserving the
+perturbation-wise marginal distribution while breaking shared
+reporter-loading structure.
 
 ## Usage
 
@@ -11,8 +12,8 @@ marginal distribution while breaking shared promoter-loading structure.
 background_rank_diagnostics(
   table,
   effect = "total_effect",
-  promoter = "promoter",
-  compound = "compound",
+  reporter = "reporter",
+  perturbation = "perturbation",
   rank_max = 10,
   permutations = 100,
   seed = NULL
@@ -23,16 +24,16 @@ background_rank_diagnostics(
 
 - table:
 
-  Data frame with promoter, compound, and effect columns.
+  Data frame with reporter, perturbation, and effect columns.
 
 - effect:
 
   Numeric effect column to decompose, usually `total_effect` or
   `background_adjusted_effect`.
 
-- promoter, compound:
+- reporter, perturbation:
 
-  Column names identifying promoters and compounds.
+  Column names identifying reporters and perturbations.
 
 - rank_max:
 

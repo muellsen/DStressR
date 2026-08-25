@@ -5,12 +5,12 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>E. coli promoter-compound screen • DStressR</title>
+<title>E. coli reporter-perturbation screen • DStressR</title>
 <script src="../lightswitch.js"></script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="E. coli promoter-compound screen">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="E. coli reporter-perturbation screen">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -36,7 +36,7 @@
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Get started</h6></li>
-    <li><a class="dropdown-item" href="../articles/ecoli-promoter-screen.html">E. coli promoter-compound screen</a></li>
+    <li><a class="dropdown-item" href="../articles/ecoli-promoter-screen.html">E. coli reporter-perturbation screen</a></li>
     <li><a class="dropdown-item" href="../articles/median-polish-workflow.html">Original median-polish workflow</a></li>
     <li><a class="dropdown-item" href="../articles/salmonella-empty-vector-workflow.html">Salmonella Empty Vector workflow</a></li>
   </ul>
@@ -69,7 +69,7 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
 
-      <h1>E. coli promoter-compound screen</h1>
+      <h1>E. coli reporter-perturbation screen</h1>
             
       
       <small class="dont-index">Source: <a href="https://github.com/muellsen/DStressR/blob/main/vignettes/ecoli-promoter-screen.Rmd" class="external-link"><code>vignettes/ecoli-promoter-screen.Rmd</code></a></small>
@@ -105,24 +105,24 @@ associated Zenodo archive:</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; DmarA  Drob DsoxS    WT </span></span>
 <span><span class="co">#&gt;  6144  6144  6144  6144</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">binsfeld_reporter_auc</span><span class="op">$</span><span class="va">promoter</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">binsfeld_reporter_auc</span><span class="op">$</span><span class="va">reporter</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 8</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">binsfeld_reporter_auc</span><span class="op">$</span><span class="va">compound</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">binsfeld_reporter_auc</span><span class="op">$</span><span class="va">perturbation</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 95</span></span></code></pre></div>
-<p>The AUC table is a long table with one row per strain, promoter,
-compound or control, replicate, and serial-dilution observation. The
-package-level <code>compound</code> column keeps the original compound
-labels, except that the water control wells are collapsed to
-<code>Water</code>. The original label remains in <code>drug</code>. The
-source <code>concentration_index</code> increases with dilution;
+<p>The AUC table is a long table with one row per strain, reporter,
+perturbation or control, replicate, and serial-dilution observation. The
+package-level <code>perturbation</code> column keeps the original
+perturbation labels, except that the water control wells are collapsed
+to <code>Water</code>. The original label remains in <code>drug</code>.
+The source <code>concentration_index</code> increases with dilution;
 <code>dose_level</code> reverses this coding so that larger values
-correspond to higher concentration for non-water compound wells. For
+correspond to higher concentration for non-water perturbation wells. For
 water controls, the same column records the matched concentration-index
 position in the screen layout.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">binsfeld_reporter_auc</span><span class="op">)</span></span>
-<span><span class="co">#&gt;  [1] "strain"              "promoter"            "replicate"          </span></span>
-<span><span class="co">#&gt;  [4] "well"                "drug"                "compound"           </span></span>
+<span><span class="co">#&gt;  [1] "strain"              "reporter"            "replicate"          </span></span>
+<span><span class="co">#&gt;  [4] "well"                "drug"                "perturbation"       </span></span>
 <span><span class="co">#&gt;  [7] "concentration_index" "dose_level"          "concentration_ug_ml"</span></span>
 <span><span class="co">#&gt; [10] "od_auc"              "lux_auc"             "od_auc_per_lux_auc" </span></span>
 <span><span class="co">#&gt; [13] "removed"</span></span></code></pre></div>
@@ -131,9 +131,9 @@ form. It is used by the reproducibility workflow to reconstruct the
 reference hit rule.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">binsfeld_reporter_scores</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] "well"                "drug"                "compound"           </span></span>
+<span><span class="co">#&gt; [1] "well"                "drug"                "perturbation"       </span></span>
 <span><span class="co">#&gt; [4] "concentration_ug_ml" "strain"              "statistic"          </span></span>
-<span><span class="co">#&gt; [7] "promoter"            "replicate"           "value"</span></span></code></pre></div>
+<span><span class="co">#&gt; [7] "reporter"            "replicate"           "value"</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="dstressr-analysis">DStressR analysis<a class="anchor" aria-label="anchor" href="#dstressr-analysis"></a>
@@ -152,8 +152,8 @@ before model-based testing.</p>
 <span></span>
 <span><span class="va">assay</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/prepare_assay.html">prepare_assay</a></span><span class="op">(</span></span>
 <span>  <span class="va">wt_auc</span>,</span>
-<span>  promoter <span class="op">=</span> <span class="st">"promoter"</span>,</span>
-<span>  compound <span class="op">=</span> <span class="st">"compound"</span>,</span>
+<span>  reporter <span class="op">=</span> <span class="st">"reporter"</span>,</span>
+<span>  perturbation <span class="op">=</span> <span class="st">"perturbation"</span>,</span>
 <span>  control <span class="op">=</span> <span class="st">"Water"</span>,</span>
 <span>  lux <span class="op">=</span> <span class="st">"lux_auc"</span>,</span>
 <span>  growth <span class="op">=</span> <span class="st">"od_auc"</span>,</span>
@@ -162,8 +162,8 @@ before model-based testing.</p>
 <span>  replicate <span class="op">=</span> <span class="st">"replicate"</span>,</span>
 <span>  growth_covariates <span class="op">=</span> <span class="st">"replicate"</span>,</span>
 <span>  numeric_covariates <span class="op">=</span> <span class="st">"dose_level"</span>,</span>
-<span>  background_promoter <span class="op">=</span> <span class="st">"EVC"</span>,</span>
-<span>  background_by <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"compound"</span>, <span class="st">"dose_level"</span>, <span class="st">"replicate"</span><span class="op">)</span></span>
+<span>  background_reporter <span class="op">=</span> <span class="st">"EVC"</span>,</span>
+<span>  background_by <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"perturbation"</span>, <span class="st">"dose_level"</span>, <span class="st">"replicate"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fit_destress.html">fit_destress</a></span><span class="op">(</span></span>
@@ -171,7 +171,7 @@ before model-based testing.</p>
 <span>  preset <span class="op">=</span> <span class="st">"model"</span>,</span>
 <span>  technical <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"replicate"</span>, <span class="st">"dose_level"</span><span class="op">)</span>,</span>
 <span>  empirical_bayes <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  adjustment <span class="op">=</span> <span class="st">"by_promoter"</span>,</span>
+<span>  adjustment <span class="op">=</span> <span class="st">"by_reporter"</span>,</span>
 <span>  interaction <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span>
 <span></span>

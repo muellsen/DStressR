@@ -1,11 +1,11 @@
 # Reproduce Empty Vector Control normalization
 
 This function implements the Salmonella StressRegNet workflow in which
-promoter activity is normalized against an Empty Vector Control (EVC)
-reporter measured for the same compound/library well. It starts from a
-long expression table, subtracts a compound-specific EVC average from
-each promoter-replicate value, estimates promoter-replicate DMSO null
-distributions, and applies the original conservative replicate
+reporter activity is normalized against an Empty Vector Control (EVC)
+reporter measured for the same perturbation/library well. It starts from
+a long expression table, subtracts a perturbation-specific EVC average
+from each reporter-replicate value, estimates reporter-replicate DMSO
+null distributions, and applies the original conservative replicate
 aggregation.
 
 ## Usage
@@ -13,14 +13,14 @@ aggregation.
 ``` r
 fit_empty_vector_control(
   data,
-  promoter = "promoter",
-  compound = "srn_code",
+  reporter = "reporter",
+  perturbation = "srn_code",
   replicate = "replicate",
   response = "log2.lux.normed.centered",
-  empty_vector_promoter = "PEVC3",
+  empty_vector_reporter = "PEVC3",
   control,
   exclude = character(),
-  remove_promoters = character(),
+  remove_reporters = character(),
   fdr = 0.05,
   require_complete_empty_vector = TRUE
 )
@@ -30,12 +30,12 @@ fit_empty_vector_control(
 
 - data:
 
-  Long expression table with one row per promoter-compound-replicate
+  Long expression table with one row per reporter-perturbation-replicate
   observation.
 
-- promoter, compound, replicate:
+- reporter, perturbation, replicate:
 
-  Column names identifying promoter, compound/library well, and
+  Column names identifying reporter, perturbation/library well, and
   replicate.
 
 - response:
@@ -43,24 +43,24 @@ fit_empty_vector_control(
   Column containing the expression value to normalize. For the
   Salmonella workflow this is `log2.lux.normed.centered`.
 
-- empty_vector_promoter:
+- empty_vector_reporter:
 
-  Promoter/control strain used as the Empty Vector reference. The
+  Reporter/control strain used as the Empty Vector reference. The
   original Salmonella workflow uses `PEVC3`.
 
 - control:
 
-  Character vector of compound/library-well IDs used as DMSO controls
-  for the null distribution.
+  Character vector of perturbation/library-well IDs used as DMSO
+  controls for the null distribution.
 
 - exclude:
 
-  Character vector of compound/library-well IDs removed before
+  Character vector of perturbation/library-well IDs removed before
   normalization and hit calling, for example noisy DMSO wells.
 
-- remove_promoters:
+- remove_reporters:
 
-  Promoters removed before normalization, for example failed reporter
+  Reporters removed before normalization, for example failed reporter
   strains.
 
 - fdr:
@@ -69,7 +69,7 @@ fit_empty_vector_control(
 
 - require_complete_empty_vector:
 
-  If `TRUE`, require all EVC replicate values for a compound to be
+  If `TRUE`, require all EVC replicate values for a perturbation to be
   finite before computing the EVC average. This matches the original
   workflow's effective behavior with two PEVC3 replicates.
 

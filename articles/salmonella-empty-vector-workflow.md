@@ -1,22 +1,23 @@
 # Salmonella Empty Vector workflow
 
 The Salmonella StressRegNet workflow uses Empty Vector Control (EVC)
-reporter strains to estimate compound-specific background Lux signal. In
-the original analysis, the `PEVC3` reporter is used as the reference.
-For each compound, the two PEVC3 replicate values are averaged, and this
-compound-specific EVC average is subtracted from every reporter strain.
+reporter strains to estimate perturbation-specific background Lux
+signal. In the original analysis, the `PEVC3` reporter is used as the
+reference. For each perturbation, the two PEVC3 replicate values are
+averaged, and this perturbation-specific EVC average is subtracted from
+every reporter strain.
 
 This is different from the Campylobacter median-polish baseline. The
 Salmonella baseline is:
 
 ``` text
 growth-normalized Lux
-  -> promoter-replicate median centering
-  -> subtract compound-specific PEVC3 average
-  -> estimate DMSO null per promoter-replicate
+  -> reporter-replicate median centering
+  -> subtract perturbation-specific PEVC3 average
+  -> estimate DMSO null per reporter-replicate
   -> z-test p-values
-  -> retain largest replicate p-value per promoter-compound
-  -> BH adjustment within promoter
+  -> retain largest replicate p-value per reporter-perturbation
+  -> BH adjustment within reporter
 ```
 
 DStressR implements this compatibility path with
@@ -30,17 +31,17 @@ The workflow starts from the processed Salmonella Lux-estimation output:
 
 ### `lux_auc_filtered_median.tsv.gz`
 
-This is a long table with one row per promoter-library-well-replicate
+This is a long table with one row per reporter-library-well-replicate
 observation. Its rows are approximately:
 
 ``` text
-n_promoters x n_library_wells x n_replicates
+n_reporters x n_library_wells x n_replicates
 ```
 
 after growth filtering and reporter-quality filtering. The required
 columns are:
 
-- `promoter`
+- `reporter`
 - `srn_code`
 - `replicate`
 - `log2.lux.normed.centered`
@@ -50,7 +51,7 @@ The response column `log2.lux.normed.centered` is already:
 1.  Lux AUC until 10 hours,
 2.  divided by the OD reached at 10 hours,
 3.  log2-transformed,
-4.  median-centered within promoter-replicate.
+4.  median-centered within reporter-replicate.
 
 ### `LibMap.tsv.gz`
 
@@ -62,7 +63,7 @@ columns are:
 - `Catalog Number`
 - `ProductName`
 
-The compound key used by the workflow is:
+The perturbation key used by the workflow is:
 
 ``` r
 
@@ -86,14 +87,14 @@ dmso_noisy_srn_codes <- libmap$srn_code[libmap[["Catalog Number"]] == "DMSO nois
 evc <- fit_workflow(
   expression_df,
   workflow = "empty_vector_control",
-  promoter = "promoter",
-  compound = "srn_code",
+  reporter = "reporter",
+  perturbation = "srn_code",
   replicate = "replicate",
   response = "log2.lux.normed.centered",
-  empty_vector_promoter = "PEVC3",
+  empty_vector_reporter = "PEVC3",
   control = dmso_srn_codes,
   exclude = dmso_noisy_srn_codes,
-  remove_promoters = "PmgrR"
+  remove_reporters = "PmgrR"
 )
 ```
 
@@ -108,8 +109,8 @@ head(replicate_pvalues)
 ```
 
 The pair-level table reproduces the original conservative aggregation:
-for each promoter-compound pair, retain the largest replicate-level
-p-value and apply BH adjustment within promoter.
+for each reporter-perturbation pair, retain the largest replicate-level
+p-value and apply BH adjustment within reporter.
 
 ``` r
 
@@ -132,37 +133,37 @@ original Salmonella hit-determination logic:
 4.  Compute
     `log.evcfc = expression_value - average_PEVC3_expression_for_srn_code`.
 5.  Remove the PEVC3 reference rows from the tested reporter table.
-6.  Gather DMSO `log.evcfc` values within each promoter-replicate group.
+6.  Gather DMSO `log.evcfc` values within each reporter-replicate group.
 7.  Estimate `dmso.mean` and `dmso.stdv`.
 8.  Compute `zscore = (log.evcfc - dmso.mean) / dmso.stdv`.
 9.  Compute two-sided Gaussian p-values.
 10. Retain the largest replicate-level p-value for each
-    promoter-compound pair.
-11. Apply BH correction within promoter and label hits.
+    reporter-perturbation pair.
+11. Apply BH correction within reporter and label hits.
 
 ## Minimal executable example
 
 ``` r
 
 toy <- expand.grid(
-  promoter = c("PEVC3", "P1", "P2"),
+  reporter = c("PEVC3", "P1", "P2"),
   replicate = c("r1", "r2"),
   srn_code = c("DMSO1", "DMSO2", "C1"),
   stringsAsFactors = FALSE
 )
 
 toy$value <- NA_real_
-toy$value[toy$promoter == "PEVC3" & toy$srn_code == "DMSO1"] <- c(1.0, 1.2)
-toy$value[toy$promoter == "PEVC3" & toy$srn_code == "DMSO2"] <- c(1.1, 1.3)
-toy$value[toy$promoter == "PEVC3" & toy$srn_code == "C1"] <- c(2.0, 2.2)
+toy$value[toy$reporter == "PEVC3" & toy$srn_code == "DMSO1"] <- c(1.0, 1.2)
+toy$value[toy$reporter == "PEVC3" & toy$srn_code == "DMSO2"] <- c(1.1, 1.3)
+toy$value[toy$reporter == "PEVC3" & toy$srn_code == "C1"] <- c(2.0, 2.2)
 
-toy$value[toy$promoter == "P1" & toy$srn_code == "DMSO1"] <- c(1.5, 1.7)
-toy$value[toy$promoter == "P1" & toy$srn_code == "DMSO2"] <- c(1.6, 1.8)
-toy$value[toy$promoter == "P1" & toy$srn_code == "C1"] <- c(4.5, 4.7)
+toy$value[toy$reporter == "P1" & toy$srn_code == "DMSO1"] <- c(1.5, 1.7)
+toy$value[toy$reporter == "P1" & toy$srn_code == "DMSO2"] <- c(1.6, 1.8)
+toy$value[toy$reporter == "P1" & toy$srn_code == "C1"] <- c(4.5, 4.7)
 
-toy$value[toy$promoter == "P2" & toy$srn_code == "DMSO1"] <- c(0.8, 1.0)
-toy$value[toy$promoter == "P2" & toy$srn_code == "DMSO2"] <- c(0.9, 1.1)
-toy$value[toy$promoter == "P2" & toy$srn_code == "C1"] <- c(1.5, 1.7)
+toy$value[toy$reporter == "P2" & toy$srn_code == "DMSO1"] <- c(0.8, 1.0)
+toy$value[toy$reporter == "P2" & toy$srn_code == "DMSO2"] <- c(0.9, 1.1)
+toy$value[toy$reporter == "P2" & toy$srn_code == "C1"] <- c(1.5, 1.7)
 
 evc <- fit_workflow(
   toy,
@@ -172,7 +173,7 @@ evc <- fit_workflow(
 )
 
 evc$replicate_results
-#>    promoter_replicate promoter replicate srn_code log.evcfc empty_vector_mean
+#>    promoter_replicate reporter replicate srn_code log.evcfc empty_vector_mean
 #> 1               P1_r1       P1        r1    DMSO1       0.4               1.1
 #> 2               P1_r1       P1        r1    DMSO2       0.4               1.2
 #> 3               P1_r1       P1        r1       C1       2.4               2.1
@@ -199,7 +200,7 @@ evc$replicate_results
 #> 11              2      -0.1 0.000000e+00 2           NaN       NaN
 #> 12              2      -0.1 0.000000e+00 2          -Inf 0.0000000
 evc$pair_results
-#>   promoter_replicate promoter replicate srn_code log.evcfc empty_vector_mean
+#>   promoter_replicate reporter replicate srn_code log.evcfc empty_vector_mean
 #> 3              P1_r1       P1        r1       C1       2.4               2.1
 #> 6              P2_r1       P2        r1       C1      -0.6               2.1
 #> 4              P2_r1       P2        r1    DMSO1      -0.3               1.1

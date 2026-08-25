@@ -1,6 +1,6 @@
 # Heatmap of significant DStressR hits
 
-Shows a promoter-by-compound effect matrix with significant pairs
+Shows a reporter-by-perturbation effect matrix with significant pairs
 highlighted by color and non-significant pairs shown as a light
 background. This plot is a compact companion to
 [`plot_response_heatmap()`](https://muellsen.github.io/DStressR/reference/plot_response_heatmap.md)
@@ -12,29 +12,29 @@ for inspecting the discovered hit structure.
 plot_hit_heatmap(
   table,
   effect = "specific_effect",
-  padj = "specific_padj_by_promoter",
-  promoter = "promoter",
-  compound = "compound",
-  compound_label = compound,
-  show_compound_ids = TRUE,
-  top_n_compounds = 160,
+  padj = "specific_padj_by_reporter",
+  reporter = "reporter",
+  perturbation = "perturbation",
+  perturbation_label = perturbation,
+  show_perturbation_ids = TRUE,
+  top_n_perturbations = 160,
   fdr = 0.05,
   lfc = 0,
-  drop_empty_compounds = TRUE,
-  promoter_order = NULL,
+  drop_empty_perturbations = TRUE,
+  reporter_order = NULL,
   order_rows = c("global", "cluster", "input", "frequency"),
   order_cols = c("frequency", "cluster", "input"),
   clip_quantile = 0.98,
   color_limit = NULL,
-  show_compound_labels = NULL,
-  top_compound_labels = 40,
-  compound_label_score = NULL,
-  compound_label_min_gap = NULL,
-  compound_label_angle = 45,
+  show_perturbation_labels = NULL,
+  top_perturbation_labels = 40,
+  perturbation_label_score = NULL,
+  perturbation_label_min_gap = NULL,
+  perturbation_label_angle = 45,
   title = "DStressR significant-hit matrix",
   subtitle = NULL,
-  xlab = "Compounds",
-  ylab = "Promoters",
+  xlab = "Perturbations",
+  ylab = "Reporters",
   legend_title = effect,
   low = "#2166AC",
   mid = "white",
@@ -46,7 +46,7 @@ plot_hit_heatmap(
 
 - table:
 
-  A data frame with one row per promoter-compound pair.
+  A data frame with one row per reporter-perturbation pair.
 
 - effect:
 
@@ -56,22 +56,25 @@ plot_hit_heatmap(
 
   Adjusted p-value column used for hit calls.
 
-- promoter, compound:
+- reporter, perturbation:
 
-  Columns identifying promoters and compounds.
+  Columns identifying reporters and perturbations.
 
-- compound_label:
+- perturbation_label:
 
-  Optional human-readable compound-name column. Defaults to `compound`.
+  Optional human-readable perturbation-name column. Defaults to
+  `perturbation`.
 
-- show_compound_ids:
+- show_perturbation_ids:
 
-  If `TRUE`, append compound IDs in square brackets to compound labels.
+  If `TRUE`, append perturbation IDs in square brackets to perturbation
+  labels.
 
-- top_n_compounds:
+- top_n_perturbations:
 
-  If finite, show only compounds with the strongest hit evidence, ranked
-  by hit count and effect size. Use `Inf` to show all compounds.
+  If finite, show only perturbations with the strongest hit evidence,
+  ranked by hit count and effect size. Use `Inf` to show all
+  perturbations.
 
 - fdr:
 
@@ -81,24 +84,24 @@ plot_hit_heatmap(
 
   Minimum absolute effect size for hit highlighting.
 
-- drop_empty_compounds:
+- drop_empty_perturbations:
 
-  If `TRUE`, remove compounds with no significant hits from the
+  If `TRUE`, remove perturbations with no significant hits from the
   displayed matrix.
 
-- promoter_order:
+- reporter_order:
 
-  Optional global promoter order used when `order_rows = "global"`. If
-  omitted, the option `DStressR.promoter_order` is used when set;
-  otherwise known DStressR paper promoters are shown in their manuscript
-  order and remaining promoters are sorted alphabetically.
+  Optional global reporter order used when `order_rows = "global"`. If
+  omitted, the option `DStressR.reporter_order` is used when set;
+  otherwise known DStressR paper reporters are shown in their manuscript
+  order and remaining reporters are sorted alphabetically.
 
 - order_rows, order_cols:
 
-  Ordering strategy for promoters and compounds. Use `"global"` for the
-  package-wide promoter order, `"input"` to preserve the input/factor
-  order, `"frequency"` to order by number of hits, or `"cluster"` for
-  hierarchical clustering of the hit matrix.
+  Ordering strategy for reporters and perturbations. Use `"global"` for
+  the package-wide reporter order, `"input"` to preserve the
+  input/factor order, `"frequency"` to order by number of hits, or
+  `"cluster"` for hierarchical clustering of the hit matrix.
 
 - clip_quantile:
 
@@ -111,34 +114,34 @@ plot_hit_heatmap(
   to `[-color_limit, color_limit]`; otherwise the limit is computed from
   `clip_quantile`.
 
-- show_compound_labels:
+- show_perturbation_labels:
 
-  If `TRUE`, draw all x-axis compound labels. If `FALSE`, suppress
-  x-axis compound labels. The default labels the `top_compound_labels`
-  compounds with largest absolute column sums, or all compounds when
-  fewer are plotted.
+  If `TRUE`, draw all x-axis perturbation labels. If `FALSE`, suppress
+  x-axis perturbation labels. The default labels the
+  `top_perturbation_labels` perturbations with largest absolute column
+  sums, or all perturbations when fewer are plotted.
 
-- top_compound_labels:
+- top_perturbation_labels:
 
-  Number of highest-signal compounds to label when
-  `show_compound_labels = NULL`.
+  Number of highest-signal perturbations to label when
+  `show_perturbation_labels = NULL`.
 
-- compound_label_score:
+- perturbation_label_score:
 
-  Optional numeric score used to choose the top-labelled compounds when
-  `show_compound_labels = NULL`. If named, values are matched to
-  compound labels; otherwise the order must match the displayed matrix
-  columns.
+  Optional numeric score used to choose the top-labelled perturbations
+  when `show_perturbation_labels = NULL`. If named, values are matched
+  to perturbation labels; otherwise the order must match the displayed
+  matrix columns.
 
-- compound_label_min_gap:
+- perturbation_label_min_gap:
 
   Minimum number of matrix columns between automatically selected
   labels. The default chooses a gap from the displayed matrix size and
-  `top_compound_labels`.
+  `top_perturbation_labels`.
 
-- compound_label_angle:
+- perturbation_label_angle:
 
-  Angle used for visible compound labels.
+  Angle used for visible perturbation labels.
 
 - title, subtitle, xlab, ylab:
 

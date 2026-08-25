@@ -1,10 +1,10 @@
-# Volcano plot for DStressR promoter-compound hits
+# Volcano plot for DStressR reporter-perturbation hits
 
 Creates a standard volcano plot from a DStressR result table. The x-axis
-is a promoter-compound effect size and the y-axis is the negative log10
-adjusted p-value. Significant hits are emphasized, top promoter groups
-can be colored, and the most significant promoter-compound pairs are
-annotated.
+is a reporter-perturbation effect size and the y-axis is the negative
+log10 adjusted p-value. Significant hits are emphasized, top reporter
+groups can be colored, and the most significant reporter-perturbation
+pairs are annotated.
 
 ## Usage
 
@@ -14,18 +14,18 @@ plot_volcano(
   effect = "specific_effect",
   padj = "specific_padj",
   pvalue = NULL,
-  promoter = "promoter",
-  compound = "compound",
-  compound_label = compound,
+  reporter = "reporter",
+  perturbation = "perturbation",
+  perturbation_label = perturbation,
   fdr = 0.05,
   lfc = 0,
   top_n = 12,
-  top_promoters = 6,
+  top_reporters = 6,
   title = "DStressR volcano plot",
   subtitle = NULL,
   xlab = NULL,
   ylab = NULL,
-  label_by = c("pair", "promoter", "compound"),
+  label_by = c("pair", "reporter", "perturbation"),
   max_label_chars = 46,
   repel_labels = TRUE,
   point_alpha = 0.65
@@ -36,7 +36,7 @@ plot_volcano(
 
 - table:
 
-  A data frame with one row per promoter-compound pair.
+  A data frame with one row per reporter-perturbation pair.
 
 - effect:
 
@@ -50,14 +50,14 @@ plot_volcano(
 
   Optional raw p-value column used only if `padj = NULL`.
 
-- promoter, compound:
+- reporter, perturbation:
 
-  Columns identifying the promoter and compound.
+  Columns identifying the reporter and perturbation.
 
-- compound_label:
+- perturbation_label:
 
-  Optional column with human-readable compound names used for
-  annotations. Defaults to `compound`.
+  Optional column with human-readable perturbation names used for
+  annotations. Defaults to `perturbation`.
 
 - fdr:
 
@@ -71,9 +71,9 @@ plot_volcano(
 
   Number of significant pairs to annotate.
 
-- top_promoters:
+- top_reporters:
 
-  Number of promoter groups to color. Remaining promoters are shown in
+  Number of reporter groups to color. Remaining reporters are shown in
   grey.
 
 - title, subtitle:
@@ -88,7 +88,7 @@ plot_volcano(
 - label_by:
 
   Label style for annotated points. The default, `"pair"`, labels top
-  hits as promoter-compound pairs.
+  hits as reporter-perturbation pairs.
 
 - max_label_chars:
 
@@ -118,5 +118,5 @@ or
 [`call_hits()`](https://muellsen.github.io/DStressR/reference/call_hits.md).
 For workflow comparison tables, pass the corresponding column names, for
 example `effect = "destress_eb_effect_centered"`,
-`padj = "estimated_alpha_eb_padj_by_promoter"`, `compound = "srn_code"`,
-and `compound_label = "ProductName"`.
+`padj = "estimated_alpha_eb_padj_by_reporter"`,
+`perturbation = "srn_code"`, and `perturbation_label = "ProductName"`.

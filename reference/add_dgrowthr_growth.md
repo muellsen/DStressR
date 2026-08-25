@@ -68,7 +68,7 @@ This keeps the present analysis reproducible while making the DGrowthR
 bridge available for future comparisons.
 
 This helper joins `object@growth_parameters` from a fitted DGrowthR
-object onto a promoter/luminescence assay table. Run
+object onto a reporter/luminescence assay table. Run
 `DGrowthR::estimate_growth_parameters()` first, optionally with
 `od_auc_at_t` if you want time-specific columns such as `OD_16` or
 `AUC_16`.

@@ -17,5 +17,5 @@ model_parameters(fit)
 ## Value
 
 A named list of estimated parameter tables available for the fitted
-model. The scalable model path includes promoter-specific growth
-normalization estimates and promoter-compound effect estimates.
+model. The scalable model path includes reporter-specific growth
+normalization estimates and reporter-perturbation effect estimates.

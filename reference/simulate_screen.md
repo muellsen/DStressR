@@ -6,8 +6,8 @@ Simulate a chemical-genomics screen
 
 ``` r
 simulate_screen(
-  n_promoters = 12,
-  n_compounds = 24,
+  n_reporters = 12,
+  n_perturbations = 24,
   n_replicates = 2,
   sigma = 0.15,
   seed = NULL
@@ -16,7 +16,7 @@ simulate_screen(
 
 ## Arguments
 
-- n_promoters, n_compounds:
+- n_reporters, n_perturbations:
 
   Dimensions excluding DMSO.
 

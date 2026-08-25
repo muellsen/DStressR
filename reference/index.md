@@ -5,7 +5,7 @@
 - [`add_dgrowthr_growth()`](https://muellsen.github.io/DStressR/reference/add_dgrowthr_growth.md)
   : Add DGrowthR-derived growth metrics to a DStressR assay table
 - [`adjust_pvalues()`](https://muellsen.github.io/DStressR/reference/adjust_pvalues.md)
-  : Adjust p-values within promoter
+  : Adjust p-values within reporter
 - [`background_rank_diagnostics()`](https://muellsen.github.io/DStressR/reference/background_rank_diagnostics.md)
   : Diagnose low-rank background structure
 - [`binsfeld_reporter_auc`](https://muellsen.github.io/DStressR/reference/binsfeld_reporter_auc.md)
@@ -19,14 +19,15 @@
 - [`destress_workflows()`](https://muellsen.github.io/DStressR/reference/destress_workflows.md)
   : List available DStressR workflows
 - [`empirical_replicate_pvalues()`](https://muellsen.github.io/DStressR/reference/empirical_replicate_pvalues.md)
-  : Empirical p-values from replicate-averaged compound effects and DMSO
-  nulls
+  : Empirical p-values from replicate-averaged perturbation effects and
+  DMSO nulls
 - [`estimate_growth_exponents()`](https://muellsen.github.io/DStressR/reference/estimate_growth_exponents.md)
-  : Estimate promoter-specific growth normalization exponents
+  : Estimate reporter-specific growth normalization exponents
 - [`fit_destress()`](https://muellsen.github.io/DStressR/reference/fit_destress.md)
   : Fit DStressR with staged statistical options
 - [`fit_effect_mixture()`](https://muellsen.github.io/DStressR/reference/fit_effect_mixture.md)
-  : Fit a three-part empirical-null mixture to promoter-compound effects
+  : Fit a three-part empirical-null mixture to reporter-perturbation
+  effects
 - [`fit_empty_vector_control()`](https://muellsen.github.io/DStressR/reference/fit_empty_vector_control.md)
   : Reproduce Empty Vector Control normalization
 - [`fit_median_polish()`](https://muellsen.github.io/DStressR/reference/fit_median_polish.md)
@@ -42,22 +43,22 @@
 - [`perturbation_diagnostics()`](https://muellsen.github.io/DStressR/reference/perturbation_diagnostics.md)
   : Perturbation-level response diagnostics
 - [`plot_effect_histogram()`](https://muellsen.github.io/DStressR/reference/plot_effect_histogram.md)
-  : Histogram of DStressR promoter-compound effects
+  : Histogram of DStressR reporter-perturbation effects
 - [`plot_hit_heatmap()`](https://muellsen.github.io/DStressR/reference/plot_hit_heatmap.md)
   : Heatmap of significant DStressR hits
 - [`plot_mean_variance_diagnostic()`](https://muellsen.github.io/DStressR/reference/plot_mean_variance_diagnostic.md)
   : Plot perturbation-level mean-variance diagnostics
 - [`plot_response_cluster_blocks()`](https://muellsen.github.io/DStressR/reference/plot_response_cluster_blocks.md)
-  : Clustered block map of a DStressR promoter-by-compound response
+  : Clustered block map of a DStressR reporter-by-perturbation response
   matrix
 - [`plot_response_clustered_heatmap()`](https://muellsen.github.io/DStressR/reference/plot_response_clustered_heatmap.md)
-  : Clustered heatmap with promoter and compound dendrograms
+  : Clustered heatmap with reporter and perturbation dendrograms
 - [`plot_response_heatmap()`](https://muellsen.github.io/DStressR/reference/plot_response_heatmap.md)
-  : Heatmap of a DStressR promoter-by-compound response matrix
+  : Heatmap of a DStressR reporter-by-perturbation response matrix
 - [`plot_variance_distribution()`](https://muellsen.github.io/DStressR/reference/plot_variance_distribution.md)
   : Plot diagnostic distributions for perturbation-level variances
 - [`plot_volcano()`](https://muellsen.github.io/DStressR/reference/plot_volcano.md)
-  : Volcano plot for DStressR promoter-compound hits
+  : Volcano plot for DStressR reporter-perturbation hits
 - [`prepare_assay()`](https://muellsen.github.io/DStressR/reference/prepare_assay.md)
   : Prepare a chemical-genomics assay table
 - [`read_campylobacter_expression()`](https://muellsen.github.io/DStressR/reference/read_campylobacter_expression.md)
@@ -67,4 +68,4 @@
 - [`simulate_screen()`](https://muellsen.github.io/DStressR/reference/simulate_screen.md)
   : Simulate a chemical-genomics screen
 - [`summarize_hits()`](https://muellsen.github.io/DStressR/reference/summarize_hits.md)
-  : Summarize significant promoter-compound hits
+  : Summarize significant reporter-perturbation hits

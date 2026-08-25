@@ -1,20 +1,20 @@
 # Reproduce the legacy median-polish workflow
 
 This function implements the original median-polish hit-determination
-workflow used for the Campylobacter promoter-library screen. It starts
+workflow used for the Campylobacter reporter-library screen. It starts
 from a long expression table, centers each
-promoter-library-plate-replicate group by its DMSO wells, applies
+reporter-library-plate-replicate group by its DMSO wells, applies
 [`stats::medpolish()`](https://rdrr.io/r/stats/medpolish.html) to the
-resulting promoter-libplate-replicate by compound matrix, and computes
-z-test p-values from the polished DMSO residual distribution.
+resulting reporter-libplate-replicate by perturbation matrix, and
+computes z-test p-values from the polished DMSO residual distribution.
 
 ## Usage
 
 ``` r
 fit_median_polish(
   data,
-  promoter = "promoter",
-  compound = "srn_code",
+  reporter = "reporter",
+  perturbation = "srn_code",
   libplate = "libplate",
   replicate = "replicate",
   response = "log2.auc.16hmeasured.normed",
@@ -32,13 +32,13 @@ fit_median_polish(
 
 - data:
 
-  Long expression table with one row per promoter-compound-replicate
+  Long expression table with one row per reporter-perturbation-replicate
   observation.
 
-- promoter, compound, libplate, replicate:
+- reporter, perturbation, libplate, replicate:
 
-  Column names identifying the promoter, compound/library well, library
-  plate, and replicate.
+  Column names identifying the reporter, perturbation/library well,
+  library plate, and replicate.
 
 - response:
 
@@ -47,12 +47,13 @@ fit_median_polish(
 
 - control:
 
-  Character vector of compound/library-well IDs used as DMSO controls.
+  Character vector of perturbation/library-well IDs used as DMSO
+  controls.
 
 - exclude:
 
-  Character vector of compound/library-well IDs to remove before median
-  polishing and hit calling, for example noisy DMSO wells.
+  Character vector of perturbation/library-well IDs to remove before
+  median polishing and hit calling, for example noisy DMSO wells.
 
 - fdr:
 
@@ -61,7 +62,7 @@ fit_median_polish(
 - normality:
 
   If `TRUE`, test pre-polish DMSO-centered fold changes within each
-  promoter-library-plate-replicate group.
+  reporter-library-plate-replicate group.
 
 - normality_methods:
 
@@ -81,7 +82,8 @@ A list of class `destress_median_polish` with `replicate_results`,
 
 ## Details
 
-The promoter-compound hit table follows the original conservative
+The reporter-perturbation hit table follows the original conservative
 replicate aggregation: DMSO and excluded control wells are removed, the
-largest replicate-level p-value is retained for each promoter-compound
-pair, and p-values are BH-adjusted within promoter.
+largest replicate-level p-value is retained for each
+reporter-perturbation pair, and p-values are BH-adjusted within
+reporter.

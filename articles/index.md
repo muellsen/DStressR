@@ -4,7 +4,7 @@
 
 - [Get started with
   DStressR](https://muellsen.github.io/DStressR/articles/DStressR.md):
-- [E. coli promoter-compound
+- [E. coli reporter-perturbation
   screen](https://muellsen.github.io/DStressR/articles/ecoli-promoter-screen.md):
 - [Original median-polish
   workflow](https://muellsen.github.io/DStressR/articles/median-polish-workflow.md):

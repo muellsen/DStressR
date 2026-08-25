@@ -27,7 +27,7 @@ in spirit to mean-variance diagnostic plots used for count-data workflows."></he
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Get started</h6></li>
-    <li><a class="dropdown-item" href="../articles/ecoli-promoter-screen.html">E. coli promoter-compound screen</a></li>
+    <li><a class="dropdown-item" href="../articles/ecoli-promoter-screen.html">E. coli reporter-perturbation screen</a></li>
     <li><a class="dropdown-item" href="../articles/median-polish-workflow.html">Original median-polish workflow</a></li>
     <li><a class="dropdown-item" href="../articles/salmonella-empty-vector-workflow.html">Salmonella Empty Vector workflow</a></li>
   </ul></li>
@@ -67,8 +67,8 @@ in spirit to mean-variance diagnostic plots used for count-data workflows.</p>
 <span>  <span class="va">table</span>,</span>
 <span>  mean_effect <span class="op">=</span> <span class="st">"total_effect"</span>,</span>
 <span>  variance_effect <span class="op">=</span> <span class="va">mean_effect</span>,</span>
-<span>  reporter <span class="op">=</span> <span class="st">"promoter"</span>,</span>
-<span>  perturbation <span class="op">=</span> <span class="st">"compound"</span>,</span>
+<span>  reporter <span class="op">=</span> <span class="st">"reporter"</span>,</span>
+<span>  perturbation <span class="op">=</span> <span class="st">"perturbation"</span>,</span>
 <span>  perturbation_label <span class="op">=</span> <span class="va">perturbation</span>,</span>
 <span>  min_reporters <span class="op">=</span> <span class="fl">2</span>,</span>
 <span>  trend_span <span class="op">=</span> <span class="fl">0.45</span></span>
@@ -120,8 +120,8 @@ for a perturbation.</p></dd>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>The function is deliberately generic: columns are referred to as reporters
-and perturbations, although DStressR result tables usually contain promoters
-and compounds. Large absolute mean effects with low variance indicate
+and perturbations, although DStressR result tables usually contain reporters
+and perturbations. Large absolute mean effects with low variance indicate
 coherent, broad responses, whereas unusually large variance conditional on
 the absolute mean effect indicates heterogeneous reporter behavior.</p>
     </div>

@@ -1,10 +1,10 @@
-# Clustered block map of a DStressR promoter-by-compound response matrix
+# Clustered block map of a DStressR reporter-by-perturbation response matrix
 
-Hierarchically clusters promoters and compounds, cuts the dendrograms
-into interpretable groups, and plots the mean response for each
-promoter-cluster by compound-cluster block. This is useful as a compact
-overview when the full compound library is too large for individual
-compound labels.
+Hierarchically clusters reporters and perturbations, cuts the
+dendrograms into interpretable groups, and plots the mean response for
+each reporter-cluster by perturbation-cluster block. This is useful as a
+compact overview when the full perturbation library is too large for
+individual perturbation labels.
 
 ## Usage
 
@@ -12,19 +12,19 @@ compound labels.
 plot_response_cluster_blocks(
   table,
   value = "specific_effect",
-  promoter = "promoter",
-  compound = "compound",
-  compound_label = compound,
-  show_compound_ids = TRUE,
-  n_promoter_clusters = 6,
-  n_compound_clusters = 14,
+  reporter = "reporter",
+  perturbation = "perturbation",
+  perturbation_label = perturbation,
+  show_perturbation_ids = TRUE,
+  n_reporter_clusters = 6,
+  n_perturbation_clusters = 14,
   missing_value = 0,
   clip_quantile = 0.98,
   show_counts = TRUE,
   title = "DStressR clustered response map",
   subtitle = NULL,
-  xlab = "Compound clusters",
-  ylab = "Promoter clusters",
+  xlab = "Perturbation clusters",
+  ylab = "Reporter clusters",
   low = "#2166AC",
   mid = "white",
   high = "#B2182B"
@@ -35,28 +35,29 @@ plot_response_cluster_blocks(
 
 - table:
 
-  A data frame with one row per promoter-compound pair.
+  A data frame with one row per reporter-perturbation pair.
 
 - value:
 
   Numeric response/effect column to summarize.
 
-- promoter, compound:
+- reporter, perturbation:
 
-  Columns identifying promoters and compounds.
+  Columns identifying reporters and perturbations.
 
-- compound_label:
+- perturbation_label:
 
-  Optional human-readable compound-name column. Defaults to `compound`.
+  Optional human-readable perturbation-name column. Defaults to
+  `perturbation`.
 
-- show_compound_ids:
+- show_perturbation_ids:
 
-  If `TRUE`, append compound IDs in square brackets to compound labels
-  before clustering.
+  If `TRUE`, append perturbation IDs in square brackets to perturbation
+  labels before clustering.
 
-- n_promoter_clusters, n_compound_clusters:
+- n_reporter_clusters, n_perturbation_clusters:
 
-  Number of dendrogram clusters to use for promoters and compounds.
+  Number of dendrogram clusters to use for reporters and perturbations.
 
 - missing_value:
 
@@ -70,8 +71,8 @@ plot_response_cluster_blocks(
 
 - show_counts:
 
-  If `TRUE`, annotate each tile with the number of compounds in that
-  compound cluster.
+  If `TRUE`, annotate each tile with the number of perturbations in that
+  perturbation cluster.
 
 - title, subtitle, xlab, ylab:
 
@@ -84,5 +85,5 @@ plot_response_cluster_blocks(
 ## Value
 
 A `ggplot` object with attributes `response_matrix`,
-`promoter_clusters`, `compound_clusters`, `block_summary`, `row_hclust`,
-and `col_hclust`.
+`reporter_clusters`, `perturbation_clusters`, `block_summary`,
+`row_hclust`, and `col_hclust`.

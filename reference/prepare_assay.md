@@ -1,7 +1,7 @@
 # Prepare a chemical-genomics assay table
 
-Computes a growth-adjusted log2 promoter-activity response from
-luminescence and growth measurements. By default, promoter-specific
+Computes a growth-adjusted log2 reporter-activity response from
+luminescence and growth measurements. By default, reporter-specific
 growth exponents are estimated from control wells with available
 technical-factor adjustment and shrunk toward a global control-well
 slope. Set `growth_exponent = 1` to reproduce the current workflow's
@@ -12,8 +12,8 @@ log2(LUX / OD) response.
 ``` r
 prepare_assay(
   data,
-  promoter = "promoter",
-  compound = "compound",
+  reporter = "reporter",
+  perturbation = "perturbation",
   control = "DMSO",
   lux = "lux",
   growth = "growth",
@@ -25,7 +25,7 @@ prepare_assay(
   replicate = NULL,
   growth_covariates = NULL,
   numeric_covariates = NULL,
-  background_promoter = NULL,
+  background_reporter = NULL,
   background_method = c("none", "subtract", "lm", "huber"),
   background_by = NULL,
   pseudocount = 1e-08
@@ -36,15 +36,15 @@ prepare_assay(
 
 - data:
 
-  A data frame with one row per promoter-compound-replicate well.
+  A data frame with one row per reporter-perturbation-replicate well.
 
-- promoter, compound:
+- reporter, perturbation:
 
-  Column names identifying promoter and compound.
+  Column names identifying reporter and perturbation.
 
 - control:
 
-  Label in `compound` for the negative control, usually DMSO.
+  Label in `perturbation` for the negative control, usually DMSO.
 
 - lux, growth:
 
@@ -53,13 +53,13 @@ prepare_assay(
 - growth_exponent:
 
   Fixed coefficient for growth normalization, a named vector keyed by
-  promoter, or `"estimate"` to estimate promoter-specific exponents from
+  reporter, or `"estimate"` to estimate reporter-specific exponents from
   controls.
 
 - control_values:
 
-  Values in `compound` used as controls for growth exponent estimation.
-  Defaults to `control`.
+  Values in `perturbation` used as controls for growth exponent
+  estimation. Defaults to `control`.
 
 - response:
 
@@ -70,13 +70,13 @@ prepare_assay(
 
   Optional technical-factor column names. When
   `growth_exponent = "estimate"`, these columns are also used as
-  covariates while estimating promoter-specific growth exponents unless
+  covariates while estimating reporter-specific growth exponents unless
   `growth_covariates` is supplied.
 
 - growth_covariates:
 
   Optional technical covariate column names used only while estimating
-  promoter-specific growth exponents from control wells. If `NULL`,
+  reporter-specific growth exponents from control wells. If `NULL`,
   DStressR uses the supplied `batch`, `plate`, and `replicate` columns
   for backwards compatibility.
 
@@ -86,27 +86,27 @@ prepare_assay(
   numeric in model matrices. Other optional covariates are converted to
   factors.
 
-- background_promoter:
+- background_reporter:
 
-  Optional reporter promoter used as a background reference, e.g. an
+  Optional background reporter used as a background reference, e.g. an
   Empty Vector Control. When supplied, the default background method is
-  `"huber"`. The background reporter is matched to other promoters by
+  `"huber"`. The background reporter is matched to other reporters by
   `background_by`, the response is calibrated, and the background
   reporter is excluded from model-based testing.
 
 - background_method:
 
   One of `"none"`, `"subtract"`, `"lm"`, or `"huber"`. If omitted,
-  DStressR uses `"none"` when no `background_promoter` is supplied and
+  DStressR uses `"none"` when no `background_reporter` is supplied and
   `"huber"` when one is supplied. `"subtract"` subtracts the matched
   background response. `"lm"` and `"huber"` replace each non-background
-  promoter response by residuals from a promoter-wise calibration
+  reporter response by residuals from a reporter-wise calibration
   against the matched background.
 
 - background_by:
 
   Columns used to match each observation to the background reporter.
-  Defaults to `compound` plus the supplied technical columns.
+  Defaults to `perturbation` plus the supplied technical columns.
 
 - pseudocount:
 

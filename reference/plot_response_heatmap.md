@@ -1,7 +1,7 @@
-# Heatmap of a DStressR promoter-by-compound response matrix
+# Heatmap of a DStressR reporter-by-perturbation response matrix
 
-Creates a standard heatmap for normalized promoter-compound responses.
-The default `value` is `specific_effect`, matching
+Creates a standard heatmap for normalized reporter-perturbation
+responses. The default `value` is `specific_effect`, matching
 [`results()`](https://muellsen.github.io/DStressR/reference/results.md),
 but workflow tables can use columns such as
 `destress_eb_effect_centered`.
@@ -12,25 +12,25 @@ but workflow tables can use columns such as
 plot_response_heatmap(
   table,
   value = "specific_effect",
-  promoter = "promoter",
-  compound = "compound",
-  compound_label = compound,
-  show_compound_ids = TRUE,
-  top_n_compounds = 160,
-  promoter_order = NULL,
+  reporter = "reporter",
+  perturbation = "perturbation",
+  perturbation_label = perturbation,
+  show_perturbation_ids = TRUE,
+  top_n_perturbations = 160,
+  reporter_order = NULL,
   cluster_rows = FALSE,
   cluster_cols = TRUE,
   clip_quantile = 0.98,
   color_limit = NULL,
-  show_compound_labels = NULL,
-  top_compound_labels = 40,
-  compound_label_score = NULL,
-  compound_label_min_gap = NULL,
-  compound_label_angle = 45,
-  title = "DStressR promoter-by-compound matrix",
+  show_perturbation_labels = NULL,
+  top_perturbation_labels = 40,
+  perturbation_label_score = NULL,
+  perturbation_label_min_gap = NULL,
+  perturbation_label_angle = 45,
+  title = "DStressR reporter-by-perturbation matrix",
   subtitle = NULL,
-  xlab = "Compounds",
-  ylab = "Promoters",
+  xlab = "Perturbations",
+  ylab = "Reporters",
   legend_title = value,
   low = "#2166AC",
   mid = "white",
@@ -42,39 +42,41 @@ plot_response_heatmap(
 
 - table:
 
-  A data frame with one row per promoter-compound pair.
+  A data frame with one row per reporter-perturbation pair.
 
 - value:
 
   Numeric response/effect column to show in the heatmap.
 
-- promoter, compound:
+- reporter, perturbation:
 
-  Columns identifying promoters and compounds.
+  Columns identifying reporters and perturbations.
 
-- compound_label:
+- perturbation_label:
 
-  Optional human-readable compound-name column. Defaults to `compound`.
+  Optional human-readable perturbation-name column. Defaults to
+  `perturbation`.
 
-- show_compound_ids:
+- show_perturbation_ids:
 
-  If `TRUE`, append compound IDs in square brackets to compound labels.
+  If `TRUE`, append perturbation IDs in square brackets to perturbation
+  labels.
 
-- top_n_compounds:
+- top_n_perturbations:
 
-  If finite, show only the top compounds by mean absolute response. Use
-  `Inf` to show all compounds.
+  If finite, show only the top perturbations by mean absolute response.
+  Use `Inf` to show all perturbations.
 
-- promoter_order:
+- reporter_order:
 
-  Optional global promoter order used when `cluster_rows = FALSE`. If
-  omitted, the option `DStressR.promoter_order` is used when set;
-  otherwise known DStressR paper promoters are shown in their manuscript
-  order and remaining promoters are sorted alphabetically.
+  Optional global reporter order used when `cluster_rows = FALSE`. If
+  omitted, the option `DStressR.reporter_order` is used when set;
+  otherwise known DStressR paper reporters are shown in their manuscript
+  order and remaining reporters are sorted alphabetically.
 
 - cluster_rows, cluster_cols:
 
-  If `TRUE`, hierarchically cluster promoters and/or compounds.
+  If `TRUE`, hierarchically cluster reporters and/or perturbations.
 
 - clip_quantile:
 
@@ -87,34 +89,34 @@ plot_response_heatmap(
   to `[-color_limit, color_limit]`; otherwise the limit is computed from
   `clip_quantile`.
 
-- show_compound_labels:
+- show_perturbation_labels:
 
-  If `TRUE`, draw all x-axis compound labels. If `FALSE`, suppress
-  x-axis compound labels. The default labels the `top_compound_labels`
-  compounds with largest absolute column sums, or all compounds when
-  fewer are plotted.
+  If `TRUE`, draw all x-axis perturbation labels. If `FALSE`, suppress
+  x-axis perturbation labels. The default labels the
+  `top_perturbation_labels` perturbations with largest absolute column
+  sums, or all perturbations when fewer are plotted.
 
-- top_compound_labels:
+- top_perturbation_labels:
 
-  Number of highest-signal compounds to label when
-  `show_compound_labels = NULL`.
+  Number of highest-signal perturbations to label when
+  `show_perturbation_labels = NULL`.
 
-- compound_label_score:
+- perturbation_label_score:
 
-  Optional numeric score used to choose the top-labelled compounds when
-  `show_compound_labels = NULL`. If named, values are matched to
-  compound labels; otherwise the order must match the displayed matrix
-  columns.
+  Optional numeric score used to choose the top-labelled perturbations
+  when `show_perturbation_labels = NULL`. If named, values are matched
+  to perturbation labels; otherwise the order must match the displayed
+  matrix columns.
 
-- compound_label_min_gap:
+- perturbation_label_min_gap:
 
   Minimum number of matrix columns between automatically selected
   labels. The default chooses a gap from the displayed matrix size and
-  `top_compound_labels`.
+  `top_perturbation_labels`.
 
-- compound_label_angle:
+- perturbation_label_angle:
 
-  Angle used for visible compound labels.
+  Angle used for visible perturbation labels.
 
 - title, subtitle, xlab, ylab:
 

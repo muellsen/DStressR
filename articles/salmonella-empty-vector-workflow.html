@@ -36,7 +36,7 @@
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Get started</h6></li>
-    <li><a class="dropdown-item" href="../articles/ecoli-promoter-screen.html">E. coli promoter-compound screen</a></li>
+    <li><a class="dropdown-item" href="../articles/ecoli-promoter-screen.html">E. coli reporter-perturbation screen</a></li>
     <li><a class="dropdown-item" href="../articles/median-polish-workflow.html">Original median-polish workflow</a></li>
     <li><a class="dropdown-item" href="../articles/salmonella-empty-vector-workflow.html">Salmonella Empty Vector workflow</a></li>
   </ul>
@@ -79,20 +79,20 @@
     
     
 <p>The Salmonella StressRegNet workflow uses Empty Vector Control (EVC)
-reporter strains to estimate compound-specific background Lux signal. In
-the original analysis, the <code>PEVC3</code> reporter is used as the
-reference. For each compound, the two PEVC3 replicate values are
-averaged, and this compound-specific EVC average is subtracted from
-every reporter strain.</p>
+reporter strains to estimate perturbation-specific background Lux
+signal. In the original analysis, the <code>PEVC3</code> reporter is
+used as the reference. For each perturbation, the two PEVC3 replicate
+values are averaged, and this perturbation-specific EVC average is
+subtracted from every reporter strain.</p>
 <p>This is different from the Campylobacter median-polish baseline. The
 Salmonella baseline is:</p>
 <pre class="text"><code>growth-normalized Lux
-  -&gt; promoter-replicate median centering
-  -&gt; subtract compound-specific PEVC3 average
-  -&gt; estimate DMSO null per promoter-replicate
+  -&gt; reporter-replicate median centering
+  -&gt; subtract perturbation-specific PEVC3 average
+  -&gt; estimate DMSO null per reporter-replicate
   -&gt; z-test p-values
-  -&gt; retain largest replicate p-value per promoter-compound
-  -&gt; BH adjustment within promoter</code></pre>
+  -&gt; retain largest replicate p-value per reporter-perturbation
+  -&gt; BH adjustment within reporter</code></pre>
 <p>DStressR implements this compatibility path with
 <code>fit_workflow(..., workflow = "empty_vector_control")</code>. The
 lower-level <code><a href="../reference/fit_empty_vector_control.html">fit_empty_vector_control()</a></code> function remains
@@ -106,13 +106,13 @@ output:</p>
 <h3 id="lux_auc_filtered_median-tsv-gz">
 <code>lux_auc_filtered_median.tsv.gz</code><a class="anchor" aria-label="anchor" href="#lux_auc_filtered_median-tsv-gz"></a>
 </h3>
-<p>This is a long table with one row per promoter-library-well-replicate
+<p>This is a long table with one row per reporter-library-well-replicate
 observation. Its rows are approximately:</p>
-<pre class="text"><code>n_promoters x n_library_wells x n_replicates</code></pre>
+<pre class="text"><code>n_reporters x n_library_wells x n_replicates</code></pre>
 <p>after growth filtering and reporter-quality filtering. The required
 columns are:</p>
 <ul>
-<li><code>promoter</code></li>
+<li><code>reporter</code></li>
 <li><code>srn_code</code></li>
 <li><code>replicate</code></li>
 <li><code>log2.lux.normed.centered</code></li>
@@ -123,7 +123,7 @@ already:</p>
 <li>Lux AUC until 10 hours,</li>
 <li>divided by the OD reached at 10 hours,</li>
 <li>log2-transformed,</li>
-<li>median-centered within promoter-replicate.</li>
+<li>median-centered within reporter-replicate.</li>
 </ol>
 </div>
 <div class="section level3">
@@ -138,7 +138,7 @@ Required columns are:</p>
 <li><code>Catalog Number</code></li>
 <li><code>ProductName</code></li>
 </ul>
-<p>The compound key used by the workflow is:</p>
+<p>The perturbation key used by the workflow is:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">srn_code</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">sub</a></span><span class="op">(</span><span class="st">"LibPlate"</span>, <span class="st">"lp"</span>, <span class="va">`Library plate`</span><span class="op">)</span>, <span class="va">`New well`</span>, sep <span class="op">=</span> <span class="st">"_"</span><span class="op">)</span></span></code></pre></div>
 </div>
@@ -160,14 +160,14 @@ Required columns are:</p>
 <span><span class="va">evc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fit_workflow.html">fit_workflow</a></span><span class="op">(</span></span>
 <span>  <span class="va">expression_df</span>,</span>
 <span>  workflow <span class="op">=</span> <span class="st">"empty_vector_control"</span>,</span>
-<span>  promoter <span class="op">=</span> <span class="st">"promoter"</span>,</span>
-<span>  compound <span class="op">=</span> <span class="st">"srn_code"</span>,</span>
+<span>  reporter <span class="op">=</span> <span class="st">"reporter"</span>,</span>
+<span>  perturbation <span class="op">=</span> <span class="st">"srn_code"</span>,</span>
 <span>  replicate <span class="op">=</span> <span class="st">"replicate"</span>,</span>
 <span>  response <span class="op">=</span> <span class="st">"log2.lux.normed.centered"</span>,</span>
-<span>  empty_vector_promoter <span class="op">=</span> <span class="st">"PEVC3"</span>,</span>
+<span>  empty_vector_reporter <span class="op">=</span> <span class="st">"PEVC3"</span>,</span>
 <span>  control <span class="op">=</span> <span class="va">dmso_srn_codes</span>,</span>
 <span>  exclude <span class="op">=</span> <span class="va">dmso_noisy_srn_codes</span>,</span>
-<span>  remove_promoters <span class="op">=</span> <span class="st">"PmgrR"</span></span>
+<span>  remove_reporters <span class="op">=</span> <span class="st">"PmgrR"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>The replicate-level table contains the EVC-normalized fold change,
 DMSO null parameters, z-scores, and raw p-values:</p>
@@ -176,8 +176,8 @@ DMSO null parameters, z-scores, and raw p-values:</p>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">replicate_pvalues</span><span class="op">)</span></span></code></pre></div>
 <p>The pair-level table reproduces the original conservative
-aggregation: for each promoter-compound pair, retain the largest
-replicate-level p-value and apply BH adjustment within promoter.</p>
+aggregation: for each reporter-perturbation pair, retain the largest
+replicate-level p-value and apply BH adjustment within reporter.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">hit_table</span> <span class="op">&lt;-</span> <span class="va">evc</span><span class="op">$</span><span class="va">pair_results</span></span>
 <span></span>
@@ -200,14 +200,14 @@ across PEVC3 replicates.</li>
 <code>log.evcfc = expression_value - average_PEVC3_expression_for_srn_code</code>.</li>
 <li>Remove the PEVC3 reference rows from the tested reporter table.</li>
 <li>Gather DMSO <code>log.evcfc</code> values within each
-promoter-replicate group.</li>
+reporter-replicate group.</li>
 <li>Estimate <code>dmso.mean</code> and <code>dmso.stdv</code>.</li>
 <li>Compute
 <code>zscore = (log.evcfc - dmso.mean) / dmso.stdv</code>.</li>
 <li>Compute two-sided Gaussian p-values.</li>
 <li>Retain the largest replicate-level p-value for each
-promoter-compound pair.</li>
-<li>Apply BH correction within promoter and label hits.</li>
+reporter-perturbation pair.</li>
+<li>Apply BH correction within reporter and label hits.</li>
 </ol>
 </div>
 <div class="section level2">
@@ -215,24 +215,24 @@ promoter-compound pair.</li>
 </h2>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">toy</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/expand.grid.html" class="external-link">expand.grid</a></span><span class="op">(</span></span>
-<span>  promoter <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"PEVC3"</span>, <span class="st">"P1"</span>, <span class="st">"P2"</span><span class="op">)</span>,</span>
+<span>  reporter <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"PEVC3"</span>, <span class="st">"P1"</span>, <span class="st">"P2"</span><span class="op">)</span>,</span>
 <span>  replicate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"r1"</span>, <span class="st">"r2"</span><span class="op">)</span>,</span>
 <span>  srn_code <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"DMSO1"</span>, <span class="st">"DMSO2"</span>, <span class="st">"C1"</span><span class="op">)</span>,</span>
 <span>  stringsAsFactors <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">toy</span><span class="op">$</span><span class="va">value</span> <span class="op">&lt;-</span> <span class="cn">NA_real_</span></span>
-<span><span class="va">toy</span><span class="op">$</span><span class="va">value</span><span class="op">[</span><span class="va">toy</span><span class="op">$</span><span class="va">promoter</span> <span class="op">==</span> <span class="st">"PEVC3"</span> <span class="op">&amp;</span> <span class="va">toy</span><span class="op">$</span><span class="va">srn_code</span> <span class="op">==</span> <span class="st">"DMSO1"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1.0</span>, <span class="fl">1.2</span><span class="op">)</span></span>
-<span><span class="va">toy</span><span class="op">$</span><span class="va">value</span><span class="op">[</span><span class="va">toy</span><span class="op">$</span><span class="va">promoter</span> <span class="op">==</span> <span class="st">"PEVC3"</span> <span class="op">&amp;</span> <span class="va">toy</span><span class="op">$</span><span class="va">srn_code</span> <span class="op">==</span> <span class="st">"DMSO2"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1.1</span>, <span class="fl">1.3</span><span class="op">)</span></span>
-<span><span class="va">toy</span><span class="op">$</span><span class="va">value</span><span class="op">[</span><span class="va">toy</span><span class="op">$</span><span class="va">promoter</span> <span class="op">==</span> <span class="st">"PEVC3"</span> <span class="op">&amp;</span> <span class="va">toy</span><span class="op">$</span><span class="va">srn_code</span> <span class="op">==</span> <span class="st">"C1"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2.0</span>, <span class="fl">2.2</span><span class="op">)</span></span>
+<span><span class="va">toy</span><span class="op">$</span><span class="va">value</span><span class="op">[</span><span class="va">toy</span><span class="op">$</span><span class="va">reporter</span> <span class="op">==</span> <span class="st">"PEVC3"</span> <span class="op">&amp;</span> <span class="va">toy</span><span class="op">$</span><span class="va">srn_code</span> <span class="op">==</span> <span class="st">"DMSO1"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1.0</span>, <span class="fl">1.2</span><span class="op">)</span></span>
+<span><span class="va">toy</span><span class="op">$</span><span class="va">value</span><span class="op">[</span><span class="va">toy</span><span class="op">$</span><span class="va">reporter</span> <span class="op">==</span> <span class="st">"PEVC3"</span> <span class="op">&amp;</span> <span class="va">toy</span><span class="op">$</span><span class="va">srn_code</span> <span class="op">==</span> <span class="st">"DMSO2"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1.1</span>, <span class="fl">1.3</span><span class="op">)</span></span>
+<span><span class="va">toy</span><span class="op">$</span><span class="va">value</span><span class="op">[</span><span class="va">toy</span><span class="op">$</span><span class="va">reporter</span> <span class="op">==</span> <span class="st">"PEVC3"</span> <span class="op">&amp;</span> <span class="va">toy</span><span class="op">$</span><span class="va">srn_code</span> <span class="op">==</span> <span class="st">"C1"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2.0</span>, <span class="fl">2.2</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">toy</span><span class="op">$</span><span class="va">value</span><span class="op">[</span><span class="va">toy</span><span class="op">$</span><span class="va">promoter</span> <span class="op">==</span> <span class="st">"P1"</span> <span class="op">&amp;</span> <span class="va">toy</span><span class="op">$</span><span class="va">srn_code</span> <span class="op">==</span> <span class="st">"DMSO1"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1.5</span>, <span class="fl">1.7</span><span class="op">)</span></span>
-<span><span class="va">toy</span><span class="op">$</span><span class="va">value</span><span class="op">[</span><span class="va">toy</span><span class="op">$</span><span class="va">promoter</span> <span class="op">==</span> <span class="st">"P1"</span> <span class="op">&amp;</span> <span class="va">toy</span><span class="op">$</span><span class="va">srn_code</span> <span class="op">==</span> <span class="st">"DMSO2"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1.6</span>, <span class="fl">1.8</span><span class="op">)</span></span>
-<span><span class="va">toy</span><span class="op">$</span><span class="va">value</span><span class="op">[</span><span class="va">toy</span><span class="op">$</span><span class="va">promoter</span> <span class="op">==</span> <span class="st">"P1"</span> <span class="op">&amp;</span> <span class="va">toy</span><span class="op">$</span><span class="va">srn_code</span> <span class="op">==</span> <span class="st">"C1"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">4.5</span>, <span class="fl">4.7</span><span class="op">)</span></span>
+<span><span class="va">toy</span><span class="op">$</span><span class="va">value</span><span class="op">[</span><span class="va">toy</span><span class="op">$</span><span class="va">reporter</span> <span class="op">==</span> <span class="st">"P1"</span> <span class="op">&amp;</span> <span class="va">toy</span><span class="op">$</span><span class="va">srn_code</span> <span class="op">==</span> <span class="st">"DMSO1"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1.5</span>, <span class="fl">1.7</span><span class="op">)</span></span>
+<span><span class="va">toy</span><span class="op">$</span><span class="va">value</span><span class="op">[</span><span class="va">toy</span><span class="op">$</span><span class="va">reporter</span> <span class="op">==</span> <span class="st">"P1"</span> <span class="op">&amp;</span> <span class="va">toy</span><span class="op">$</span><span class="va">srn_code</span> <span class="op">==</span> <span class="st">"DMSO2"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1.6</span>, <span class="fl">1.8</span><span class="op">)</span></span>
+<span><span class="va">toy</span><span class="op">$</span><span class="va">value</span><span class="op">[</span><span class="va">toy</span><span class="op">$</span><span class="va">reporter</span> <span class="op">==</span> <span class="st">"P1"</span> <span class="op">&amp;</span> <span class="va">toy</span><span class="op">$</span><span class="va">srn_code</span> <span class="op">==</span> <span class="st">"C1"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">4.5</span>, <span class="fl">4.7</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">toy</span><span class="op">$</span><span class="va">value</span><span class="op">[</span><span class="va">toy</span><span class="op">$</span><span class="va">promoter</span> <span class="op">==</span> <span class="st">"P2"</span> <span class="op">&amp;</span> <span class="va">toy</span><span class="op">$</span><span class="va">srn_code</span> <span class="op">==</span> <span class="st">"DMSO1"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.8</span>, <span class="fl">1.0</span><span class="op">)</span></span>
-<span><span class="va">toy</span><span class="op">$</span><span class="va">value</span><span class="op">[</span><span class="va">toy</span><span class="op">$</span><span class="va">promoter</span> <span class="op">==</span> <span class="st">"P2"</span> <span class="op">&amp;</span> <span class="va">toy</span><span class="op">$</span><span class="va">srn_code</span> <span class="op">==</span> <span class="st">"DMSO2"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.9</span>, <span class="fl">1.1</span><span class="op">)</span></span>
-<span><span class="va">toy</span><span class="op">$</span><span class="va">value</span><span class="op">[</span><span class="va">toy</span><span class="op">$</span><span class="va">promoter</span> <span class="op">==</span> <span class="st">"P2"</span> <span class="op">&amp;</span> <span class="va">toy</span><span class="op">$</span><span class="va">srn_code</span> <span class="op">==</span> <span class="st">"C1"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1.5</span>, <span class="fl">1.7</span><span class="op">)</span></span>
+<span><span class="va">toy</span><span class="op">$</span><span class="va">value</span><span class="op">[</span><span class="va">toy</span><span class="op">$</span><span class="va">reporter</span> <span class="op">==</span> <span class="st">"P2"</span> <span class="op">&amp;</span> <span class="va">toy</span><span class="op">$</span><span class="va">srn_code</span> <span class="op">==</span> <span class="st">"DMSO1"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.8</span>, <span class="fl">1.0</span><span class="op">)</span></span>
+<span><span class="va">toy</span><span class="op">$</span><span class="va">value</span><span class="op">[</span><span class="va">toy</span><span class="op">$</span><span class="va">reporter</span> <span class="op">==</span> <span class="st">"P2"</span> <span class="op">&amp;</span> <span class="va">toy</span><span class="op">$</span><span class="va">srn_code</span> <span class="op">==</span> <span class="st">"DMSO2"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.9</span>, <span class="fl">1.1</span><span class="op">)</span></span>
+<span><span class="va">toy</span><span class="op">$</span><span class="va">value</span><span class="op">[</span><span class="va">toy</span><span class="op">$</span><span class="va">reporter</span> <span class="op">==</span> <span class="st">"P2"</span> <span class="op">&amp;</span> <span class="va">toy</span><span class="op">$</span><span class="va">srn_code</span> <span class="op">==</span> <span class="st">"C1"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1.5</span>, <span class="fl">1.7</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">evc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fit_workflow.html">fit_workflow</a></span><span class="op">(</span></span>
 <span>  <span class="va">toy</span>,</span>
@@ -242,7 +242,7 @@ promoter-compound pair.</li>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">evc</span><span class="op">$</span><span class="va">replicate_results</span></span>
-<span><span class="co">#&gt;    promoter_replicate promoter replicate srn_code log.evcfc empty_vector_mean</span></span>
+<span><span class="co">#&gt;    promoter_replicate reporter replicate srn_code log.evcfc empty_vector_mean</span></span>
 <span><span class="co">#&gt; 1               P1_r1       P1        r1    DMSO1       0.4               1.1</span></span>
 <span><span class="co">#&gt; 2               P1_r1       P1        r1    DMSO2       0.4               1.2</span></span>
 <span><span class="co">#&gt; 3               P1_r1       P1        r1       C1       2.4               2.1</span></span>
@@ -269,7 +269,7 @@ promoter-compound pair.</li>
 <span><span class="co">#&gt; 11              2      -0.1 0.000000e+00 2           NaN       NaN</span></span>
 <span><span class="co">#&gt; 12              2      -0.1 0.000000e+00 2          -Inf 0.0000000</span></span>
 <span><span class="va">evc</span><span class="op">$</span><span class="va">pair_results</span></span>
-<span><span class="co">#&gt;   promoter_replicate promoter replicate srn_code log.evcfc empty_vector_mean</span></span>
+<span><span class="co">#&gt;   promoter_replicate reporter replicate srn_code log.evcfc empty_vector_mean</span></span>
 <span><span class="co">#&gt; 3              P1_r1       P1        r1       C1       2.4               2.1</span></span>
 <span><span class="co">#&gt; 6              P2_r1       P2        r1       C1      -0.6               2.1</span></span>
 <span><span class="co">#&gt; 4              P2_r1       P2        r1    DMSO1      -0.3               1.1</span></span>

@@ -5,7 +5,7 @@ Extract model results
 ## Usage
 
 ``` r
-results(fit, compounds = NULL, promoters = NULL)
+results(fit, perturbations = NULL, reporters = NULL)
 ```
 
 ## Arguments
@@ -14,14 +14,14 @@ results(fit, compounds = NULL, promoters = NULL)
 
   A `destress_fit` object.
 
-- compounds:
+- perturbations:
 
-  Optional compound subset.
+  Optional perturbation subset.
 
-- promoters:
+- reporters:
 
-  Optional promoter subset.
+  Optional reporter subset.
 
 ## Value
 
-A data frame with total and promoter-specific effects.
+A data frame with total and reporter-specific effects.

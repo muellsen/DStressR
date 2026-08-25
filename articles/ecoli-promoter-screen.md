@@ -1,4 +1,4 @@
-# E. coli promoter-compound screen
+# E. coli reporter-perturbation screen
 
 This article describes the public *E. coli* reporter screen used as the
 package application for DStressR. The data are from Binsfeld et
@@ -26,27 +26,27 @@ table(binsfeld_reporter_auc$strain)
 #> 
 #> DmarA  Drob DsoxS    WT 
 #>  6144  6144  6144  6144
-length(unique(binsfeld_reporter_auc$promoter))
+length(unique(binsfeld_reporter_auc$reporter))
 #> [1] 8
-length(unique(binsfeld_reporter_auc$compound))
+length(unique(binsfeld_reporter_auc$perturbation))
 #> [1] 95
 ```
 
-The AUC table is a long table with one row per strain, promoter,
-compound or control, replicate, and serial-dilution observation. The
-package-level `compound` column keeps the original compound labels,
-except that the water control wells are collapsed to `Water`. The
-original label remains in `drug`. The source `concentration_index`
+The AUC table is a long table with one row per strain, reporter,
+perturbation or control, replicate, and serial-dilution observation. The
+package-level `perturbation` column keeps the original perturbation
+labels, except that the water control wells are collapsed to `Water`.
+The original label remains in `drug`. The source `concentration_index`
 increases with dilution; `dose_level` reverses this coding so that
-larger values correspond to higher concentration for non-water compound
-wells. For water controls, the same column records the matched
-concentration-index position in the screen layout.
+larger values correspond to higher concentration for non-water
+perturbation wells. For water controls, the same column records the
+matched concentration-index position in the screen layout.
 
 ``` r
 
 names(binsfeld_reporter_auc)
-#>  [1] "strain"              "promoter"            "replicate"          
-#>  [4] "well"                "drug"                "compound"           
+#>  [1] "strain"              "reporter"            "replicate"          
+#>  [4] "well"                "drug"                "perturbation"       
 #>  [7] "concentration_index" "dose_level"          "concentration_ug_ml"
 #> [10] "od_auc"              "lux_auc"             "od_auc_per_lux_auc" 
 #> [13] "removed"
@@ -59,9 +59,9 @@ reference hit rule.
 ``` r
 
 names(binsfeld_reporter_scores)
-#> [1] "well"                "drug"                "compound"           
+#> [1] "well"                "drug"                "perturbation"       
 #> [4] "concentration_ug_ml" "strain"              "statistic"          
-#> [7] "promoter"            "replicate"           "value"
+#> [7] "reporter"            "replicate"           "value"
 ```
 
 ## DStressR analysis
@@ -82,8 +82,8 @@ wt_auc <- subset(
 
 assay <- prepare_assay(
   wt_auc,
-  promoter = "promoter",
-  compound = "compound",
+  reporter = "reporter",
+  perturbation = "perturbation",
   control = "Water",
   lux = "lux_auc",
   growth = "od_auc",
@@ -92,8 +92,8 @@ assay <- prepare_assay(
   replicate = "replicate",
   growth_covariates = "replicate",
   numeric_covariates = "dose_level",
-  background_promoter = "EVC",
-  background_by = c("compound", "dose_level", "replicate")
+  background_reporter = "EVC",
+  background_by = c("perturbation", "dose_level", "replicate")
 )
 
 fit <- fit_destress(
@@ -101,7 +101,7 @@ fit <- fit_destress(
   preset = "model",
   technical = c("replicate", "dose_level"),
   empirical_bayes = TRUE,
-  adjustment = "by_promoter",
+  adjustment = "by_reporter",
   interaction = FALSE
 )
 

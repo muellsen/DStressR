@@ -1,4 +1,4 @@
-# Estimate promoter-specific growth normalization exponents
+# Estimate reporter-specific growth normalization exponents
 
 Estimates how luminescence scales with growth in negative-control wells,
 optionally adjusting for technical factors such as batch, plate, or
@@ -9,8 +9,8 @@ replicate:
 ``` r
 estimate_growth_exponents(
   data,
-  promoter = "promoter",
-  compound = "compound",
+  reporter = "reporter",
+  perturbation = "perturbation",
   lux = "lux",
   growth = "growth",
   covariates = NULL,
@@ -29,7 +29,7 @@ estimate_growth_exponents(
 
   A data frame with one row per well.
 
-- promoter, compound, lux, growth:
+- reporter, perturbation, lux, growth:
 
   Column names.
 
@@ -46,7 +46,7 @@ estimate_growth_exponents(
 
 - controls:
 
-  Control values in `compound`, usually DMSO wells.
+  Control values in `perturbation`, usually DMSO wells.
 
 - pseudocount:
 
@@ -54,12 +54,12 @@ estimate_growth_exponents(
 
 - min_control_n:
 
-  Minimum control wells needed for a promoter-specific raw slope.
-  Promoters with fewer controls use the global slope.
+  Minimum control wells needed for a reporter-specific raw slope.
+  Reporters with fewer controls use the global slope.
 
 - shrink:
 
-  If `TRUE`, shrink promoter-specific slopes toward the global control
+  If `TRUE`, shrink reporter-specific slopes toward the global control
   slope.
 
 - alpha_bounds:
@@ -69,15 +69,15 @@ estimate_growth_exponents(
 
 ## Value
 
-A data frame with raw promoter intercepts and raw and shrunken growth
-exponents per promoter.
+A data frame with raw reporter intercepts and raw and shrunken growth
+exponents per reporter.
 
 ## Details
 
 \$\$\log_2(LUX_i) = a_g + \alpha_g \log_2(growth_i) + X_i\theta +
 e_i\$\$
 
-Raw promoter-specific slopes are then shrunk toward a global
+Raw reporter-specific slopes are then shrunk toward a global
 control-well slope using an empirical-Bayes normal prior. The shrunken
 \\\alpha_g\\ values can be used in
 [`prepare_assay()`](https://muellsen.github.io/DStressR/reference/prepare_assay.md)

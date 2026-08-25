@@ -11,7 +11,7 @@ fit_destress(
   assay,
   technical = NULL,
   empirical_bayes = TRUE,
-  empty_vector_promoter = NULL,
+  empty_vector_reporter = NULL,
   background_rank = 0,
   normalization = NULL,
   testing = NULL,
@@ -44,13 +44,13 @@ fit_destress(
   variance distribution. This maps to `testing = "moderated_t"` for the
   model path; `FALSE` maps to `testing = "student_t"`.
 
-- empty_vector_promoter:
+- empty_vector_reporter:
 
-  Optional promoter/control strain used as an empty-vector reporter in
-  the model-based path. When supplied, its reference-relative compound
-  effect is subtracted from every promoter's reference-relative compound
-  effect before promoter-library centering. For new analyses, prefer
-  `background_promoter` in
+  Optional reporter/control strain used as an empty-vector reporter in
+  the model-based path. When supplied, its reference-relative
+  perturbation effect is subtracted from every reporter's
+  reference-relative perturbation effect before reporter-library
+  centering. For new analyses, prefer `background_reporter` in
   [`prepare_assay()`](https://muellsen.github.io/DStressR/reference/prepare_assay.md),
   which performs explicit response-level background calibration before
   model fitting.
@@ -60,7 +60,7 @@ fit_destress(
   Non-negative integer. The default `0` removes no latent background.
   Values `1` or `2` additionally subtract a low-rank background term
   from the reference-relative total-effect matrix before testing
-  rank-adjusted total and promoter-specific residual effects.
+  rank-adjusted total and reporter-specific residual effects.
 
 - normalization:
 
@@ -77,15 +77,15 @@ fit_destress(
 
 - adjustment:
 
-  One of `"global"`, `"by_promoter"`, or `"none"`.
+  One of `"global"`, `"by_reporter"`, or `"none"`.
 
 - interaction:
 
-  If `FALSE`, fit one Gaussian linear model per promoter with the
-  control compound as reference and the supplied technical covariates as
-  design terms. The latter is the scalable path for promoter-specific
-  compound effects. If `TRUE`, fit the historical full
-  promoter-by-compound interaction model.
+  If `FALSE`, fit one Gaussian linear model per reporter with the
+  control perturbation as reference and the supplied technical
+  covariates as design terms. The latter is the scalable path for
+  reporter-specific perturbation effects. If `TRUE`, fit the historical
+  full reporter-by-perturbation interaction model.
 
 - preset:
 
@@ -115,4 +115,4 @@ accepted. For the model-based path, growth-response normalization is
 performed upstream by
 [`prepare_assay()`](https://muellsen.github.io/DStressR/reference/prepare_assay.md),
 where `growth_exponent` can be fixed, estimated, or supplied as
-promoter-specific values.
+reporter-specific values.

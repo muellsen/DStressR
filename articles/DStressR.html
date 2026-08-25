@@ -36,7 +36,7 @@
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Get started</h6></li>
-    <li><a class="dropdown-item" href="../articles/ecoli-promoter-screen.html">E. coli promoter-compound screen</a></li>
+    <li><a class="dropdown-item" href="../articles/ecoli-promoter-screen.html">E. coli reporter-perturbation screen</a></li>
     <li><a class="dropdown-item" href="../articles/median-polish-workflow.html">Original median-polish workflow</a></li>
     <li><a class="dropdown-item" href="../articles/salmonella-empty-vector-workflow.html">Salmonella Empty Vector workflow</a></li>
   </ul>
@@ -78,11 +78,11 @@
 
     
     
-<p><code>DStressR</code> models promoter-activity responses in
+<p><code>DStressR</code> models reporter-activity responses in
 high-throughput chemical genomics screens. The package is designed as
 the stress-response counterpart to <a href="https://bio-datascience.github.io/DGrowthR/" class="external-link"><code>DGrowthR</code></a>:
 DGrowthR handles growth-curve modeling, while DStressR handles
-promoter-compound effects after accounting for growth and technical
+reporter-perturbation effects after accounting for growth and technical
 structure.</p>
 <p>This vignette uses a small simulated screen so that the model-based
 named workflow can be run without private data files. DStressR also
@@ -94,9 +94,9 @@ the empty-vector-control workflow.</p>
 <h2 id="input-files-and-table-shape">Input files and table shape<a class="anchor" aria-label="anchor" href="#input-files-and-table-shape"></a>
 </h2>
 <p>DStressR expects a long measurement table with one row per measured
-promoter-compound-replicate observation. In a complete rectangular
+reporter-perturbation-replicate observation. In a complete rectangular
 screen, the row count is approximately:</p>
-<pre class="text"><code>n_promoters x (n_compound_wells + n_control_wells) x n_replicates</code></pre>
+<pre class="text"><code>n_reporters x (n_compound_wells + n_control_wells) x n_replicates</code></pre>
 <p>The table may contain additional rows when the same screen is
 repeated across batches, library plates, measurement plates, or
 experimental days. The important point is that these technical
@@ -104,9 +104,9 @@ covariates remain in the table so they can be modeled rather than
 accidentally averaged away.</p>
 <p>The required biological and technical information is:</p>
 <ul>
-<li>promoter or reporter construct</li>
-<li>compound or library-well identifier</li>
-<li>negative-control compound, usually <code>DMSO</code>
+<li>reporter or reporter construct</li>
+<li>perturbation or library-well identifier</li>
+<li>negative-control perturbation, usually <code>DMSO</code>
 </li>
 <li>luminescence summary</li>
 <li>growth summary</li>
@@ -115,24 +115,24 @@ plate</li>
 </ul>
 <p>Column names are not fixed. They are mapped explicitly in
 <code><a href="../reference/prepare_assay.html">prepare_assay()</a></code>.</p>
-<p>For the original Campylobacter promoter-library workflow, the
+<p>For the original Campylobacter reporter-library workflow, the
 convenience helper <code><a href="../reference/read_campylobacter_expression.html">read_campylobacter_expression()</a></code> joins
 two exported files:</p>
 <ul>
 <li>
 <code>expression_values.tsv.gz</code>: one row per
-promoter-library-well-replicate observation. It must contain either
+reporter-library-well-replicate observation. It must contain either
 <code>srn_code</code> or both <code>libplate</code> and
-<code>well</code>, plus the promoter, luminescence, growth, and
+<code>well</code>, plus the reporter, luminescence, growth, and
 technical columns used downstream.</li>
 <li>
-<code>LibMap.txt</code>: one row per compound/library well with
+<code>LibMap.txt</code>: one row per perturbation/library well with
 columns <code>Library plate</code>, <code>Well</code>,
 <code>ProductName</code>, and <code>Catalog Number</code>.</li>
 </ul>
 <p>The helper reconstructs the library-well key as
 <code>paste0("lp", Library plate, "_", Well)</code> for
-<code>LibMap.txt</code>, joins the compound annotations onto the
+<code>LibMap.txt</code>, joins the perturbation annotations onto the
 expression table, and returns a long table with the same number of rows
 as <code>expression_values.tsv.gz</code>.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
@@ -143,8 +143,8 @@ as <code>expression_values.tsv.gz</code>.</p>
 <span></span>
 <span><span class="va">assay</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/prepare_assay.html">prepare_assay</a></span><span class="op">(</span></span>
 <span>  <span class="va">expression_df</span>,</span>
-<span>  promoter <span class="op">=</span> <span class="st">"promoter"</span>,</span>
-<span>  compound <span class="op">=</span> <span class="st">"srn_code"</span>,</span>
+<span>  reporter <span class="op">=</span> <span class="st">"reporter"</span>,</span>
+<span>  perturbation <span class="op">=</span> <span class="st">"srn_code"</span>,</span>
 <span>  control <span class="op">=</span> <span class="st">"DMSO"</span>,</span>
 <span>  lux <span class="op">=</span> <span class="st">"LUX.AUC_16"</span>,</span>
 <span>  growth <span class="op">=</span> <span class="st">"od_16h.measured"</span>,</span>
@@ -160,33 +160,34 @@ as <code>expression_values.tsv.gz</code>.</p>
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://muellsen.github.io/DStressR/">DStressR</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">screen</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/simulate_screen.html">simulate_screen</a></span><span class="op">(</span></span>
-<span>  n_promoters <span class="op">=</span> <span class="fl">12</span>,</span>
-<span>  n_compounds <span class="op">=</span> <span class="fl">40</span>,</span>
+<span>  n_reporters <span class="op">=</span> <span class="fl">12</span>,</span>
+<span>  n_perturbations <span class="op">=</span> <span class="fl">40</span>,</span>
 <span>  n_replicates <span class="op">=</span> <span class="fl">3</span>,</span>
 <span>  seed <span class="op">=</span> <span class="fl">1</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">screen</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   promoter compound replicate batch od_16h.measured LUX.AUC_16 truth_specific</span></span>
-<span><span class="co">#&gt; 1       P1     DMSO        r1    b2       0.4116687   293.9048              0</span></span>
-<span><span class="co">#&gt; 2       P2     DMSO        r1    b2       0.3906898   432.5738              0</span></span>
-<span><span class="co">#&gt; 3       P3     DMSO        r1    b2       0.3333026   235.1525              0</span></span>
-<span><span class="co">#&gt; 4       P4     DMSO        r1    b2       0.3000495   850.4902              0</span></span>
-<span><span class="co">#&gt; 5       P5     DMSO        r1    b2       0.3410560   346.1222              0</span></span>
-<span><span class="co">#&gt; 6       P6     DMSO        r1    b2       0.5140298   378.6924              0</span></span>
-<span><span class="co">#&gt;   truth_global</span></span>
-<span><span class="co">#&gt; 1            0</span></span>
-<span><span class="co">#&gt; 2            0</span></span>
-<span><span class="co">#&gt; 3            0</span></span>
-<span><span class="co">#&gt; 4            0</span></span>
-<span><span class="co">#&gt; 5            0</span></span>
-<span><span class="co">#&gt; 6            0</span></span></code></pre></div>
-<p>The simulated table contains one row per promoter-compound-replicate
-well. It includes luminescence, growth, batch, replicate, and hidden
-truth columns used only to check the example.</p>
+<span><span class="co">#&gt;   reporter perturbation replicate batch od_16h.measured LUX.AUC_16</span></span>
+<span><span class="co">#&gt; 1       P1         DMSO        r1    b2       0.4116687   293.9048</span></span>
+<span><span class="co">#&gt; 2       P2         DMSO        r1    b2       0.3906898   432.5738</span></span>
+<span><span class="co">#&gt; 3       P3         DMSO        r1    b2       0.3333026   235.1525</span></span>
+<span><span class="co">#&gt; 4       P4         DMSO        r1    b2       0.3000495   850.4902</span></span>
+<span><span class="co">#&gt; 5       P5         DMSO        r1    b2       0.3410560   346.1222</span></span>
+<span><span class="co">#&gt; 6       P6         DMSO        r1    b2       0.5140298   378.6924</span></span>
+<span><span class="co">#&gt;   truth_specific truth_global</span></span>
+<span><span class="co">#&gt; 1              0            0</span></span>
+<span><span class="co">#&gt; 2              0            0</span></span>
+<span><span class="co">#&gt; 3              0            0</span></span>
+<span><span class="co">#&gt; 4              0            0</span></span>
+<span><span class="co">#&gt; 5              0            0</span></span>
+<span><span class="co">#&gt; 6              0            0</span></span></code></pre></div>
+<p>The simulated table contains one row per
+reporter-perturbation-replicate well. It includes luminescence, growth,
+batch, replicate, and hidden truth columns used only to check the
+example.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">screen</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] "promoter"        "compound"        "replicate"       "batch"          </span></span>
+<span><span class="co">#&gt; [1] "reporter"        "perturbation"    "replicate"       "batch"          </span></span>
 <span><span class="co">#&gt; [5] "od_16h.measured" "LUX.AUC_16"      "truth_specific"  "truth_global"</span></span></code></pre></div>
 </div>
 <div class="section level2">
@@ -194,13 +195,13 @@ truth columns used only to check the example.</p>
 </h2>
 <p><code><a href="../reference/prepare_assay.html">prepare_assay()</a></code> converts luminescence and growth
 summaries into a growth-adjusted log2 response. By default, DStressR
-estimates promoter-specific growth exponents from DMSO control wells and
+estimates reporter-specific growth exponents from DMSO control wells and
 shrinks them toward a global control-well slope.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">assay</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/prepare_assay.html">prepare_assay</a></span><span class="op">(</span></span>
 <span>  <span class="va">screen</span>,</span>
-<span>  promoter <span class="op">=</span> <span class="st">"promoter"</span>,</span>
-<span>  compound <span class="op">=</span> <span class="st">"compound"</span>,</span>
+<span>  reporter <span class="op">=</span> <span class="st">"reporter"</span>,</span>
+<span>  perturbation <span class="op">=</span> <span class="st">"perturbation"</span>,</span>
 <span>  control <span class="op">=</span> <span class="st">"DMSO"</span>,</span>
 <span>  lux <span class="op">=</span> <span class="st">"LUX.AUC_16"</span>,</span>
 <span>  growth <span class="op">=</span> <span class="st">"od_16h.measured"</span>,</span>
@@ -209,7 +210,7 @@ shrinks them toward a global control-well slope.</p>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">assay</span>, <span class="st">"destress"</span><span class="op">)</span><span class="op">$</span><span class="va">growth_exponent_fit</span></span>
-<span><span class="co">#&gt;    promoter control_n log_growth_sd a_raw a_raw_se a_raw_df alpha_raw</span></span>
+<span><span class="co">#&gt;    reporter control_n log_growth_sd a_raw a_raw_se a_raw_df alpha_raw</span></span>
 <span><span class="co">#&gt; 1        P1         3     0.2789856    NA       NA       NA        NA</span></span>
 <span><span class="co">#&gt; 2       P10         3     0.3303240    NA       NA       NA        NA</span></span>
 <span><span class="co">#&gt; 3       P11         3     0.2469301    NA       NA       NA        NA</span></span>
@@ -236,18 +237,18 @@ shrinks them toward a global control-well slope.</p>
 <span><span class="co">#&gt; 11           NA           NA                     0.8875006       0.1613071</span></span>
 <span><span class="co">#&gt; 12           NA           NA                     0.8875006       0.1613071</span></span>
 <span><span class="co">#&gt;     alpha_global_covariates alpha_prior_var alpha_prior_sd alpha_shrunk</span></span>
-<span><span class="co">#&gt; 1  promoter;batch;replicate      0.02601998      0.1613071    0.8875006</span></span>
-<span><span class="co">#&gt; 2  promoter;batch;replicate      0.02601998      0.1613071    0.8875006</span></span>
-<span><span class="co">#&gt; 3  promoter;batch;replicate      0.02601998      0.1613071    0.8875006</span></span>
-<span><span class="co">#&gt; 4  promoter;batch;replicate      0.02601998      0.1613071    0.8875006</span></span>
-<span><span class="co">#&gt; 5  promoter;batch;replicate      0.02601998      0.1613071    0.8875006</span></span>
-<span><span class="co">#&gt; 6  promoter;batch;replicate      0.02601998      0.1613071    0.8875006</span></span>
-<span><span class="co">#&gt; 7  promoter;batch;replicate      0.02601998      0.1613071    0.8875006</span></span>
-<span><span class="co">#&gt; 8  promoter;batch;replicate      0.02601998      0.1613071    0.8875006</span></span>
-<span><span class="co">#&gt; 9  promoter;batch;replicate      0.02601998      0.1613071    0.8875006</span></span>
-<span><span class="co">#&gt; 10 promoter;batch;replicate      0.02601998      0.1613071    0.8875006</span></span>
-<span><span class="co">#&gt; 11 promoter;batch;replicate      0.02601998      0.1613071    0.8875006</span></span>
-<span><span class="co">#&gt; 12 promoter;batch;replicate      0.02601998      0.1613071    0.8875006</span></span>
+<span><span class="co">#&gt; 1  reporter;batch;replicate      0.02601998      0.1613071    0.8875006</span></span>
+<span><span class="co">#&gt; 2  reporter;batch;replicate      0.02601998      0.1613071    0.8875006</span></span>
+<span><span class="co">#&gt; 3  reporter;batch;replicate      0.02601998      0.1613071    0.8875006</span></span>
+<span><span class="co">#&gt; 4  reporter;batch;replicate      0.02601998      0.1613071    0.8875006</span></span>
+<span><span class="co">#&gt; 5  reporter;batch;replicate      0.02601998      0.1613071    0.8875006</span></span>
+<span><span class="co">#&gt; 6  reporter;batch;replicate      0.02601998      0.1613071    0.8875006</span></span>
+<span><span class="co">#&gt; 7  reporter;batch;replicate      0.02601998      0.1613071    0.8875006</span></span>
+<span><span class="co">#&gt; 8  reporter;batch;replicate      0.02601998      0.1613071    0.8875006</span></span>
+<span><span class="co">#&gt; 9  reporter;batch;replicate      0.02601998      0.1613071    0.8875006</span></span>
+<span><span class="co">#&gt; 10 reporter;batch;replicate      0.02601998      0.1613071    0.8875006</span></span>
+<span><span class="co">#&gt; 11 reporter;batch;replicate      0.02601998      0.1613071    0.8875006</span></span>
+<span><span class="co">#&gt; 12 reporter;batch;replicate      0.02601998      0.1613071    0.8875006</span></span>
 <span><span class="co">#&gt;    alpha_shrunk_se alpha_fixed_one alpha_diff_from_one</span></span>
 <span><span class="co">#&gt; 1        0.1613071               1          -0.1124994</span></span>
 <span><span class="co">#&gt; 2        0.1613071               1          -0.1124994</span></span>
@@ -267,8 +268,8 @@ shrinks them toward a global control-well slope.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">assay_fixed</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/prepare_assay.html">prepare_assay</a></span><span class="op">(</span></span>
 <span>  <span class="va">screen</span>,</span>
-<span>  promoter <span class="op">=</span> <span class="st">"promoter"</span>,</span>
-<span>  compound <span class="op">=</span> <span class="st">"compound"</span>,</span>
+<span>  reporter <span class="op">=</span> <span class="st">"reporter"</span>,</span>
+<span>  perturbation <span class="op">=</span> <span class="st">"perturbation"</span>,</span>
 <span>  control <span class="op">=</span> <span class="st">"DMSO"</span>,</span>
 <span>  lux <span class="op">=</span> <span class="st">"LUX.AUC_16"</span>,</span>
 <span>  growth <span class="op">=</span> <span class="st">"od_16h.measured"</span>,</span>
@@ -280,10 +281,10 @@ shrinks them toward a global control-well slope.</p>
 <div class="section level2">
 <h2 id="fit-the-model-workflow">Fit the model workflow<a class="anchor" aria-label="anchor" href="#fit-the-model-workflow"></a>
 </h2>
-<p><code><a href="../reference/fit_destress.html">fit_destress()</a></code> fits promoter and compound effects while
-accounting for technical covariates. The result table reports both the
-DMSO-relative total effect and the promoter-specific effect after
-subtracting the compound-wide effect.</p>
+<p><code><a href="../reference/fit_destress.html">fit_destress()</a></code> fits reporter and perturbation effects
+while accounting for technical covariates. The result table reports both
+the DMSO-relative total effect and the reporter-specific effect after
+subtracting the perturbation-wide effect.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fit_destress.html">fit_destress</a></span><span class="op">(</span></span>
 <span>  <span class="va">assay</span>,</span>
@@ -295,13 +296,13 @@ subtracting the compound-wide effect.</p>
 <span><span class="va">tab</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/adjust_pvalues.html">adjust_pvalues</a></span><span class="op">(</span><span class="va">tab</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">tab</span><span class="op">)</span></span>
-<span><span class="co">#&gt;    promoter compound total_effect  total_se total_statistic total_pvalue</span></span>
-<span><span class="co">#&gt; 1        P1       C1  -0.42759639 0.1286067      -3.3248384 0.0008847299</span></span>
-<span><span class="co">#&gt; 21       P1      C10   0.11008012 0.1286067       0.8559441 0.3920289226</span></span>
-<span><span class="co">#&gt; 34       P1      C11  -0.40523361 0.1286067      -3.1509533 0.0016274332</span></span>
-<span><span class="co">#&gt; 47       P1      C12   0.28971870 0.1286067       2.2527502 0.0242751218</span></span>
-<span><span class="co">#&gt; 58       P1      C13   0.04093903 0.1286067       0.3183274 0.7502366381</span></span>
-<span><span class="co">#&gt; 67       P1      C14  -0.06382475 0.1286067      -0.4962787 0.6196979032</span></span>
+<span><span class="co">#&gt;    reporter perturbation total_effect  total_se total_statistic total_pvalue</span></span>
+<span><span class="co">#&gt; 1        P1           C1  -0.42759639 0.1286067      -3.3248384 0.0008847299</span></span>
+<span><span class="co">#&gt; 21       P1          C10   0.11008012 0.1286067       0.8559441 0.3920289226</span></span>
+<span><span class="co">#&gt; 34       P1          C11  -0.40523361 0.1286067      -3.1509533 0.0016274332</span></span>
+<span><span class="co">#&gt; 47       P1          C12   0.28971870 0.1286067       2.2527502 0.0242751218</span></span>
+<span><span class="co">#&gt; 58       P1          C13   0.04093903 0.1286067       0.3183274 0.7502366381</span></span>
+<span><span class="co">#&gt; 67       P1          C14  -0.06382475 0.1286067      -0.4962787 0.6196979032</span></span>
 <span><span class="co">#&gt;    additive_total_effect additive_total_se empty_vector_effect</span></span>
 <span><span class="co">#&gt; 1                     NA                NA                  NA</span></span>
 <span><span class="co">#&gt; 21                    NA                NA                  NA</span></span>
@@ -344,21 +345,21 @@ subtracting the compound-wide effect.</p>
 <span><span class="co">#&gt; 47   0.1239068          0.7063943       0.4799431        0.11490814</span></span>
 <span><span class="co">#&gt; 58   0.1239068          0.2280126       0.8196365        0.86983958</span></span>
 <span><span class="co">#&gt; 67   0.1239068         -0.3537217       0.7235475        0.79321332</span></span>
-<span><span class="co">#&gt;    total_padj_by_promoter rank_adjusted_total_padj_global</span></span>
+<span><span class="co">#&gt;    total_padj_by_reporter rank_adjusted_total_padj_global</span></span>
 <span><span class="co">#&gt; 1              0.02671743                      0.01678774</span></span>
 <span><span class="co">#&gt; 21             0.54072955                      0.61694101</span></span>
 <span><span class="co">#&gt; 34             0.02671743                      0.02389438</span></span>
 <span><span class="co">#&gt; 47             0.09710049                      0.12774996</span></span>
 <span><span class="co">#&gt; 58             0.78972278                      0.87080128</span></span>
 <span><span class="co">#&gt; 67             0.70822618                      0.79495505</span></span>
-<span><span class="co">#&gt;    rank_adjusted_total_padj_by_promoter specific_padj_global</span></span>
+<span><span class="co">#&gt;    rank_adjusted_total_padj_by_reporter specific_padj_global</span></span>
 <span><span class="co">#&gt; 1                             0.0348559            0.9710323</span></span>
 <span><span class="co">#&gt; 21                            0.5442554            0.9710323</span></span>
 <span><span class="co">#&gt; 34                            0.0348559            0.9710323</span></span>
 <span><span class="co">#&gt; 47                            0.1080558            0.9710323</span></span>
 <span><span class="co">#&gt; 58                            0.7905959            0.9710323</span></span>
 <span><span class="co">#&gt; 67                            0.7097813            0.9710323</span></span>
-<span><span class="co">#&gt;    specific_padj_by_promoter total_padj specific_padj</span></span>
+<span><span class="co">#&gt;    specific_padj_by_reporter total_padj specific_padj</span></span>
 <span><span class="co">#&gt; 1                  0.8293604 0.01114009     0.9710323</span></span>
 <span><span class="co">#&gt; 21                 0.8293604 0.61294424     0.9710323</span></span>
 <span><span class="co">#&gt; 34                 0.8293604 0.01698191     0.9710323</span></span>
@@ -369,13 +370,13 @@ subtracting the compound-wide effect.</p>
 <ul>
 <li>
 <code>total_effect</code>: DMSO-relative response for the
-promoter-compound pair.</li>
+reporter-perturbation pair.</li>
 <li>
-<code>global_effect</code>: average compound-wide response across
-promoters.</li>
+<code>global_effect</code>: average perturbation-wide response
+across reporters.</li>
 <li>
-<code>specific_effect</code>: promoter-specific deviation from the
-compound-wide effect.</li>
+<code>specific_effect</code>: reporter-specific deviation from the
+perturbation-wide effect.</li>
 <li>
 <code>specific_pvalue</code> and <code>specific_padj</code>: test
 and BH-adjusted p-value.</li>
@@ -389,22 +390,22 @@ model-based analyses.</p>
 </h2>
 <p>If a screen contains a matched background reporter, such as an Empty
 Vector Control, the background reporter can be used during response
-construction. When <code>background_promoter</code> is supplied,
+construction. When <code>background_reporter</code> is supplied,
 DStressR uses Huber calibration by default; least-squares calibration
 and direct subtraction remain available through
 <code>background_method</code>.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">assay_bg</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/prepare_assay.html">prepare_assay</a></span><span class="op">(</span></span>
 <span>  <span class="va">screen_with_evc</span>,</span>
-<span>  promoter <span class="op">=</span> <span class="st">"promoter"</span>,</span>
-<span>  compound <span class="op">=</span> <span class="st">"compound"</span>,</span>
+<span>  reporter <span class="op">=</span> <span class="st">"reporter"</span>,</span>
+<span>  perturbation <span class="op">=</span> <span class="st">"perturbation"</span>,</span>
 <span>  control <span class="op">=</span> <span class="st">"DMSO"</span>,</span>
 <span>  lux <span class="op">=</span> <span class="st">"LUX.AUC_16"</span>,</span>
 <span>  growth <span class="op">=</span> <span class="st">"od_16h.measured"</span>,</span>
 <span>  batch <span class="op">=</span> <span class="st">"batch"</span>,</span>
 <span>  replicate <span class="op">=</span> <span class="st">"replicate"</span>,</span>
-<span>  background_promoter <span class="op">=</span> <span class="st">"EVC"</span>,</span>
-<span>  background_by <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"compound"</span>, <span class="st">"batch"</span>, <span class="st">"replicate"</span><span class="op">)</span></span>
+<span>  background_reporter <span class="op">=</span> <span class="st">"EVC"</span>,</span>
+<span>  background_by <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"perturbation"</span>, <span class="st">"batch"</span>, <span class="st">"replicate"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">fit_bg</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fit_destress.html">fit_destress</a></span><span class="op">(</span></span>
@@ -434,17 +435,17 @@ and direct subtraction remain available through
 <span>  <span class="va">hits</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/order.html" class="external-link">order</a></span><span class="op">(</span><span class="va">hits</span><span class="op">$</span><span class="va">specific_padj</span>, <span class="op">-</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">hits</span><span class="op">$</span><span class="va">specific_effect</span><span class="op">)</span><span class="op">)</span>, <span class="op">]</span>,</span>
 <span>  <span class="fl">10</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt;     promoter compound total_effect  total_se total_statistic total_pvalue</span></span>
-<span><span class="co">#&gt; 218      P12      C26   -1.3710711 0.1286071      -10.660929 1.555518e-26</span></span>
-<span><span class="co">#&gt; 197      P11      C24   -1.6735292 0.1286071      -13.012726 1.043345e-38</span></span>
-<span><span class="co">#&gt; 244      P10      C28    1.4895866 0.1286077       11.582410 5.083461e-31</span></span>
-<span><span class="co">#&gt; 177      P10      C22   -1.6257162 0.1286077      -12.640897 1.264264e-36</span></span>
-<span><span class="co">#&gt; 324      P10      C33    0.9705429 0.1286077        7.546540 4.473479e-14</span></span>
-<span><span class="co">#&gt; 131       P5      C19    1.0692457 0.1286080        8.313991 9.264966e-17</span></span>
-<span><span class="co">#&gt; 387      P11      C39   -1.2130464 0.1286071       -9.432187 4.024404e-21</span></span>
-<span><span class="co">#&gt; 410       P8      C40   -0.7506326 0.1286064       -5.836665 5.327233e-09</span></span>
-<span><span class="co">#&gt; 98        P8      C17   -0.2232267 0.1286064       -1.735735 8.261100e-02</span></span>
-<span><span class="co">#&gt; 248       P4      C28   -0.2227294 0.1286069       -1.731862 8.329848e-02</span></span>
+<span><span class="co">#&gt;     reporter perturbation total_effect  total_se total_statistic total_pvalue</span></span>
+<span><span class="co">#&gt; 218      P12          C26   -1.3710711 0.1286071      -10.660929 1.555518e-26</span></span>
+<span><span class="co">#&gt; 197      P11          C24   -1.6735292 0.1286071      -13.012726 1.043345e-38</span></span>
+<span><span class="co">#&gt; 244      P10          C28    1.4895866 0.1286077       11.582410 5.083461e-31</span></span>
+<span><span class="co">#&gt; 177      P10          C22   -1.6257162 0.1286077      -12.640897 1.264264e-36</span></span>
+<span><span class="co">#&gt; 324      P10          C33    0.9705429 0.1286077        7.546540 4.473479e-14</span></span>
+<span><span class="co">#&gt; 131       P5          C19    1.0692457 0.1286080        8.313991 9.264966e-17</span></span>
+<span><span class="co">#&gt; 387      P11          C39   -1.2130464 0.1286071       -9.432187 4.024404e-21</span></span>
+<span><span class="co">#&gt; 410       P8          C40   -0.7506326 0.1286064       -5.836665 5.327233e-09</span></span>
+<span><span class="co">#&gt; 98        P8          C17   -0.2232267 0.1286064       -1.735735 8.261100e-02</span></span>
+<span><span class="co">#&gt; 248       P4          C28   -0.2227294 0.1286069       -1.731862 8.329848e-02</span></span>
 <span><span class="co">#&gt;     additive_total_effect additive_total_se empty_vector_effect</span></span>
 <span><span class="co">#&gt; 218                    NA                NA                  NA</span></span>
 <span><span class="co">#&gt; 197                    NA                NA                  NA</span></span>
@@ -511,7 +512,7 @@ and direct subtraction remain available through
 <span><span class="co">#&gt; 410   0.1239068          -6.167437    6.943232e-10      3.196340e-07</span></span>
 <span><span class="co">#&gt; 98    0.1239068          -2.856035    4.289771e-03      2.493917e-01</span></span>
 <span><span class="co">#&gt; 248   0.1239068          -2.816362    4.857182e-03      2.498954e-01</span></span>
-<span><span class="co">#&gt;     total_padj_by_promoter rank_adjusted_total_padj_global</span></span>
+<span><span class="co">#&gt;     total_padj_by_reporter rank_adjusted_total_padj_global</span></span>
 <span><span class="co">#&gt; 218           6.222073e-25                    6.063186e-15</span></span>
 <span><span class="co">#&gt; 197           4.173380e-37                    9.212500e-19</span></span>
 <span><span class="co">#&gt; 244           1.016692e-29                    1.400593e-16</span></span>
@@ -522,7 +523,7 @@ and direct subtraction remain available through
 <span><span class="co">#&gt; 410           1.623456e-07                    6.534070e-06</span></span>
 <span><span class="co">#&gt; 98            2.863950e-01                    2.610141e-01</span></span>
 <span><span class="co">#&gt; 248           2.221293e-01                    2.614575e-01</span></span>
-<span><span class="co">#&gt;     rank_adjusted_total_padj_by_promoter specific_padj_global</span></span>
+<span><span class="co">#&gt;     rank_adjusted_total_padj_by_reporter specific_padj_global</span></span>
 <span><span class="co">#&gt; 218                         2.021062e-15         1.579977e-30</span></span>
 <span><span class="co">#&gt; 197                         7.677083e-20         6.238121e-30</span></span>
 <span><span class="co">#&gt; 244                         1.750741e-17         5.934161e-26</span></span>
@@ -533,7 +534,7 @@ and direct subtraction remain available through
 <span><span class="co">#&gt; 410                         2.929108e-06         4.165939e-08</span></span>
 <span><span class="co">#&gt; 98                          2.992909e-01         2.287878e-01</span></span>
 <span><span class="co">#&gt; 248                         2.324067e-01         2.331447e-01</span></span>
-<span><span class="co">#&gt;     specific_padj_by_promoter   total_padj specific_padj           hit</span></span>
+<span><span class="co">#&gt;     specific_padj_by_reporter   total_padj specific_padj           hit</span></span>
 <span><span class="co">#&gt; 218              1.316648e-31 1.866622e-24  1.579977e-30 Downregulated</span></span>
 <span><span class="co">#&gt; 197              1.039687e-30 5.008056e-36  6.238121e-30 Downregulated</span></span>
 <span><span class="co">#&gt; 244              1.483540e-26 8.133537e-29  5.934161e-26   Upregulated</span></span>
@@ -552,7 +553,7 @@ check.</p>
 <div class="section level2">
 <h2 id="visualize-the-screen">Visualize the screen<a class="anchor" aria-label="anchor" href="#visualize-the-screen"></a>
 </h2>
-<p>The standard volcano plot labels the strongest promoter-compound
+<p>The standard volcano plot labels the strongest reporter-perturbation
 pairs.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/plot_volcano.html">plot_volcano</a></span><span class="op">(</span></span>
@@ -562,25 +563,25 @@ pairs.</p>
 <span>  fdr <span class="op">=</span> <span class="fl">0.05</span>,</span>
 <span>  lfc <span class="op">=</span> <span class="fl">0.5</span>,</span>
 <span>  top_n <span class="op">=</span> <span class="fl">8</span>,</span>
-<span>  top_promoters <span class="op">=</span> <span class="fl">6</span></span>
+<span>  top_reporters <span class="op">=</span> <span class="fl">6</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p><img src="DStressR_files/figure-html/volcano-1.png" class="r-plt" alt="" width="672"></p>
-<p>A response heatmap gives a matrix-level view of the promoter-compound
-response surface.</p>
+<p>A response heatmap gives a matrix-level view of the
+reporter-perturbation response surface.</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/plot_response_heatmap.html">plot_response_heatmap</a></span><span class="op">(</span></span>
 <span>  <span class="va">hits</span>,</span>
 <span>  value <span class="op">=</span> <span class="st">"specific_effect"</span>,</span>
-<span>  top_n_compounds <span class="op">=</span> <span class="fl">30</span></span>
+<span>  top_n_perturbations <span class="op">=</span> <span class="fl">30</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p><img src="DStressR_files/figure-html/heatmap-1.png" class="r-plt" alt="" width="672"></p>
-<p>For broader screens, clustered heatmaps help reveal compound and
-promoter groups with similar response profiles.</p>
+<p>For broader screens, clustered heatmaps help reveal perturbation and
+reporter groups with similar response profiles.</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/plot_response_clustered_heatmap.html">plot_response_clustered_heatmap</a></span><span class="op">(</span></span>
 <span>  <span class="va">hits</span>,</span>
 <span>  value <span class="op">=</span> <span class="st">"specific_effect"</span>,</span>
-<span>  top_n_compounds <span class="op">=</span> <span class="fl">30</span>,</span>
+<span>  top_n_perturbations <span class="op">=</span> <span class="fl">30</span>,</span>
 <span>  title <span class="op">=</span> <span class="st">"Clustered DStressR response map"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p><img src="DStressR_files/figure-html/clustered-1.png" class="r-plt" alt="" width="672"></p>
@@ -604,8 +605,8 @@ joined explicitly before assay preparation.</p>
 <span></span>
 <span><span class="va">assay2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/prepare_assay.html">prepare_assay</a></span><span class="op">(</span></span>
 <span>  <span class="va">screen2</span>,</span>
-<span>  promoter <span class="op">=</span> <span class="st">"promoter"</span>,</span>
-<span>  compound <span class="op">=</span> <span class="st">"compound"</span>,</span>
+<span>  reporter <span class="op">=</span> <span class="st">"reporter"</span>,</span>
+<span>  perturbation <span class="op">=</span> <span class="st">"perturbation"</span>,</span>
 <span>  control <span class="op">=</span> <span class="st">"DMSO"</span>,</span>
 <span>  lux <span class="op">=</span> <span class="st">"LUX.AUC_16"</span>,</span>
 <span>  growth <span class="op">=</span> <span class="st">"dgrowthr_od16"</span>,</span>

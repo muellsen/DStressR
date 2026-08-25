@@ -1,6 +1,6 @@
-# Adjust p-values within promoter
+# Adjust p-values within reporter
 
-Adjust p-values within promoter
+Adjust p-values within reporter
 
 ## Usage
 
@@ -8,7 +8,7 @@ Adjust p-values within promoter
 adjust_pvalues(
   table,
   pvalue = "specific_pvalue",
-  output = "specific_padj_by_promoter",
+  output = "specific_padj_by_reporter",
   method = "BH"
 )
 ```

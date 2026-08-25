@@ -5,12 +5,12 @@
 DStressR logo
 
 This repository hosts the `DStressR` R package and companion analysis
-workflow for high-throughput bacterial chemical genomics screens.
-`DStressR` is designed to go hand in hand with
+workflow for high-throughput reporter-perturbation screens. `DStressR`
+is designed to go hand in hand with
 [`DGrowthR`](https://bio-datascience.github.io/DGrowthR/): `DGrowthR`
-models bacterial growth curves, while `DStressR` models
-promoter-activity responses after accounting for growth, compound-wide
-effects, technical covariates, and promoter-specific uncertainty.
+models bacterial growth curves, while `DStressR` models reporter
+responses after accounting for growth, perturbation-wide effects,
+technical covariates, and reporter-specific uncertainty.
 
 ![DStressR statistical workflow: response estimation, effect estimation
 and diagnostics, and
@@ -19,7 +19,7 @@ inference.](reference/figures/dstressr-workflow.png)
 DStressR statistical workflow: response estimation, effect estimation
 and diagnostics, and inference.
 
-> \[!TIP\] `DStressR` is intended as the promoter-response counterpart
+> \[!TIP\] `DStressR` is intended as the reporter-response counterpart
 > to [`DGrowthR`](https://bio-datascience.github.io/DGrowthR/). The
 > current default hit-determination workflow is based on the original
 > exported luminescence and growth summaries; DGrowthR-derived growth
@@ -75,8 +75,8 @@ screen <- simulate_screen(seed = 1)
 
 assay <- prepare_assay(
   screen,
-  promoter = "promoter",
-  compound = "compound",
+  reporter = "reporter",
+  perturbation = "perturbation",
   control = "DMSO",
   lux = "LUX.AUC_16",
   growth = "od_16h.measured",
@@ -113,8 +113,8 @@ wt_auc <- subset(
 
 assay <- prepare_assay(
   wt_auc,
-  promoter = "promoter",
-  compound = "compound",
+  reporter = "reporter",
+  perturbation = "perturbation",
   control = "Water",
   lux = "lux_auc",
   growth = "od_auc",
@@ -123,8 +123,8 @@ assay <- prepare_assay(
   replicate = "replicate",
   growth_covariates = "replicate",
   numeric_covariates = "dose_level",
-  background_promoter = "EVC",
-  background_by = c("compound", "dose_level", "replicate")
+  background_reporter = "EVC",
+  background_by = c("perturbation", "dose_level", "replicate")
 )
 
 fit <- fit_destress(
@@ -132,15 +132,15 @@ fit <- fit_destress(
   preset = "model",
   technical = c("replicate", "dose_level"),
   empirical_bayes = TRUE,
-  adjustment = "by_promoter",
+  adjustment = "by_reporter",
   interaction = FALSE
 )
 ```
 
 Here `growth_covariates = "replicate"` keeps the water-control
 growth-response model separate from the downstream concentration-index
-adjustment: `dose_level` is used in the compound-effect model, not in
-the estimation of `alpha_g`.
+adjustment: `dose_level` is used in the perturbation-effect model, not
+in the estimation of `alpha_g`.
 
 The public sources are the PLOS article
 <https://doi.org/10.1371/journal.pbio.3003260> and the Zenodo archive
@@ -164,8 +164,8 @@ fit <- fit_destress(
   testing = "moderated_t",
   aggregation = "none",
   adjustment = "global",
-  promoter = "promoter",
-  compound = "compound",
+  reporter = "reporter",
+  perturbation = "perturbation",
   control = "DMSO",
   lux = "LUX.AUC_16",
   growth = "od_16h.measured",
@@ -181,21 +181,20 @@ Growth-response normalization for the model path is controlled in
 or by passing the same arguments through
 [`fit_destress()`](https://muellsen.github.io/DStressR/reference/fit_destress.md).
 Use `growth_exponent = 1` for the fixed log2(LUX / OD) normalization,
-`growth_exponent = "estimate"` to estimate promoter-specific `alpha_g`
-values from controls, or pass a named promoter vector.
+`growth_exponent = "estimate"` to estimate reporter-specific `alpha_g`
+values from controls, or pass a named reporter vector.
 
 In model-based analyses, `empirical_bayes = TRUE` is the default
 moderated model and `empirical_bayes = FALSE` is the ordinary
-Student-$`t`$ sensitivity model. The Campylobacter manuscript comparison
-uses the default moderated model against the median-polish max-p
-workflow.
+Student-$`t`$ sensitivity model. The local Campylobacter comparison uses
+the default moderated model against the median-polish max-p workflow.
 
 ## Model-based Background Reporter Calibration
 
 If the screen contains an Empty Vector Control (EVC) reporter, it can be
 used when constructing the model-based response. This is different from
 the project-level `preset = "empty_vector_control"` workflow below: the
-model-based path still fits promoter-specific linear models, but first
+model-based path still fits reporter-specific linear models, but first
 calibrates each non-background reporter against the matched background
 reporter.
 
@@ -203,14 +202,14 @@ reporter.
 
 assay <- prepare_assay(
   expression_df,
-  promoter = "promoter",
-  compound = "srn_code",
+  reporter = "promoter",
+  perturbation = "srn_code",
   control = "DMSO",
   lux = "LUX.AUC_16",
   growth = "od_16h.measured",
   batch = "batch",
   replicate = "replicate",
-  background_promoter = "PEVC3",
+  background_reporter = "PEVC3",
   background_by = c("srn_code", "batch", "replicate")
 )
 
@@ -218,11 +217,11 @@ fit <- fit_destress(assay, technical = c("batch", "replicate"))
 tab <- results(fit)
 ```
 
-When `background_promoter` is supplied,
+When `background_reporter` is supplied,
 [`prepare_assay()`](https://muellsen.github.io/DStressR/reference/prepare_assay.md)
 uses Huber calibration by default. Use `background_method = "lm"` for
 least-squares calibration or `background_method = "subtract"` for direct
-matched-background subtraction. Without `background_promoter`, no
+matched-background subtraction. Without `background_reporter`, no
 background calibration is applied and the default DStressR workflow is
 unchanged.
 
@@ -231,14 +230,14 @@ metadata, and the background reporter is excluded from model-based
 testing.
 
 Estimated model components, including growth-exponent parameters and
-promoter-compound effect estimates, can be extracted with:
+reporter-perturbation effect estimates, can be extracted with:
 
 ``` r
 
 params <- model_parameters(fit)
 
 growth_parameters <- params$growth_exponents
-promoter_effects <- params$promoter_effects
+reporter_effects <- params$reporter_effects
 ```
 
 The median-polish compatibility workflow starts from the original
@@ -268,7 +267,7 @@ evc <- fit_destress(
   expression_df,
   preset = "empty_vector_control",
   response = "log2.lux.normed.centered",
-  empty_vector_promoter = "PEVC3",
+  empty_vector_reporter = "PEVC3",
   control = dmso_srn_codes,
   exclude = dmso_noisy_srn_codes
 )
@@ -278,8 +277,8 @@ hit_table <- evc$pair_results
 
 ## How to use `DStressR`
 
-The typical DStressR analysis starts from promoter-level luminescence
-and growth summaries, together with compound, promoter, replicate,
+The typical DStressR analysis starts from reporter-level luminescence
+and growth summaries, together with perturbation, reporter, replicate,
 plate, and batch metadata.
 
 ``` r
@@ -288,8 +287,8 @@ library(DStressR)
 
 assay <- prepare_assay(
   expression_df,
-  promoter = "promoter",
-  compound = "srn_code",
+  reporter = "promoter",
+  perturbation = "srn_code",
   control = "DMSO",
   lux = "LUX.AUC_16",
   growth = "od_16h.measured",
@@ -312,18 +311,18 @@ hits <- call_hits(tab, fdr = 0.05, effect = "specific_effect")
 
 The fitted model separates two related quantities:
 
-- `total_effect`: DMSO-relative promoter response for a compound.
-- `specific_effect`: promoter-specific response after subtracting the
-  compound-wide effect shared across promoters.
+- `total_effect`: control-relative reporter response for a perturbation.
+- `specific_effect`: reporter-specific response after subtracting the
+  perturbation-wide effect shared across reporters.
 
-This distinction is important for compounds that globally perturb
+This distinction is important for perturbations that globally affect
 growth, luminescence, metabolism, or assay chemistry.
 
 For downstream comparisons and publication figures, use the
-promoter-specific columns from `results(fit)`: `specific_effect`,
+reporter-specific columns from `results(fit)`: `specific_effect`,
 `specific_pvalue`, `specific_padj_global`, and
-`specific_padj_by_promoter`. The `total_*` columns remain useful
-diagnostics, but they are not the centered promoter-specific estimand
+`specific_padj_by_reporter`. The `total_*` columns remain useful
+diagnostics, but they are not the centered reporter-specific estimand
 used for DStressR hit calls in the current analysis scripts.
 
 The compatibility wrapper
@@ -339,8 +338,9 @@ so that the selected statistical path is explicit in the code.
 ## Diagnostic and Summary Plots
 
 `DStressR` includes output plots for common screening summaries,
-including volcano plots, promoter-compound response heatmaps, clustered
-heatmaps, effect histograms, and empirical-Bayes variance diagnostics.
+including volcano plots, reporter-perturbation response heatmaps,
+clustered heatmaps, effect histograms, and empirical-Bayes variance
+diagnostics.
 
 ``` r
 
@@ -349,7 +349,7 @@ plot_volcano(
   effect = "specific_effect",
   padj = "specific_padj",
   top_n = 12,
-  top_promoters = 6
+  top_reporters = 6
 )
 
 plot_response_heatmap(
@@ -360,12 +360,12 @@ plot_response_heatmap(
 
 ## Required input shape
 
-DStressR expects a long promoter-compound table with one row per
-measured promoter-compound-replicate observation. In a complete
+DStressR expects a long reporter-perturbation table with one row per
+measured reporter-perturbation-replicate observation. In a complete
 rectangular screen, the number of rows is approximately:
 
 ``` text
-n_promoters x (n_compound_wells + n_control_wells) x n_replicates
+n_reporters x (n_perturbation_wells + n_control_wells) x n_replicates
 ```
 
 Additional rows can occur when the same design is repeated across
@@ -390,8 +390,8 @@ so projects can use their own column names:
 
 assay <- prepare_assay(
   expression_df,
-  promoter = "promoter",
-  compound = "srn_code",
+  reporter = "promoter",
+  perturbation = "srn_code",
   control = "DMSO",
   lux = "LUX.AUC_16",
   growth = "od_16h.measured",
@@ -455,11 +455,11 @@ Campylobacter default-model call used to regenerate the local package
 output
 `analysis/outputs/package_results/destress_moderated_pair_results.tsv`
 from the proprietary expression table. It sets `empirical_bayes = TRUE`,
-`interaction = FALSE`, `background_rank = 0`, uses promoter-specific
+`interaction = FALSE`, `background_rank = 0`, uses reporter-specific
 estimated growth exponents, and exports the `specific_*` result columns
 expected by the downstream analysis scripts. The `scripts/README.md`
 file highlights this data-free export template as the canonical place to
-inspect the actual manuscript model call.
+inspect the actual local model call.
 
 To reproduce the original median-polish workflow, provide the DMSO
 library-well IDs and optional noisy-DMSO well IDs from `LibMap.txt`:
@@ -528,10 +528,10 @@ evc <- fit_destress(
   expression_df,
   preset = "empty_vector_control",
   response = "log2.lux.normed.centered",
-  empty_vector_promoter = "PEVC3",
+  empty_vector_reporter = "PEVC3",
   control = dmso_srn_codes,
   exclude = dmso_noisy_srn_codes,
-  remove_promoters = "PmgrR"
+  remove_reporters = "PmgrR"
 )
 
 replicate_pvalues <- evc$replicate_results
@@ -561,8 +561,8 @@ expression_df2 <- add_dgrowthr_growth(
 
 assay <- prepare_assay(
   expression_df2,
-  promoter = "promoter",
-  compound = "srn_code",
+  reporter = "promoter",
+  perturbation = "srn_code",
   control = "DMSO",
   lux = "LUX.AUC_16",
   growth = "dgrowthr_od16"
@@ -571,13 +571,26 @@ assay <- prepare_assay(
 
 ## Analysis workflow
 
-The `analysis/` folder is a downstream comparison and figure-generation
-layer that is excluded from the CRAN source package. Public *E. coli*
-promoter-screen reproducibility checks live in
-`analysis/ecoli_promoter_screen/`; the previous Campylobacter manuscript
-comparison workflow lives in `analysis/campylobacter_manuscript/`.
+The repository separates the R package from downstream reproducibility
+work. The package API, data objects, documentation, and tests live in
+`R/`, `data/`, `man/`, `vignettes/`, and `tests/`. The `analysis/`
+folder is a downstream comparison and figure-generation layer that is
+excluded from the CRAN source package.
+
+Canonical DStressR manuscript analyses live in
+`analysis/ecoli_promoter_screen/` and
+`analysis/dryad_global_regulators/`. Earlier Campylobacter work is
+retained in `analysis/campylobacter_manuscript/` for future analysis
+manuscripts, and exploratory datasets belong under
+`analysis/exploratory/`.
+
 Analysis scripts read package-generated outputs and must not reimplement
 estimators, p-value calculations, empirical-Bayes moderation, replicate
 aggregation, or multiple-testing correction. Generated outputs under
-`analysis/outputs/` are intentionally ignored by Git so proprietary
+`analysis/outputs/` are intentionally ignored by Git so regenerated
 result tables and manuscript figures stay local.
+
+The package manuscript source lives under
+`paper/dstressr_package_manuscript/`. It is not part of the CRAN
+package, but its source and reproducibility instructions are intended to
+be versioned with the repository.

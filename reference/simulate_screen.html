@@ -21,7 +21,7 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Get started</h6></li>
-    <li><a class="dropdown-item" href="../articles/ecoli-promoter-screen.html">E. coli promoter-compound screen</a></li>
+    <li><a class="dropdown-item" href="../articles/ecoli-promoter-screen.html">E. coli reporter-perturbation screen</a></li>
     <li><a class="dropdown-item" href="../articles/median-polish-workflow.html">Original median-polish workflow</a></li>
     <li><a class="dropdown-item" href="../articles/salmonella-empty-vector-workflow.html">Salmonella Empty Vector workflow</a></li>
   </ul></li>
@@ -55,8 +55,8 @@
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">simulate_screen</span><span class="op">(</span></span>
-<span>  n_promoters <span class="op">=</span> <span class="fl">12</span>,</span>
-<span>  n_compounds <span class="op">=</span> <span class="fl">24</span>,</span>
+<span>  n_reporters <span class="op">=</span> <span class="fl">12</span>,</span>
+<span>  n_perturbations <span class="op">=</span> <span class="fl">24</span>,</span>
 <span>  n_replicates <span class="op">=</span> <span class="fl">2</span>,</span>
 <span>  sigma <span class="op">=</span> <span class="fl">0.15</span>,</span>
 <span>  seed <span class="op">=</span> <span class="cn">NULL</span></span>
@@ -67,7 +67,7 @@
     <h2 id="arguments">Arguments<a class="anchor" aria-label="anchor" href="#arguments"></a></h2>
 
 
-<dl><dt id="arg-n-promoters-n-compounds">n_promoters, n_compounds<a class="anchor" aria-label="anchor" href="#arg-n-promoters-n-compounds"></a></dt>
+<dl><dt id="arg-n-reporters-n-perturbations">n_reporters, n_perturbations<a class="anchor" aria-label="anchor" href="#arg-n-reporters-n-perturbations"></a></dt>
 <dd><p>Dimensions excluding DMSO.</p></dd>
 
 

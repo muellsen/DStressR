@@ -1,12 +1,12 @@
-# Empirical p-values from replicate-averaged compound effects and DMSO nulls
+# Empirical p-values from replicate-averaged perturbation effects and DMSO nulls
 
 Computes empirical p-values by first averaging replicate-level values
-for each promoter-compound-stratum combination, then comparing each
-averaged non-control compound value to the corresponding distribution of
-averaged DMSO control values from the same promoter and stratum, such as
-library plate. Optionally, it also computes Monte Carlo permutation
-p-values by repeatedly drawing replicate-sized DMSO sets from the same
-matched null stratum.
+for each reporter-perturbation-stratum combination, then comparing each
+averaged non-control perturbation value to the corresponding
+distribution of averaged DMSO control values from the same reporter and
+stratum, such as library plate. Optionally, it also computes Monte Carlo
+permutation p-values by repeatedly drawing replicate-sized DMSO sets
+from the same matched null stratum.
 
 ## Usage
 
@@ -14,8 +14,8 @@ matched null stratum.
 empirical_replicate_pvalues(
   table,
   value,
-  promoter = "promoter",
-  compound = "compound",
+  reporter = "reporter",
+  perturbation = "perturbation",
   control,
   replicate = NULL,
   strata = NULL,
@@ -40,13 +40,13 @@ empirical_replicate_pvalues(
   Numeric value column to test, for example a DStressR adjusted effect
   such as `destress_eb_effect_centered`.
 
-- promoter, compound:
+- reporter, perturbation:
 
-  Columns identifying promoters and compounds.
+  Columns identifying reporters and perturbations.
 
 - control:
 
-  Character vector of control compound IDs, usually DMSO wells.
+  Character vector of control perturbation IDs, usually DMSO wells.
 
 - replicate:
 
@@ -57,13 +57,13 @@ empirical_replicate_pvalues(
 - strata:
 
   Optional columns defining matched null strata. Use
-  `strata = "libplate"` to compare compounds only to DMSO wells from the
-  same library plate.
+  `strata = "libplate"` to compare perturbations only to DMSO wells from
+  the same library plate.
 
 - min_replicates:
 
-  Minimum finite replicate values required for an averaged compound or
-  DMSO control value.
+  Minimum finite replicate values required for an averaged perturbation
+  or DMSO control value.
 
 - min_null:
 
@@ -91,10 +91,10 @@ empirical_replicate_pvalues(
 
   Multiple-testing correction method passed to
   [`stats::p.adjust()`](https://rdrr.io/r/stats/p.adjust.html), applied
-  within promoter.
+  within reporter.
 
 ## Value
 
-A data frame with one row per non-control promoter-compound-stratum
-average, including empirical p-values and promoter-wise adjusted
+A data frame with one row per non-control reporter-perturbation-stratum
+average, including empirical p-values and reporter-wise adjusted
 p-values.

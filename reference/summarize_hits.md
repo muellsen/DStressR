@@ -1,6 +1,6 @@
-# Summarize significant promoter-compound hits
+# Summarize significant reporter-perturbation hits
 
-Builds compact pair-, promoter-, and compound-level summaries from a
+Builds compact pair-, reporter-, and perturbation-level summaries from a
 DStressR result table. Hits are defined by an adjusted p-value threshold
 and, optionally, a minimum absolute effect size.
 
@@ -10,10 +10,10 @@ and, optionally, a minimum absolute effect size.
 summarize_hits(
   table,
   effect = "specific_effect",
-  padj = "specific_padj_by_promoter",
-  promoter = "promoter",
-  compound = "compound",
-  compound_label = compound,
+  padj = "specific_padj_by_reporter",
+  reporter = "reporter",
+  perturbation = "perturbation",
+  perturbation_label = perturbation,
   fdr = 0.05,
   lfc = 0
 )
@@ -23,7 +23,7 @@ summarize_hits(
 
 - table:
 
-  A data frame with one row per promoter-compound pair.
+  A data frame with one row per reporter-perturbation pair.
 
 - effect:
 
@@ -33,13 +33,14 @@ summarize_hits(
 
   Adjusted p-value column used for hit calls.
 
-- promoter, compound:
+- reporter, perturbation:
 
-  Columns identifying promoters and compounds.
+  Columns identifying reporters and perturbations.
 
-- compound_label:
+- perturbation_label:
 
-  Optional human-readable compound-name column. Defaults to `compound`.
+  Optional human-readable perturbation-name column. Defaults to
+  `perturbation`.
 
 - fdr:
 
@@ -52,4 +53,4 @@ summarize_hits(
 ## Value
 
 A list of class `destress_hit_summary` with pair-level hits and
-promoter- and compound-level summaries.
+reporter- and perturbation-level summaries.
