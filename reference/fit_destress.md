@@ -13,6 +13,11 @@ fit_destress(
   empirical_bayes = TRUE,
   empty_vector_reporter = NULL,
   background_rank = 0,
+  background_rank_max = 5,
+  background_rank_permutations = 100,
+  background_rank_threshold = 0.99,
+  background_rank_seed = NULL,
+  background_impute = c("column_mean", "global_mean", "zero"),
   normalization = NULL,
   testing = NULL,
   aggregation = NULL,
@@ -60,7 +65,31 @@ fit_destress(
   Non-negative integer. The default `0` removes no latent background.
   Values `1` or `2` additionally subtract a low-rank background term
   from the reference-relative total-effect matrix before testing
-  rank-adjusted total and reporter-specific residual effects.
+  rank-adjusted total and reporter-specific residual effects. Use
+  `"auto"` to choose the rank by permutation parallel analysis.
+
+- background_rank_max:
+
+  Maximum rank considered when `background_rank = "auto"`.
+
+- background_rank_permutations:
+
+  Number of permutations used when `background_rank = "auto"`.
+
+- background_rank_threshold:
+
+  Permutation reference quantile used when `background_rank = "auto"`.
+
+- background_rank_seed:
+
+  Optional random seed used when `background_rank = "auto"`.
+
+- background_impute:
+
+  Method used to fill missing entries of the effect matrix before
+  singular-value decomposition. The default `"column_mean"` replaces
+  missing entries by the observed mean of the corresponding perturbation
+  column. `"global_mean"` and `"zero"` are also available.
 
 - normalization:
 

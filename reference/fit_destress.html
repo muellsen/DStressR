@@ -67,6 +67,11 @@ legacy median-polish and Empty Vector Control analyses.</p>
 <span>  empirical_bayes <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  empty_vector_reporter <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  background_rank <span class="op">=</span> <span class="fl">0</span>,</span>
+<span>  background_rank_max <span class="op">=</span> <span class="fl">5</span>,</span>
+<span>  background_rank_permutations <span class="op">=</span> <span class="fl">100</span>,</span>
+<span>  background_rank_threshold <span class="op">=</span> <span class="fl">0.99</span>,</span>
+<span>  background_rank_seed <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  background_impute <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"column_mean"</span>, <span class="st">"global_mean"</span>, <span class="st">"zero"</span><span class="op">)</span>,</span>
 <span>  normalization <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  testing <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  aggregation <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -113,7 +118,35 @@ fitting.</p></dd>
 <dd><p>Non-negative integer. The default <code>0</code> removes no
 latent background. Values <code>1</code> or <code>2</code> additionally subtract a low-rank
 background term from the reference-relative total-effect matrix before
-testing rank-adjusted total and reporter-specific residual effects.</p></dd>
+testing rank-adjusted total and reporter-specific residual effects. Use
+<code>"auto"</code> to choose the rank by permutation parallel analysis.</p></dd>
+
+
+<dt id="arg-background-rank-max">background_rank_max<a class="anchor" aria-label="anchor" href="#arg-background-rank-max"></a></dt>
+<dd><p>Maximum rank considered when
+<code>background_rank = "auto"</code>.</p></dd>
+
+
+<dt id="arg-background-rank-permutations">background_rank_permutations<a class="anchor" aria-label="anchor" href="#arg-background-rank-permutations"></a></dt>
+<dd><p>Number of permutations used when
+<code>background_rank = "auto"</code>.</p></dd>
+
+
+<dt id="arg-background-rank-threshold">background_rank_threshold<a class="anchor" aria-label="anchor" href="#arg-background-rank-threshold"></a></dt>
+<dd><p>Permutation reference quantile used when
+<code>background_rank = "auto"</code>.</p></dd>
+
+
+<dt id="arg-background-rank-seed">background_rank_seed<a class="anchor" aria-label="anchor" href="#arg-background-rank-seed"></a></dt>
+<dd><p>Optional random seed used when
+<code>background_rank = "auto"</code>.</p></dd>
+
+
+<dt id="arg-background-impute">background_impute<a class="anchor" aria-label="anchor" href="#arg-background-impute"></a></dt>
+<dd><p>Method used to fill missing entries of the effect
+matrix before singular-value decomposition. The default <code>"column_mean"</code>
+replaces missing entries by the observed mean of the corresponding
+perturbation column. <code>"global_mean"</code> and <code>"zero"</code> are also available.</p></dd>
 
 
 <dt id="arg-normalization">normalization<a class="anchor" aria-label="anchor" href="#arg-normalization"></a></dt>

@@ -613,6 +613,8 @@ be versioned with the repository.
   : List available DStressR presets
 - [`destress_workflows()`](https://muellsen.github.io/DStressR/reference/destress_workflows.md)
   : List available DStressR workflows
+- [`effect_tail_scores()`](https://muellsen.github.io/DStressR/reference/effect_tail_scores.md)
+  : Robust diagnostic tail scores for effect distributions
 - [`empirical_replicate_pvalues()`](https://muellsen.github.io/DStressR/reference/empirical_replicate_pvalues.md)
   : Empirical p-values from replicate-averaged perturbation effects and
   DMSO nulls
@@ -631,16 +633,24 @@ be versioned with the repository.
   : Fit diagnostic distributions to perturbation-level variances
 - [`fit_workflow()`](https://muellsen.github.io/DStressR/reference/fit_workflow.md)
   : Fit a named DStressR workflow
+- [`low_rank_effect_decomposition()`](https://muellsen.github.io/DStressR/reference/low_rank_effect_decomposition.md)
+  : Decompose a reporter-by-perturbation effect matrix
 - [`model_matrix_report()`](https://muellsen.github.io/DStressR/reference/model_matrix_report.md)
   : Summarize model dimensions
 - [`model_parameters()`](https://muellsen.github.io/DStressR/reference/model_parameters.md)
   : Extract estimated model parameters
 - [`perturbation_diagnostics()`](https://muellsen.github.io/DStressR/reference/perturbation_diagnostics.md)
   : Perturbation-level response diagnostics
+- [`plot_background_rank_diagnostics()`](https://muellsen.github.io/DStressR/reference/plot_background_rank_diagnostics.md)
+  : Plot low-rank background diagnostics
 - [`plot_effect_histogram()`](https://muellsen.github.io/DStressR/reference/plot_effect_histogram.md)
   : Histogram of DStressR reporter-perturbation effects
+- [`plot_effect_tail_histogram()`](https://muellsen.github.io/DStressR/reference/plot_effect_tail_histogram.md)
+  : Plot diagnostic effect-tail histograms
 - [`plot_hit_heatmap()`](https://muellsen.github.io/DStressR/reference/plot_hit_heatmap.md)
   : Heatmap of significant DStressR hits
+- [`plot_low_rank_effect_heatmap()`](https://muellsen.github.io/DStressR/reference/plot_low_rank_effect_heatmap.md)
+  : Plot a low-rank effect decomposition
 - [`plot_mean_variance_diagnostic()`](https://muellsen.github.io/DStressR/reference/plot_mean_variance_diagnostic.md)
   : Plot perturbation-level mean-variance diagnostics
 - [`plot_response_cluster_blocks()`](https://muellsen.github.io/DStressR/reference/plot_response_cluster_blocks.md)
@@ -664,6 +674,12 @@ be versioned with the repository.
   : Simulate a chemical-genomics screen
 - [`summarize_hits()`](https://muellsen.github.io/DStressR/reference/summarize_hits.md)
   : Summarize significant reporter-perturbation hits
+- [`zaslaver_promoter_activity`](https://muellsen.github.io/DStressR/reference/zaslaver_promoter_activity.md)
+  : Zaslaver et al. fixed-growth-rate promoter activity data
+- [`zaslaver_promoter_annotations`](https://muellsen.github.io/DStressR/reference/zaslaver_promoter_annotations.md)
+  : Zaslaver et al. reporter annotation classes
+- [`zaslaver_promoter_timecourse`](https://muellsen.github.io/DStressR/reference/zaslaver_promoter_timecourse.md)
+  : Zaslaver et al. promoter activity and OD time courses
 
 # Articles
 

@@ -18,6 +18,7 @@
 <url><loc>https://muellsen.github.io/DStressR/reference/call_hits.html</loc></url>
 <url><loc>https://muellsen.github.io/DStressR/reference/destress_presets.html</loc></url>
 <url><loc>https://muellsen.github.io/DStressR/reference/destress_workflows.html</loc></url>
+<url><loc>https://muellsen.github.io/DStressR/reference/effect_tail_scores.html</loc></url>
 <url><loc>https://muellsen.github.io/DStressR/reference/empirical_replicate_pvalues.html</loc></url>
 <url><loc>https://muellsen.github.io/DStressR/reference/estimate_growth_exponents.html</loc></url>
 <url><loc>https://muellsen.github.io/DStressR/reference/fit_destress.html</loc></url>
@@ -27,11 +28,15 @@
 <url><loc>https://muellsen.github.io/DStressR/reference/fit_variance_distribution.html</loc></url>
 <url><loc>https://muellsen.github.io/DStressR/reference/fit_workflow.html</loc></url>
 <url><loc>https://muellsen.github.io/DStressR/reference/index.html</loc></url>
+<url><loc>https://muellsen.github.io/DStressR/reference/low_rank_effect_decomposition.html</loc></url>
 <url><loc>https://muellsen.github.io/DStressR/reference/model_matrix_report.html</loc></url>
 <url><loc>https://muellsen.github.io/DStressR/reference/model_parameters.html</loc></url>
 <url><loc>https://muellsen.github.io/DStressR/reference/perturbation_diagnostics.html</loc></url>
+<url><loc>https://muellsen.github.io/DStressR/reference/plot_background_rank_diagnostics.html</loc></url>
 <url><loc>https://muellsen.github.io/DStressR/reference/plot_effect_histogram.html</loc></url>
+<url><loc>https://muellsen.github.io/DStressR/reference/plot_effect_tail_histogram.html</loc></url>
 <url><loc>https://muellsen.github.io/DStressR/reference/plot_hit_heatmap.html</loc></url>
+<url><loc>https://muellsen.github.io/DStressR/reference/plot_low_rank_effect_heatmap.html</loc></url>
 <url><loc>https://muellsen.github.io/DStressR/reference/plot_mean_variance_diagnostic.html</loc></url>
 <url><loc>https://muellsen.github.io/DStressR/reference/plot_response_cluster_blocks.html</loc></url>
 <url><loc>https://muellsen.github.io/DStressR/reference/plot_response_clustered_heatmap.html</loc></url>
@@ -43,5 +48,8 @@
 <url><loc>https://muellsen.github.io/DStressR/reference/results.html</loc></url>
 <url><loc>https://muellsen.github.io/DStressR/reference/simulate_screen.html</loc></url>
 <url><loc>https://muellsen.github.io/DStressR/reference/summarize_hits.html</loc></url>
+<url><loc>https://muellsen.github.io/DStressR/reference/zaslaver_promoter_activity.html</loc></url>
+<url><loc>https://muellsen.github.io/DStressR/reference/zaslaver_promoter_annotations.html</loc></url>
+<url><loc>https://muellsen.github.io/DStressR/reference/zaslaver_promoter_timecourse.html</loc></url>
 </urlset>
 
