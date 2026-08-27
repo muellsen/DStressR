@@ -485,6 +485,73 @@ test_that("background_rank_diagnostics detects broad low-rank structure", {
   expect_equal(nrow(diag), 3)
   expect_gt(diag$observed[1], diag$null_q95[1])
   expect_gt(diag$prop_variance[1], 0.9)
+  expect_equal(unique(diag$impute), "column_mean")
+  expect_equal(unique(diag$threshold), 0.99)
+})
+
+test_that("automatic background rank uses permutation parallel analysis", {
+  dat <- data.frame()
+  reporters <- paste0("P", seq_len(6))
+  loading <- stats::setNames(seq(-1, 1, length.out = length(reporters)), reporters)
+  for (replicate in 1:3) {
+    for (reporter in reporters) {
+      dat <- rbind(
+        dat,
+        data.frame(reporter = reporter, perturbation = "DMSO", replicate = paste0("R", replicate), value = 0),
+        data.frame(reporter = reporter, perturbation = "C1", replicate = paste0("R", replicate), value = loading[reporter] * 2),
+        data.frame(reporter = reporter, perturbation = "C2", replicate = paste0("R", replicate), value = loading[reporter] * -1)
+      )
+    }
+  }
+  assay <- prepare_assay(
+    dat,
+    reporter = "reporter",
+    perturbation = "perturbation",
+    control = "DMSO",
+    response = "value",
+    replicate = "replicate"
+  )
+  fit <- fit_destress(
+    assay,
+    technical = "replicate",
+    empirical_bayes = FALSE,
+    background_rank = "auto",
+    background_rank_max = 2,
+    background_rank_permutations = 30,
+    background_rank_seed = 1
+  )
+  params <- model_parameters(fit)
+  expect_equal(params$background$background_rank, 1)
+  expect_equal(params$background$background_rank_requested, "auto")
+  expect_true(is.data.frame(params$background_rank_diagnostics))
+  expect_equal(nrow(params$background_rank_diagnostics), 2)
+})
+
+test_that("low-rank diagnostics use explicit missing-value imputation", {
+  tab <- expand.grid(
+    reporter = c("P1", "P2", "P3"),
+    perturbation = c("C1", "C2"),
+    stringsAsFactors = FALSE
+  )
+  tab$total_effect <- c(1, 2, 3, 10, 20, 30)
+  tab <- tab[!(tab$reporter == "P3" & tab$perturbation == "C2"), , drop = FALSE]
+
+  column_mean <- background_rank_diagnostics(
+    tab,
+    rank_max = 1,
+    permutations = 0,
+    impute = "column_mean"
+  )
+  zero <- background_rank_diagnostics(
+    tab,
+    rank_max = 1,
+    permutations = 0,
+    impute = "zero"
+  )
+
+  expect_equal(column_mean$impute, "column_mean")
+  expect_equal(zero$impute, "zero")
+  expect_false(isTRUE(all.equal(column_mean$observed, zero$observed)))
 })
 
 test_that("fit_destress subtracts model-based empty-vector background before centering", {
@@ -1279,6 +1346,67 @@ test_that("plot_effect_histogram returns pooled and reporter-faceted plots", {
 
   expect_s3_class(pooled, "ggplot")
   expect_s3_class(per_promoter, "ggplot")
+})
+
+test_that("low-rank decomposition and tail-score diagnostics are reusable", {
+  tab <- expand.grid(
+    reporter = paste0("P", 1:5),
+    perturbation = paste0("C", 1:4),
+    growth_rate = c("slow", "fast"),
+    stringsAsFactors = FALSE
+  )
+  reporter_loading <- c(-2, -1, 0, 1, 2)
+  perturbation_loading <- c(-1.5, -0.5, 0.5, 1.5)
+  tab$total_effect <- reporter_loading[match(tab$reporter, paste0("P", 1:5))] *
+    perturbation_loading[match(tab$perturbation, paste0("C", 1:4))]
+  tab$total_effect[tab$growth_rate == "fast"] <- tab$total_effect[tab$growth_rate == "fast"] * 1.2
+
+  dec <- low_rank_effect_decomposition(
+    tab,
+    effect = "total_effect",
+    group = "growth_rate",
+    rank = 1
+  )
+  expect_true(all(c("effect", "low_rank_effect", "rank_adjusted_effect", "reporter_score_rank1") %in% names(dec)))
+  expect_equal(nrow(dec), nrow(tab))
+  expect_lt(max(abs(dec$rank_adjusted_effect), na.rm = TRUE), 1e-10)
+
+  scored <- effect_tail_scores(
+    dec,
+    effect = "rank_adjusted_effect",
+    group = c("growth_rate", "perturbation"),
+    min_n = 5
+  )
+  expect_true(all(c("diagnostic_z", "tail_probability", "tail_score") %in% names(scored)))
+  expect_true(all(scored$tail_probability <= 1 | is.na(scored$tail_probability)))
+})
+
+test_that("low-rank diagnostic plots return ggplot objects", {
+  skip_if_not_installed("ggplot2")
+  tab <- expand.grid(
+    reporter = paste0("P", 1:6),
+    perturbation = paste0("C", 1:5),
+    stringsAsFactors = FALSE
+  )
+  tab$total_effect <- rep(seq(-1, 1, length.out = 6), 5) *
+    rep(seq(-2, 2, length.out = 5), each = 6)
+
+  p_rank <- plot_background_rank_diagnostics(
+    tab,
+    rank_max = 3,
+    permutations = 2,
+    seed = 1
+  )
+  dec <- low_rank_effect_decomposition(tab, rank = 1)
+  p_heat <- plot_low_rank_effect_heatmap(dec)
+  scored <- effect_tail_scores(dec, effect = "rank_adjusted_effect")
+  p_tail <- plot_effect_tail_histogram(scored, effect = "rank_adjusted_effect", bins = 8)
+
+  expect_s3_class(p_rank, "ggplot")
+  expect_s3_class(p_heat, "ggplot")
+  expect_s3_class(p_tail, "ggplot")
+  expect_true(is.data.frame(attr(p_rank, "diagnostics")))
+  expect_true(is.data.frame(attr(p_heat, "plot_data")))
 })
 
 test_that("plot_response_cluster_blocks returns cluster summaries", {

@@ -10,6 +10,11 @@ fit_destress(
   empirical_bayes = TRUE,
   empty_vector_reporter = NULL,
   background_rank = 0,
+  background_rank_max = 5,
+  background_rank_permutations = 100,
+  background_rank_threshold = 0.99,
+  background_rank_seed = NULL,
+  background_impute = c("column_mean", "global_mean", "zero"),
   normalization = NULL,
   testing = NULL,
   aggregation = NULL,
@@ -43,7 +48,25 @@ fitting.}
 \item{background_rank}{Non-negative integer. The default \code{0} removes no
 latent background. Values \code{1} or \code{2} additionally subtract a low-rank
 background term from the reference-relative total-effect matrix before
-testing rank-adjusted total and reporter-specific residual effects.}
+testing rank-adjusted total and reporter-specific residual effects. Use
+\code{"auto"} to choose the rank by permutation parallel analysis.}
+
+\item{background_rank_max}{Maximum rank considered when
+\code{background_rank = "auto"}.}
+
+\item{background_rank_permutations}{Number of permutations used when
+\code{background_rank = "auto"}.}
+
+\item{background_rank_threshold}{Permutation reference quantile used when
+\code{background_rank = "auto"}.}
+
+\item{background_rank_seed}{Optional random seed used when
+\code{background_rank = "auto"}.}
+
+\item{background_impute}{Method used to fill missing entries of the effect
+matrix before singular-value decomposition. The default \code{"column_mean"}
+replaces missing entries by the observed mean of the corresponding
+perturbation column. \code{"global_mean"} and \code{"zero"} are also available.}
 
 \item{normalization}{One of \code{"linear_model"}, \code{"median_polish"}, or
 \code{"empty_vector"}. \code{"model"} and \code{"evc"} are accepted aliases.}

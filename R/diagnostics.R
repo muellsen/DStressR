@@ -1,9 +1,11 @@
 # Avoid R CMD check notes for data-frame columns used inside ggplot2 aesthetics.
 if (getRversion() >= "2.15.1") {
   utils::globalVariables(c(
-    ".color_effect", ".density", ".effect_variance", ".log10_variance", ".rank",
-    ".signed_mean_effect", "curve", "density", "variance_trend", "x", "xend",
-    "y", "yend"
+    ".color_effect", ".component", ".density", ".effect", ".effect_variance",
+    ".group_label", ".log10_variance", ".matrix", ".null_reference", ".rank", ".tail_region",
+    ".signed_mean_effect", "curve", "density", "effect", "null_median",
+    "null_q99", "observed", "perturbation_label", "reporter_order",
+    "tail_probability", "variance_trend", "x", "xend", "y", "yend"
   ))
 }
 
@@ -323,6 +325,489 @@ plot_mean_variance_diagnostic <- function(table = NULL,
   }
 
   attr(p, "diagnostics") <- diagnostics
+  p
+}
+
+split_table_by_group <- function(table, group = NULL) {
+  if (is.null(group) || length(group) == 0) {
+    out <- list(table)
+    names(out) <- ""
+    return(out)
+  }
+  missing_group <- setdiff(group, names(table))
+  if (length(missing_group) > 0) {
+    stop("Missing grouping columns: ", paste(missing_group, collapse = ", "), call. = FALSE)
+  }
+  key <- do.call(paste, c(table[group], sep = "\r"))
+  split(table, key, drop = TRUE)
+}
+
+group_label_from_table <- function(table, group = NULL) {
+  if (is.null(group) || length(group) == 0) {
+    return("")
+  }
+  vals <- vapply(group, function(col) as.character(table[[col]][1]), character(1))
+  paste(paste(group, vals, sep = " = "), collapse = ", ")
+}
+
+effect_matrix_from_table_mean <- function(table, effect, reporter, perturbation) {
+  d <- table[, c(reporter, perturbation, effect), drop = FALSE]
+  names(d) <- c(".reporter", ".perturbation", ".effect")
+  d$.effect <- as.numeric(d$.effect)
+  d <- d[is.finite(d$.effect), , drop = FALSE]
+  if (nrow(d) == 0) {
+    stop("No finite effects available for matrix decomposition.", call. = FALSE)
+  }
+  d <- stats::aggregate(.effect ~ .reporter + .perturbation, d, mean, na.rm = TRUE)
+  reporters <- unique(as.character(d$.reporter))
+  perturbations <- unique(as.character(d$.perturbation))
+  mat <- matrix(
+    NA_real_,
+    nrow = length(reporters),
+    ncol = length(perturbations),
+    dimnames = list(reporters, perturbations)
+  )
+  idx <- cbind(match(as.character(d$.reporter), reporters), match(as.character(d$.perturbation), perturbations))
+  mat[idx] <- d$.effect
+  mat
+}
+
+#' Decompose a reporter-by-perturbation effect matrix
+#'
+#' Estimates a low-rank background component from an effect matrix and returns
+#' the observed effect, low-rank component, and rank-adjusted residual in long
+#' format. If grouping columns are supplied, the decomposition is performed
+#' independently within each group.
+#'
+#' @param table A data frame with one row per reporter-perturbation pair.
+#' @param effect Numeric effect column to decompose.
+#' @param reporter,perturbation Columns identifying reporters and perturbations.
+#' @param group Optional grouping columns. A separate low-rank decomposition is
+#'   fitted within each group.
+#' @param rank Non-negative rank of the background component.
+#' @param impute Method used to fill missing entries before singular-value
+#'   decomposition. The default `"column_mean"` replaces missing entries by the
+#'   observed mean of the corresponding perturbation column.
+#' @param reporter_label,perturbation_label Optional display-label columns.
+#' @return A data frame containing the original effect, the low-rank effect, the
+#'   rank-adjusted effect, and rank-1 reporter/perturbation scores when
+#'   `rank >= 1`.
+#' @export
+low_rank_effect_decomposition <- function(table,
+                                          effect = "total_effect",
+                                          reporter = "reporter",
+                                          perturbation = "perturbation",
+                                          group = NULL,
+                                          rank = 1,
+                                          impute = c("column_mean", "global_mean", "zero"),
+                                          reporter_label = reporter,
+                                          perturbation_label = perturbation) {
+  stopifnot(is.data.frame(table))
+  rank <- validate_background_rank(rank)
+  impute <- validate_background_impute(impute)
+  required <- unique(c(effect, reporter, perturbation, group, reporter_label, perturbation_label))
+  missing_cols <- setdiff(required, names(table))
+  if (length(missing_cols) > 0) {
+    stop("Missing required columns: ", paste(missing_cols, collapse = ", "), call. = FALSE)
+  }
+
+  groups <- split_table_by_group(table, group = group)
+  rows <- lapply(groups, function(dg) {
+    mat <- effect_matrix_from_table_mean(dg, effect, reporter, perturbation)
+    observed <- is.finite(mat)
+    x <- impute_effect_matrix(mat, method = impute)
+    rank_use <- min(rank, nrow(x), ncol(x))
+
+    low_rank <- matrix(0, nrow = nrow(x), ncol = ncol(x), dimnames = dimnames(x))
+    reporter_score_rank1 <- rep(NA_real_, nrow(x))
+    perturbation_score_rank1 <- rep(NA_real_, ncol(x))
+    names(reporter_score_rank1) <- rownames(x)
+    names(perturbation_score_rank1) <- colnames(x)
+    if (rank_use > 0 && any(abs(x[observed]) > sqrt(.Machine$double.eps))) {
+      sv <- svd(x, nu = rank_use, nv = rank_use)
+      keep <- seq_len(rank_use)
+      low_rank <- sv$u[, keep, drop = FALSE] %*%
+        (diag(sv$d[keep], nrow = rank_use, ncol = rank_use) %*% t(sv$v[, keep, drop = FALSE]))
+      dimnames(low_rank) <- dimnames(x)
+      reporter_score_rank1 <- sv$u[, 1] * sv$d[1]
+      perturbation_score_rank1 <- sv$v[, 1] * sv$d[1]
+      names(reporter_score_rank1) <- rownames(x)
+      names(perturbation_score_rank1) <- colnames(x)
+    }
+    low_rank[!observed] <- NA_real_
+
+    out <- expand.grid(
+      reporter = rownames(mat),
+      perturbation = colnames(mat),
+      stringsAsFactors = FALSE
+    )
+    idx <- cbind(match(out$reporter, rownames(mat)), match(out$perturbation, colnames(mat)))
+    out$effect <- mat[idx]
+    out$low_rank_effect <- low_rank[idx]
+    out$rank_adjusted_effect <- out$effect - out$low_rank_effect
+    out$reporter_score_rank1 <- reporter_score_rank1[out$reporter]
+    out$perturbation_score_rank1 <- perturbation_score_rank1[out$perturbation]
+    out$rank <- rank
+    out$group_label <- group_label_from_table(dg, group)
+    if (!is.null(group) && length(group) > 0) {
+      for (col in rev(group)) {
+        out[[col]] <- dg[[col]][1]
+        out <- out[, c(col, setdiff(names(out), col)), drop = FALSE]
+      }
+    }
+
+    reporter_labels <- unique(dg[, c(reporter, reporter_label), drop = FALSE])
+    names(reporter_labels) <- c("reporter", "reporter_label")
+    perturbation_labels <- unique(dg[, c(perturbation, perturbation_label), drop = FALSE])
+    names(perturbation_labels) <- c("perturbation", "perturbation_label")
+    out <- merge(out, reporter_labels, by = "reporter", all.x = TRUE, sort = FALSE)
+    out <- merge(out, perturbation_labels, by = "perturbation", all.x = TRUE, sort = FALSE)
+    out
+  })
+  out <- do.call(rbind, rows)
+  rownames(out) <- NULL
+  out
+}
+
+#' Plot low-rank background diagnostics
+#'
+#' Draws observed singular values together with permutation-null summaries from
+#' [background_rank_diagnostics()]. This is a diagnostic for choosing whether a
+#' low-rank background component is visible in the effect matrix.
+#'
+#' @param table Optional effect table. Ignored when `diagnostics` is supplied.
+#' @param diagnostics Optional data frame returned by
+#'   [background_rank_diagnostics()].
+#' @inheritParams background_rank_diagnostics
+#' @param group Optional grouping columns. A separate diagnostic is computed and
+#'   faceted for each group.
+#' @param threshold Permutation reference quantile.
+#' @param impute Method used to fill missing entries before singular-value
+#'   decomposition.
+#' @param title,subtitle,xlab,ylab Plot labels.
+#' @return A `ggplot` object. The diagnostic table is available as
+#'   `attr(plot, "diagnostics")`.
+#' @export
+plot_background_rank_diagnostics <- function(table = NULL,
+                                             diagnostics = NULL,
+                                             effect = "total_effect",
+                                             reporter = "reporter",
+                                             perturbation = "perturbation",
+                                             group = NULL,
+                                             rank_max = 10,
+                                             permutations = 100,
+                                             threshold = 0.99,
+                                             impute = c("column_mean", "global_mean", "zero"),
+                                             seed = NULL,
+                                             title = NULL,
+                                             subtitle = NULL,
+                                             xlab = "Component",
+                                             ylab = "Singular value") {
+  if (!requireNamespace("ggplot2", quietly = TRUE)) {
+    stop("Package `ggplot2` is required for plot_background_rank_diagnostics().", call. = FALSE)
+  }
+  impute <- validate_background_impute(impute)
+  if (is.null(diagnostics)) {
+    if (is.null(table)) {
+      stop("Provide either `table` or `diagnostics`.", call. = FALSE)
+    }
+    split_groups <- split_table_by_group(table, group = group)
+    diagnostics <- do.call(rbind, lapply(seq_along(split_groups), function(i) {
+      dg <- split_groups[[i]]
+      seed_i <- if (is.null(seed)) NULL else seed + i - 1L
+      out <- background_rank_diagnostics(
+        dg,
+        effect = effect,
+        reporter = reporter,
+        perturbation = perturbation,
+        rank_max = rank_max,
+        permutations = permutations,
+        threshold = threshold,
+        impute = impute,
+        seed = seed_i
+      )
+      out$group_label <- group_label_from_table(dg, group)
+      out
+    }))
+  }
+  required <- c("component", "observed", "null_median", "null_q99")
+  missing_cols <- setdiff(required, names(diagnostics))
+  if (length(missing_cols) > 0) {
+    stop("`diagnostics` is missing columns: ", paste(missing_cols, collapse = ", "), call. = FALSE)
+  }
+  d <- diagnostics
+  if (!"group_label" %in% names(d)) {
+    d$group_label <- ""
+  }
+  d$.null_reference <- if ("null_threshold" %in% names(d)) d$null_threshold else d$null_q99
+  d$.group_label <- d$group_label
+  d$.component <- as.numeric(d$component)
+
+  p <- ggplot2::ggplot(d, ggplot2::aes(.component, observed)) +
+    ggplot2::geom_ribbon(
+      ggplot2::aes(ymin = null_median, ymax = .null_reference),
+      fill = "#BDBDBD",
+      alpha = 0.35
+    ) +
+    ggplot2::geom_line(ggplot2::aes(y = null_median), color = "#737373", linetype = "dashed", linewidth = 0.35) +
+    ggplot2::geom_line(color = "#1F78B4", linewidth = 0.45) +
+    ggplot2::geom_point(color = "#1F78B4", size = 1.8) +
+    ggplot2::scale_x_continuous(breaks = sort(unique(d$.component))) +
+    destress_diagnostic_theme(base_size = 9, legend_position = "none") +
+    ggplot2::labs(title = title, subtitle = subtitle, x = xlab, y = ylab)
+  if (length(unique(d$.group_label)) > 1 || nzchar(d$.group_label[1])) {
+    p <- p + ggplot2::facet_wrap(~.group_label)
+  }
+  attr(p, "diagnostics") <- diagnostics
+  p
+}
+
+#' Plot a low-rank effect decomposition
+#'
+#' Shows the observed effect matrix, the estimated low-rank component, and the
+#' rank-adjusted residual matrix. Rows are ordered by the first reporter score
+#' within each group, making broad background axes visible even when reporter
+#' labels are too dense to display.
+#'
+#' @param decomposition Output from [low_rank_effect_decomposition()].
+#' @param matrices Which matrices to display.
+#' @param group Optional grouping columns used for faceting.
+#' @param show_reporter_labels If `TRUE`, draw reporter labels.
+#' @param perturbation_order Optional perturbation order.
+#' @param clip_quantile Quantile of absolute effects used for color clipping.
+#' @param color_limit Optional positive color limit.
+#' @param title,subtitle,xlab,ylab,legend_title Plot labels.
+#' @return A `ggplot` object. The plotted data are available as
+#'   `attr(plot, "plot_data")`.
+#' @export
+plot_low_rank_effect_heatmap <- function(decomposition,
+                                         matrices = c("effect", "low_rank_effect", "rank_adjusted_effect"),
+                                         group = NULL,
+                                         show_reporter_labels = FALSE,
+                                         perturbation_order = NULL,
+                                         clip_quantile = 0.985,
+                                         color_limit = NULL,
+                                         title = NULL,
+                                         subtitle = NULL,
+                                         xlab = "Perturbation",
+                                         ylab = "Reporters ordered by rank-1 score",
+                                         legend_title = "Effect") {
+  if (!requireNamespace("ggplot2", quietly = TRUE)) {
+    stop("Package `ggplot2` is required for plot_low_rank_effect_heatmap().", call. = FALSE)
+  }
+  stopifnot(is.data.frame(decomposition))
+  matrices <- match.arg(matrices, c("effect", "low_rank_effect", "rank_adjusted_effect"), several.ok = TRUE)
+  required <- c("reporter", "perturbation", "reporter_score_rank1", matrices)
+  missing_cols <- setdiff(required, names(decomposition))
+  if (length(missing_cols) > 0) {
+    stop("`decomposition` is missing columns: ", paste(missing_cols, collapse = ", "), call. = FALSE)
+  }
+  d <- decomposition
+  if (!"group_label" %in% names(d)) {
+    d$group_label <- ""
+  }
+  if (!"reporter_label" %in% names(d)) {
+    d$reporter_label <- d$reporter
+  }
+  if (!"perturbation_label" %in% names(d)) {
+    d$perturbation_label <- d$perturbation
+  }
+  long <- do.call(rbind, lapply(matrices, function(mat_name) {
+    data.frame(
+      group_label = d$group_label,
+      reporter = d$reporter,
+      reporter_label = d$reporter_label,
+      perturbation = d$perturbation,
+      perturbation_label = d$perturbation_label,
+      reporter_score_rank1 = d$reporter_score_rank1,
+      matrix = mat_name,
+      effect = as.numeric(d[[mat_name]]),
+      stringsAsFactors = FALSE
+    )
+  }))
+  matrix_labels <- c(
+    effect = "Observed effect",
+    low_rank_effect = "Low-rank component",
+    rank_adjusted_effect = "Rank-adjusted residual"
+  )
+  long$.matrix <- factor(matrix_labels[long$matrix], levels = matrix_labels[matrices])
+  if (is.null(perturbation_order)) {
+    perturbation_order <- unique(long$perturbation_label)
+  }
+  long$perturbation_label <- factor(long$perturbation_label, levels = perturbation_order)
+
+  order_key <- unique(long[, c("group_label", "reporter", "reporter_label", "reporter_score_rank1")])
+  order_key <- order_key[order(order_key$group_label, order_key$reporter_score_rank1, order_key$reporter), , drop = FALSE]
+  order_key$reporter_order <- stats::ave(seq_len(nrow(order_key)), order_key$group_label, FUN = seq_along)
+  long$reporter_order <- order_key$reporter_order[match(paste(long$group_label, long$reporter), paste(order_key$group_label, order_key$reporter))]
+
+  finite_effect <- abs(long$effect[is.finite(long$effect)])
+  if (is.null(color_limit)) {
+    limit <- stats::quantile(finite_effect, probs = clip_quantile, names = FALSE, na.rm = TRUE)
+    if (!is.finite(limit) || limit <= 0) {
+      limit <- max(finite_effect, na.rm = TRUE)
+    }
+  } else {
+    limit <- as.numeric(color_limit)
+  }
+  if (!is.finite(limit) || limit <= 0) {
+    limit <- 1
+  }
+  long$.effect <- pmax(pmin(long$effect, limit), -limit)
+
+  p <- ggplot2::ggplot(long, ggplot2::aes(perturbation_label, reporter_order, fill = .effect)) +
+    ggplot2::geom_raster() +
+    ggplot2::scale_fill_gradient2(
+      low = "#2166AC",
+      mid = "white",
+      high = "#B2182B",
+      midpoint = 0,
+      limits = c(-limit, limit),
+      breaks = c(-limit, 0, limit),
+      labels = signif(c(-limit, 0, limit), 2),
+      name = legend_title
+    ) +
+    ggplot2::facet_grid(group_label ~ .matrix, scales = "free_y", space = "free_y") +
+    ggplot2::theme_light(base_size = 8) +
+    ggplot2::theme(
+      axis.text.x = ggplot2::element_text(angle = 45, hjust = 1, vjust = 1),
+      axis.text.y = if (isTRUE(show_reporter_labels)) ggplot2::element_text(size = 5) else ggplot2::element_blank(),
+      axis.ticks.y = ggplot2::element_blank(),
+      panel.grid = ggplot2::element_blank(),
+      legend.position = "bottom",
+      plot.title.position = "plot",
+      strip.background = ggplot2::element_rect(fill = "#F5F5F5", color = "#D0D0D0"),
+      strip.text = ggplot2::element_text(face = "bold", color = "#333333")
+    ) +
+    ggplot2::labs(title = title, subtitle = subtitle, x = xlab, y = ylab)
+
+  attr(p, "plot_data") <- long
+  p
+}
+
+#' Robust diagnostic tail scores for effect distributions
+#'
+#' Computes robust Gaussian tail probabilities for effect values, optionally
+#' within strata. These values are diagnostics for unreplicated or exploratory
+#' effect matrices and should not be interpreted as formal p-values.
+#'
+#' @param table A data frame containing an effect column.
+#' @param effect Numeric effect column.
+#' @param group Optional grouping columns. Centers and scales are estimated
+#'   separately within each group.
+#' @param min_n Minimum number of finite effects required within a group.
+#' @param alternative Tail alternative: `"two_sided"`, `"greater"`, or
+#'   `"less"`.
+#' @return The input table with diagnostic center, scale, z-score, tail
+#'   probability, and negative log10 tail score columns appended.
+#' @export
+effect_tail_scores <- function(table,
+                               effect = "effect",
+                               group = NULL,
+                               min_n = 5,
+                               alternative = c("two_sided", "greater", "less")) {
+  stopifnot(is.data.frame(table))
+  alternative <- match.arg(alternative)
+  required <- c(effect, group)
+  missing_cols <- setdiff(required, names(table))
+  if (length(missing_cols) > 0) {
+    stop("Missing required columns: ", paste(missing_cols, collapse = ", "), call. = FALSE)
+  }
+  d <- table
+  d$diagnostic_center <- NA_real_
+  d$diagnostic_scale <- NA_real_
+  d$diagnostic_z <- NA_real_
+  d$tail_probability <- NA_real_
+  d$tail_score <- NA_real_
+  d$.destress_row_id <- seq_len(nrow(d))
+  group_list <- split_table_by_group(d, group = group)
+  for (idx in group_list) {
+    row_idx <- idx$.destress_row_id
+    x <- as.numeric(idx[[effect]])
+    finite <- is.finite(x)
+    if (sum(finite) < min_n) {
+      next
+    }
+    center <- stats::median(x[finite], na.rm = TRUE)
+    scale <- stats::mad(x[finite], center = center, constant = 1.4826, na.rm = TRUE)
+    if (!is.finite(scale) || scale <= sqrt(.Machine$double.eps)) {
+      scale <- stats::sd(x[finite], na.rm = TRUE)
+    }
+    if (!is.finite(scale) || scale <= sqrt(.Machine$double.eps)) {
+      next
+    }
+    z <- (x - center) / scale
+    tail_probability <- switch(
+      alternative,
+      two_sided = 2 * stats::pnorm(abs(z), lower.tail = FALSE),
+      greater = stats::pnorm(z, lower.tail = FALSE),
+      less = stats::pnorm(z, lower.tail = TRUE)
+    )
+    d$diagnostic_center[row_idx] <- center
+    d$diagnostic_scale[row_idx] <- scale
+    d$diagnostic_z[row_idx] <- z
+    d$tail_probability[row_idx] <- tail_probability
+    d$tail_score[row_idx] <- -log10(pmax(tail_probability, .Machine$double.xmin))
+  }
+  d$.destress_row_id <- NULL
+  d
+}
+
+#' Plot diagnostic effect-tail histograms
+#'
+#' Shows effect distributions and highlights observations in the diagnostic
+#' tails. The plot is intended for exploratory effect matrices, especially when
+#' formal replicate-based inference is unavailable.
+#'
+#' @param table A data frame, usually returned by [effect_tail_scores()].
+#' @param effect Numeric effect column to plot.
+#' @param tail_probability Diagnostic tail-probability column.
+#' @param facet Optional columns used for faceting.
+#' @param tail_threshold Tail-probability threshold used for highlighting.
+#' @param bins Number of histogram bins.
+#' @param title,subtitle,xlab,ylab Plot labels.
+#' @return A `ggplot` object.
+#' @export
+plot_effect_tail_histogram <- function(table,
+                                       effect = "effect",
+                                       tail_probability = "tail_probability",
+                                       facet = NULL,
+                                       tail_threshold = 0.05,
+                                       bins = 40,
+                                       title = NULL,
+                                       subtitle = NULL,
+                                       xlab = NULL,
+                                       ylab = "Effects") {
+  if (!requireNamespace("ggplot2", quietly = TRUE)) {
+    stop("Package `ggplot2` is required for plot_effect_tail_histogram().", call. = FALSE)
+  }
+  stopifnot(is.data.frame(table))
+  required <- c(effect, tail_probability, facet)
+  missing_cols <- setdiff(required, names(table))
+  if (length(missing_cols) > 0) {
+    stop("Missing required columns: ", paste(missing_cols, collapse = ", "), call. = FALSE)
+  }
+  d <- table
+  d$.effect <- as.numeric(d[[effect]])
+  d$.tail_probability <- as.numeric(d[[tail_probability]])
+  d <- d[is.finite(d$.effect), , drop = FALSE]
+  d$.tail_region <- ifelse(is.finite(d$.tail_probability) & d$.tail_probability <= tail_threshold, "Diagnostic tail", "Central")
+  if (is.null(xlab)) {
+    xlab <- effect
+  }
+  p <- ggplot2::ggplot(d, ggplot2::aes(.effect)) +
+    ggplot2::geom_histogram(
+      ggplot2::aes(fill = .tail_region),
+      bins = bins,
+      color = "white",
+      linewidth = 0.15
+    ) +
+    ggplot2::scale_fill_manual(values = c("Central" = "#D1D5DB", "Diagnostic tail" = "#D55E00"), name = NULL) +
+    destress_diagnostic_theme(base_size = 8, legend_position = c(0.985, 0.985), legend_justification = c(1, 1)) +
+    ggplot2::labs(title = title, subtitle = subtitle, x = xlab, y = ylab)
+  if (!is.null(facet) && length(facet) > 0) {
+    p <- p + ggplot2::facet_wrap(stats::as.formula(paste("~", paste(facet, collapse = "+"))))
+  }
   p
 }
 

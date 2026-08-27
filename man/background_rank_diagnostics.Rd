@@ -11,6 +11,8 @@ background_rank_diagnostics(
   perturbation = "perturbation",
   rank_max = 10,
   permutations = 100,
+  threshold = 0.99,
+  impute = "column_mean",
   seed = NULL
 )
 }
@@ -25,6 +27,12 @@ background_rank_diagnostics(
 \item{rank_max}{Maximum component index to report.}
 
 \item{permutations}{Number of null permutations. Use \code{0} to skip the null.}
+
+\item{threshold}{Permutation reference quantile used for automatic rank
+selection and reported as \code{null_threshold}.}
+
+\item{impute}{Method used to fill missing matrix entries before
+singular-value decomposition.}
 
 \item{seed}{Optional random seed for reproducible permutations.}
 }

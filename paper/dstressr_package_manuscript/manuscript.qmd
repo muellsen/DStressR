@@ -701,12 +701,24 @@ The default specific estimand uses $k=0$, for which $B^{(0)}=0$ and
 Eq.\eqref{eq:rank-adjusted-specific-effect} reduces to
 Eq.\eqref{eq:specific-effect}. Positive ranks, typically $k=1$ or $k=2$, define
 additional low-rank adjusted estimands for screens with evidence of structured
-total-effect variation. In the implementation, the singular-value
-decomposition is applied to the fitted total-effect matrix after replacing
-missing entries by zero for the matrix decomposition; inference is reported
-only for reporter-perturbation pairs with fitted effects. For each specified rank,
-DStressR can report both the rank-adjusted total-effect matrix and its centered
-reporter-specific residual matrix.
+total-effect variation. We diagnose such structure by a permutation version of
+parallel analysis: the observed singular values of $T$ are compared with
+singular values obtained after independently permuting reporter labels within
+each perturbation column. This preserves perturbation-wise marginal effect
+distributions while breaking coherent reporter-loading structure. The approach
+follows the logic of parallel analysis [@Horn1965ParallelAnalysis] and its
+permutation interpretation [@BujaEyuboglu1992ParallelAnalysis], with modern
+theoretical justification for permutation-based PCA diagnostics developed by
+@Dobriban2017PermutationPCA and related deterministic refinements by
+@DobribanOwen2019DeterministicParallelAnalysis. In the implementation, the
+singular-value decomposition is applied to the fitted total-effect matrix after
+replacing missing entries by the observed mean of the corresponding
+perturbation column for the matrix decomposition; inference is reported only
+for reporter-perturbation pairs with fitted effects. The rank can either be
+specified by the analyst or selected by the permutation parallel-analysis
+diagnostic. For each specified or selected rank, DStressR can report both the
+rank-adjusted total-effect matrix and its centered reporter-specific residual
+matrix.
 
 ### Model-Based Inference
 

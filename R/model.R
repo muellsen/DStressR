@@ -222,8 +222,91 @@ validate_background_rank <- function(background_rank) {
   as.integer(background_rank)
 }
 
-low_rank_background_effect <- function(table, effect, rank) {
+validate_background_rank_request <- function(background_rank) {
+  if (is.character(background_rank) && length(background_rank) == 1 && identical(tolower(background_rank), "auto")) {
+    return(list(auto = TRUE, rank = NA_integer_))
+  }
+  list(auto = FALSE, rank = validate_background_rank(background_rank))
+}
+
+validate_background_rank_threshold <- function(threshold) {
+  threshold <- as.numeric(threshold)
+  if (length(threshold) != 1 || !is.finite(threshold) || threshold <= 0 || threshold >= 1) {
+    stop("`background_rank_threshold` must be one finite number between 0 and 1.", call. = FALSE)
+  }
+  threshold
+}
+
+validate_background_impute <- function(impute) {
+  if (is.null(impute)) {
+    return("column_mean")
+  }
+  match.arg(impute, c("column_mean", "global_mean", "zero"))
+}
+
+impute_effect_matrix <- function(mat, method = "column_mean") {
+  method <- validate_background_impute(method)
+  observed <- is.finite(mat)
+  out <- mat
+  if (method == "zero") {
+    out[!observed] <- 0
+    return(out)
+  }
+  finite <- mat[observed]
+  global_mean <- if (length(finite) > 0) mean(finite) else 0
+  if (!is.finite(global_mean)) {
+    global_mean <- 0
+  }
+  if (method == "global_mean") {
+    out[!observed] <- global_mean
+    return(out)
+  }
+  for (j in seq_len(ncol(out))) {
+    miss_j <- !observed[, j]
+    if (!any(miss_j)) {
+      next
+    }
+    mean_j <- mean(out[observed[, j], j], na.rm = TRUE)
+    if (!is.finite(mean_j)) {
+      mean_j <- global_mean
+    }
+    out[miss_j, j] <- mean_j
+  }
+  out
+}
+
+select_background_rank <- function(diagnostics) {
+  if (is.null(diagnostics) || nrow(diagnostics) == 0) {
+    return(0L)
+  }
+  reference <- if ("null_threshold" %in% names(diagnostics)) {
+    diagnostics$null_threshold
+  } else if ("null_q99" %in% names(diagnostics)) {
+    diagnostics$null_q99
+  } else if ("null_q95" %in% names(diagnostics)) {
+    diagnostics$null_q95
+  } else {
+    rep(Inf, nrow(diagnostics))
+  }
+  pass <- is.finite(diagnostics$observed) & is.finite(reference) & diagnostics$observed > reference
+  if (!any(pass)) {
+    return(0L)
+  }
+  fail <- which(!pass)
+  if (length(fail) == 0) {
+    return(max(diagnostics$component))
+  }
+  first_fail <- fail[1]
+  if (first_fail == 1) {
+    0L
+  } else {
+    max(diagnostics$component[seq_len(first_fail - 1L)])
+  }
+}
+
+low_rank_background_effect <- function(table, effect, rank, impute = "column_mean") {
   rank <- validate_background_rank(rank)
+  impute <- validate_background_impute(impute)
   if (rank == 0 || nrow(table) == 0) {
     return(rep(0, nrow(table)))
   }
@@ -250,8 +333,7 @@ low_rank_background_effect <- function(table, effect, rank) {
   mat[idx] <- as.numeric(table[[effect]])
 
   observed <- is.finite(mat)
-  decomp <- mat
-  decomp[!observed] <- 0
+  decomp <- impute_effect_matrix(mat, method = impute)
 
   rank <- min(rank, nrow(decomp), ncol(decomp))
   if (rank == 0 || all(abs(decomp[observed]) < sqrt(.Machine$double.eps))) {
@@ -304,6 +386,10 @@ effect_matrix_from_table <- function(table, effect, reporter = "reporter", pertu
 #' @param reporter,perturbation Column names identifying reporters and perturbations.
 #' @param rank_max Maximum component index to report.
 #' @param permutations Number of null permutations. Use `0` to skip the null.
+#' @param threshold Permutation reference quantile used for automatic rank
+#'   selection and reported as `null_threshold`.
+#' @param impute Method used to fill missing matrix entries before
+#'   singular-value decomposition.
 #' @param seed Optional random seed for reproducible permutations.
 #' @return A data frame with observed singular values, variance fractions, and
 #'   optional permutation summaries.
@@ -314,9 +400,13 @@ background_rank_diagnostics <- function(table,
                                         perturbation = "perturbation",
                                         rank_max = 10,
                                         permutations = 100,
+                                        threshold = 0.99,
+                                        impute = "column_mean",
                                         seed = NULL) {
   rank_max <- validate_background_rank(rank_max)
   permutations <- validate_background_rank(permutations)
+  threshold <- validate_background_rank_threshold(threshold)
+  impute <- validate_background_impute(impute)
   mat <- effect_matrix_from_table(
     table,
     effect = effect,
@@ -324,8 +414,7 @@ background_rank_diagnostics <- function(table,
     perturbation = perturbation
   )
   observed <- is.finite(mat)
-  decomp <- mat
-  decomp[!observed] <- 0
+  decomp <- impute_effect_matrix(mat, method = impute)
 
   rank_max <- min(rank_max, nrow(decomp), ncol(decomp))
   if (rank_max == 0) {
@@ -338,7 +427,7 @@ background_rank_diagnostics <- function(table,
   observed_sv <- singular_values[component]
   prop_var <- if (total_ss > 0) observed_sv^2 / total_ss else rep(NA_real_, rank_max)
 
-  null_median <- null_q95 <- null_q99 <- rep(NA_real_, rank_max)
+  null_median <- null_q95 <- null_q99 <- null_threshold <- rep(NA_real_, rank_max)
   if (permutations > 0) {
     if (!is.null(seed)) {
       old_seed <- if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
@@ -358,19 +447,21 @@ background_rank_diagnostics <- function(table,
 
     null_sv <- matrix(NA_real_, nrow = permutations, ncol = rank_max)
     for (b in seq_len(permutations)) {
-      permuted <- decomp
+      permuted <- mat
       for (j in seq_len(ncol(permuted))) {
         obs_j <- observed[, j]
         if (sum(obs_j) > 1) {
           permuted[obs_j, j] <- sample(permuted[obs_j, j])
         }
       }
+      permuted <- impute_effect_matrix(permuted, method = impute)
       sv_b <- svd(permuted, nu = 0, nv = 0)$d
       null_sv[b, ] <- sv_b[component]
     }
     null_median <- apply(null_sv, 2, stats::median, na.rm = TRUE)
     null_q95 <- apply(null_sv, 2, stats::quantile, probs = 0.95, na.rm = TRUE)
     null_q99 <- apply(null_sv, 2, stats::quantile, probs = 0.99, na.rm = TRUE)
+    null_threshold <- apply(null_sv, 2, stats::quantile, probs = threshold, na.rm = TRUE)
   }
 
   data.frame(
@@ -381,6 +472,9 @@ background_rank_diagnostics <- function(table,
     null_median = null_median,
     null_q95 = null_q95,
     null_q99 = null_q99,
+    null_threshold = null_threshold,
+    threshold = threshold,
+    impute = impute,
     n_reporters = nrow(decomp),
     n_perturbations = ncol(decomp),
     permutations = permutations,
@@ -536,7 +630,8 @@ reporter_effect_results <- function(fit, perturbations = NULL, reporters = NULL)
   out$low_rank_effect <- low_rank_background_effect(
     out,
     effect = "background_adjusted_effect",
-    rank = fit$background_rank
+    rank = fit$background_rank,
+    impute = fit$background_impute
   )
   out$rank_adjusted_total_effect <- out$background_adjusted_effect - out$low_rank_effect
 
@@ -671,7 +766,8 @@ reporter_lm_results <- function(fit, perturbations = NULL, reporters = NULL) {
   out$low_rank_effect <- low_rank_background_effect(
     out,
     effect = "total_effect",
-    rank = fit$background_rank
+    rank = fit$background_rank,
+    impute = fit$background_impute
   )
   out$rank_adjusted_total_effect <- out$total_effect - out$low_rank_effect
 
@@ -812,7 +908,8 @@ observed_mean_results <- function(fit, perturbations = NULL, reporters = NULL) {
   out$low_rank_effect <- low_rank_background_effect(
     out,
     effect = "total_effect",
-    rank = fit$background_rank
+    rank = fit$background_rank,
+    impute = fit$background_impute
   )
   out$rank_adjusted_total_effect <- out$total_effect - out$low_rank_effect
 
@@ -1075,7 +1172,20 @@ resolve_destress_stages <- function(preset,
 #' @param background_rank Non-negative integer. The default `0` removes no
 #'   latent background. Values `1` or `2` additionally subtract a low-rank
 #'   background term from the reference-relative total-effect matrix before
-#'   testing rank-adjusted total and reporter-specific residual effects.
+#'   testing rank-adjusted total and reporter-specific residual effects. Use
+#'   `"auto"` to choose the rank by permutation parallel analysis.
+#' @param background_rank_max Maximum rank considered when
+#'   `background_rank = "auto"`.
+#' @param background_rank_permutations Number of permutations used when
+#'   `background_rank = "auto"`.
+#' @param background_rank_threshold Permutation reference quantile used when
+#'   `background_rank = "auto"`.
+#' @param background_rank_seed Optional random seed used when
+#'   `background_rank = "auto"`.
+#' @param background_impute Method used to fill missing entries of the effect
+#'   matrix before singular-value decomposition. The default `"column_mean"`
+#'   replaces missing entries by the observed mean of the corresponding
+#'   perturbation column. `"global_mean"` and `"zero"` are also available.
 #' @param normalization One of `"linear_model"`, `"median_polish"`, or
 #'   `"empty_vector"`. `"model"` and `"evc"` are accepted aliases.
 #' @param testing One of `"student_t"`, `"moderated_t"`, or `"gaussian_z"`.
@@ -1100,6 +1210,11 @@ fit_destress <- function(assay,
                          empirical_bayes = TRUE,
                          empty_vector_reporter = NULL,
                          background_rank = 0,
+                         background_rank_max = 5,
+                         background_rank_permutations = 100,
+                         background_rank_threshold = 0.99,
+                         background_rank_seed = NULL,
+                         background_impute = c("column_mean", "global_mean", "zero"),
                          normalization = NULL,
                          testing = NULL,
                          aggregation = NULL,
@@ -1131,7 +1246,11 @@ fit_destress <- function(assay,
   }
 
   empirical_bayes <- identical(stages$testing, "moderated_t")
-  background_rank <- validate_background_rank(background_rank)
+  background_rank_request <- validate_background_rank_request(background_rank)
+  background_rank_max <- validate_background_rank(background_rank_max)
+  background_rank_permutations <- validate_background_rank(background_rank_permutations)
+  background_rank_threshold <- validate_background_rank_threshold(background_rank_threshold)
+  background_impute <- validate_background_impute(background_impute)
   if (!inherits(assay, "destress_assay")) {
     if (!is.data.frame(assay)) {
       stop("`assay` must be a data frame or be produced by prepare_assay().", call. = FALSE)
@@ -1152,6 +1271,9 @@ fit_destress <- function(assay,
     stop("Unknown technical columns: ", paste(missing_technical, collapse = ", "), call. = FALSE)
   }
   interaction <- isTRUE(interaction)
+  if (isTRUE(background_rank_request$auto) && interaction) {
+    stop("`background_rank = \"auto\"` is currently supported for the scalable reporter-specific model only.", call. = FALSE)
+  }
   if (!is.null(empty_vector_reporter)) {
     empty_vector_reporter <- as.character(empty_vector_reporter)
     if (length(empty_vector_reporter) != 1 || is.na(empty_vector_reporter) || !nzchar(empty_vector_reporter)) {
@@ -1188,6 +1310,22 @@ fit_destress <- function(assay,
   } else {
     fit_reporter_effects(assay_for_model, technical, attr(assay, "destress")$control)
   }
+  background_rank_diagnostics_table <- NULL
+  selected_background_rank <- background_rank_request$rank
+  if (isTRUE(background_rank_request$auto)) {
+    background_rank_diagnostics_table <- background_rank_diagnostics(
+      reporter_effects,
+      effect = "total_effect",
+      reporter = "reporter",
+      perturbation = "perturbation",
+      rank_max = background_rank_max,
+      permutations = background_rank_permutations,
+      threshold = background_rank_threshold,
+      impute = background_impute,
+      seed = background_rank_seed
+    )
+    selected_background_rank <- select_background_rank(background_rank_diagnostics_table)
+  }
 
   structure(
     list(
@@ -1207,7 +1345,12 @@ fit_destress <- function(assay,
       empirical_bayes = empirical_bayes,
       empty_vector_reporter = empty_vector_reporter,
       background_reporter = background_reporter,
-      background_rank = background_rank,
+      background_rank = selected_background_rank,
+      background_rank_requested = background_rank,
+      background_rank_diagnostics = background_rank_diagnostics_table,
+      background_rank_threshold = background_rank_threshold,
+      background_rank_seed = background_rank_seed,
+      background_impute = background_impute,
       stages = stages,
       preset = if (is.null(preset)) "model" else preset,
       adjustment = stages$adjustment
@@ -1231,6 +1374,9 @@ model_parameters <- function(fit) {
   out <- list(
     background = data.frame(
       background_rank = validate_background_rank(fit$background_rank),
+      background_rank_requested = if (is.null(fit$background_rank_requested)) fit$background_rank else as.character(fit$background_rank_requested),
+      background_rank_threshold = if (is.null(fit$background_rank_threshold)) NA_real_ else fit$background_rank_threshold,
+      background_impute = if (is.null(fit$background_impute)) "column_mean" else fit$background_impute,
       background_reporter = if (is.null(fit$background_reporter)) NA_character_ else fit$background_reporter,
       background_method = if (is.null(fit$assay_info$background_method)) "none" else fit$assay_info$background_method
     ),
@@ -1238,6 +1384,9 @@ model_parameters <- function(fit) {
     background_calibration = fit$assay_info$background_fit,
     reporter_effects = fit$reporter_effects
   )
+  if (!is.null(fit$background_rank_diagnostics)) {
+    out$background_rank_diagnostics <- fit$background_rank_diagnostics
+  }
 
   if (isTRUE(fit$interaction)) {
     coef_table <- function(model) {
@@ -1363,7 +1512,8 @@ results <- function(fit, perturbations = NULL, reporters = NULL) {
   out$low_rank_effect <- low_rank_background_effect(
     out,
     effect = "total_effect",
-    rank = fit$background_rank
+    rank = fit$background_rank,
+    impute = fit$background_impute
   )
   out$rank_adjusted_total_effect <- out$total_effect - out$low_rank_effect
   out$rank_adjusted_total_se <- out$total_se

@@ -123,6 +123,26 @@ utils::write.table(
   row.names = FALSE
 )
 
+p_destress_rank_scree <- plot_background_rank_diagnostics(
+  diagnostics = rank_diagnostics,
+  xlab = "Component",
+  ylab = "Singular value"
+)
+ggplot2::ggsave(
+  file.path(out_dir, "dryad_weak_stress_windows_calibrated_alpha_destress_rank_scree.png"),
+  p_destress_rank_scree,
+  width = 5.2,
+  height = 3.8,
+  dpi = 300,
+  bg = "white"
+)
+ggplot2::ggsave(
+  file.path(out_dir, "dryad_weak_stress_windows_calibrated_alpha_destress_rank_scree.pdf"),
+  p_destress_rank_scree,
+  width = 5.2,
+  height = 3.8
+)
+
 utils::write.table(
   res_rank1,
   file.path(out_dir, "dryad_weak_stress_windows_calibrated_alpha_rank1_pair_results.tsv"),
