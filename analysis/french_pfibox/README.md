@@ -23,8 +23,15 @@ Code and sample files:
 - <https://github.com/sfrench007/pfibox>
 
 The GitHub sample contains one untreated time-course file and is useful for
-parser validation. A multi-treatment `gfpData.Rdata` object or equivalent
-processed time-course output is needed for DStressR perturbation analysis.
+parser validation. The DStressR perturbation analysis requires the deposited
+multi-treatment `gfpData.Rdata` object, or an equivalent processed time-course
+object, placed under `data-raw/french_pfibox/source/`. Supplementary article
+tables, such as the French et al. time-course cluster assignment table, can be
+placed in the same folder when reproducing the cluster-mapping figure.
+
+Large source files and bulky derived tables are intentionally not versioned.
+The local data provenance and expected file layout are described in
+`data-raw/french_pfibox/README.md`.
 
 ## Scripts
 
