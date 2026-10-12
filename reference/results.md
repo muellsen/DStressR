@@ -5,14 +5,14 @@ Extract model results
 ## Usage
 
 ``` r
-results(fit, perturbations = NULL, reporters = NULL)
+results(fit, perturbations = NULL, reporters = NULL, verbose = FALSE)
 ```
 
 ## Arguments
 
 - fit:
 
-  A `destress_fit` object.
+  A `destress_fit` or `destress_summary_fit` object.
 
 - perturbations:
 
@@ -21,6 +21,11 @@ results(fit, perturbations = NULL, reporters = NULL)
 - reporters:
 
   Optional reporter subset.
+
+- verbose:
+
+  If `TRUE`, print stage-level progress messages while extracting model
+  results.
 
 ## Value
 

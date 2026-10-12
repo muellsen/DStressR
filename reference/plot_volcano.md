@@ -2,9 +2,8 @@
 
 Creates a standard volcano plot from a DStressR result table. The x-axis
 is a reporter-perturbation effect size and the y-axis is the negative
-log10 adjusted p-value. Significant hits are emphasized, top reporter
-groups can be colored, and the most significant reporter-perturbation
-pairs are annotated.
+log10 adjusted p-value. Significant hits are emphasized and the most
+significant reporter-perturbation pairs can be annotated.
 
 ## Usage
 
@@ -14,6 +13,7 @@ plot_volcano(
   effect = "specific_effect",
   padj = "specific_padj",
   pvalue = NULL,
+  y = c("auto", "pvalue", "padj"),
   reporter = "reporter",
   perturbation = "perturbation",
   perturbation_label = perturbation,
@@ -21,14 +21,20 @@ plot_volcano(
   lfc = 0,
   top_n = 12,
   top_reporters = 6,
+  color_by = c("significance", "reporter"),
   title = "DStressR volcano plot",
   subtitle = NULL,
   xlab = NULL,
   ylab = NULL,
   label_by = c("pair", "reporter", "perturbation"),
+  label_hits_only = TRUE,
   max_label_chars = 46,
   repel_labels = TRUE,
-  point_alpha = 0.65
+  point_size = 1.35,
+  point_alpha = 0.78,
+  hit_color = "#D95F02",
+  background_color = "#D1D5DB",
+  call_labels = c("Not called", "Called")
 )
 ```
 
@@ -44,11 +50,17 @@ plot_volcano(
 
 - padj:
 
-  Adjusted p-value column to plot on the y-axis.
+  Adjusted p-value column used for FDR calls.
 
 - pvalue:
 
-  Optional raw p-value column used only if `padj = NULL`.
+  Optional raw p-value column. When supplied, the default y-axis is
+  `-log10(pvalue)` while calls are still defined by `padj`.
+
+- y:
+
+  Which p-value scale to show on the y-axis. The default `"auto"` uses
+  `pvalue` when available and otherwise uses `padj`.
 
 - reporter, perturbation:
 
@@ -69,12 +81,17 @@ plot_volcano(
 
 - top_n:
 
-  Number of significant pairs to annotate.
+  Number of pairs to annotate. By default these are selected from
+  significant hits.
 
 - top_reporters:
 
   Number of reporter groups to color. Remaining reporters are shown in
-  grey.
+  grey when `color_by = "reporter"`.
+
+- color_by:
+
+  Color points by `"significance"` or by `"reporter"`.
 
 - title, subtitle:
 
@@ -90,6 +107,11 @@ plot_volcano(
   Label style for annotated points. The default, `"pair"`, labels top
   hits as reporter-perturbation pairs.
 
+- label_hits_only:
+
+  If `TRUE`, annotations are selected only from pairs passing the FDR
+  and effect-size thresholds.
+
 - max_label_chars:
 
   Maximum characters per annotation label. Longer labels are truncated
@@ -100,9 +122,18 @@ plot_volcano(
   If `TRUE` and the optional `ggrepel` package is installed, use
   repelled labels for the annotated top hits.
 
-- point_alpha:
+- point_size, point_alpha:
 
-  Point transparency.
+  Point size and transparency.
+
+- hit_color, background_color:
+
+  Colors used when `color_by = "significance"`.
+
+- call_labels:
+
+  Two labels for non-called and called pairs when
+  `color_by = "significance"`.
 
 ## Value
 

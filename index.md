@@ -187,6 +187,38 @@ moderated model and `empirical_bayes = FALSE` is the ordinary
 Student-$`t`$ sensitivity model. The local Campylobacter comparison uses
 the default moderated model against the median-polish max-p workflow.
 
+## Summary-level analyses with supplied variances
+
+Some public reporter resources release processed response estimates
+together with uncertainty estimates, but not the replicate-level wells.
+These datasets can be analyzed with
+[`fit_destress_summary()`](https://muellsen.github.io/DStressR/reference/fit_destress_summary.md).
+The input is one row per reporter and perturbation, with a response
+estimate and its sampling variance.
+
+``` r
+
+summary_fit <- fit_destress_summary(
+  processed_response_table,
+  reporter = "reporter",
+  perturbation = "condition",
+  response = "log2_promoter_activity",
+  response_variance = "log2_promoter_activity_variance",
+  reference_perturbation = "glucose",
+  global_method = "weighted_mean",
+  background_rank = 1
+)
+
+summary_results <- results(summary_fit)
+```
+
+This path estimates reference-relative total effects, inverse-variance
+weighted perturbation-wide effects, reporter-specific effects, optional
+low-rank background adjustments, and summary-level Gaussian p-values. It
+is intended for processed datasets with reported variances and should
+not be confused with the replicate-level moderated model fitted by
+[`fit_destress()`](https://muellsen.github.io/DStressR/reference/fit_destress.md).
+
 ## Model-based Background Reporter Calibration
 
 If the screen contains an Empty Vector Control (EVC) reporter, it can be

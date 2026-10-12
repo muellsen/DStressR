@@ -12,7 +12,7 @@ model_parameters(fit)
 
 - fit:
 
-  A `destress_fit` object.
+  A `destress_fit` or `destress_summary_fit` object.
 
 ## Value
 

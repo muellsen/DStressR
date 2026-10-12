@@ -27,6 +27,8 @@
   : Estimate reporter-specific growth normalization exponents
 - [`fit_destress()`](https://muellsen.github.io/DStressR/reference/fit_destress.md)
   : Fit DStressR with staged statistical options
+- [`fit_destress_summary()`](https://muellsen.github.io/DStressR/reference/fit_destress_summary.md)
+  : Fit DStressR from supplied response estimates and variances
 - [`fit_effect_mixture()`](https://muellsen.github.io/DStressR/reference/fit_effect_mixture.md)
   : Fit a three-part empirical-null mixture to reporter-perturbation
   effects

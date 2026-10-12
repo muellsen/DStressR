@@ -78,6 +78,7 @@ legacy median-polish and Empty Vector Control analyses.</p>
 <span>  adjustment <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  interaction <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  preset <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  verbose <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -178,6 +179,11 @@ reporter-by-perturbation interaction model.</p></dd>
 <dd><p>Optional named preset: <code>"model"</code>, <code>"median_polish_legacy"</code>, or
 <code>"empty_vector_control"</code>. Common aliases such as <code>"median_polish"</code> and
 <code>"evc"</code> are accepted.</p></dd>
+
+
+<dt id="arg-verbose">verbose<a class="anchor" aria-label="anchor" href="#arg-verbose"></a></dt>
+<dd><p>If <code>TRUE</code>, print stage-level progress messages during model
+fitting. This is useful for large screens and full interaction models.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>

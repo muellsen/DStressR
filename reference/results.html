@@ -55,7 +55,7 @@
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">results</span><span class="op">(</span><span class="va">fit</span>, perturbations <span class="op">=</span> <span class="cn">NULL</span>, reporters <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">results</span><span class="op">(</span><span class="va">fit</span>, perturbations <span class="op">=</span> <span class="cn">NULL</span>, reporters <span class="op">=</span> <span class="cn">NULL</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -63,7 +63,7 @@
 
 
 <dl><dt id="arg-fit">fit<a class="anchor" aria-label="anchor" href="#arg-fit"></a></dt>
-<dd><p>A <code>destress_fit</code> object.</p></dd>
+<dd><p>A <code>destress_fit</code> or <code>destress_summary_fit</code> object.</p></dd>
 
 
 <dt id="arg-perturbations">perturbations<a class="anchor" aria-label="anchor" href="#arg-perturbations"></a></dt>
@@ -72,6 +72,11 @@
 
 <dt id="arg-reporters">reporters<a class="anchor" aria-label="anchor" href="#arg-reporters"></a></dt>
 <dd><p>Optional reporter subset.</p></dd>
+
+
+<dt id="arg-verbose">verbose<a class="anchor" aria-label="anchor" href="#arg-verbose"></a></dt>
+<dd><p>If <code>TRUE</code>, print stage-level progress messages while
+extracting model results.</p></dd>
 
 </dl></div>
     <div class="section level2">

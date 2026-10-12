@@ -24,6 +24,7 @@ fit_destress(
   adjustment = NULL,
   interaction = FALSE,
   preset = NULL,
+  verbose = FALSE,
   ...
 )
 ```
@@ -121,6 +122,11 @@ fit_destress(
   Optional named preset: `"model"`, `"median_polish_legacy"`, or
   `"empty_vector_control"`. Common aliases such as `"median_polish"` and
   `"evc"` are accepted.
+
+- verbose:
+
+  If `TRUE`, print stage-level progress messages during model fitting.
+  This is useful for large screens and full interaction models.
 
 - ...:
 
