@@ -9,6 +9,7 @@ plot_volcano(
   effect = "specific_effect",
   padj = "specific_padj",
   pvalue = NULL,
+  y = c("auto", "pvalue", "padj"),
   reporter = "reporter",
   perturbation = "perturbation",
   perturbation_label = perturbation,
@@ -16,14 +17,20 @@ plot_volcano(
   lfc = 0,
   top_n = 12,
   top_reporters = 6,
+  color_by = c("significance", "reporter"),
   title = "DStressR volcano plot",
   subtitle = NULL,
   xlab = NULL,
   ylab = NULL,
   label_by = c("pair", "reporter", "perturbation"),
+  label_hits_only = TRUE,
   max_label_chars = 46,
   repel_labels = TRUE,
-  point_alpha = 0.65
+  point_size = 1.35,
+  point_alpha = 0.78,
+  hit_color = "#D95F02",
+  background_color = "#D1D5DB",
+  call_labels = c("Not called", "Called")
 )
 }
 \arguments{
@@ -31,9 +38,13 @@ plot_volcano(
 
 \item{effect}{Effect-size column to plot on the x-axis.}
 
-\item{padj}{Adjusted p-value column to plot on the y-axis.}
+\item{padj}{Adjusted p-value column used for FDR calls.}
 
-\item{pvalue}{Optional raw p-value column used only if \code{padj = NULL}.}
+\item{pvalue}{Optional raw p-value column. When supplied, the default
+y-axis is \code{-log10(pvalue)} while calls are still defined by \code{padj}.}
+
+\item{y}{Which p-value scale to show on the y-axis. The default \code{"auto"}
+uses \code{pvalue} when available and otherwise uses \code{padj}.}
 
 \item{reporter, perturbation}{Columns identifying the reporter and perturbation.}
 
@@ -44,10 +55,13 @@ for annotations. Defaults to \code{perturbation}.}
 
 \item{lfc}{Minimum absolute effect size for hit highlighting.}
 
-\item{top_n}{Number of significant pairs to annotate.}
+\item{top_n}{Number of pairs to annotate. By default these are selected from
+significant hits.}
 
 \item{top_reporters}{Number of reporter groups to color. Remaining reporters
-are shown in grey.}
+are shown in grey when \code{color_by = "reporter"}.}
+
+\item{color_by}{Color points by \code{"significance"} or by \code{"reporter"}.}
 
 \item{title, subtitle}{Plot title and subtitle.}
 
@@ -57,13 +71,22 @@ selected columns.}
 \item{label_by}{Label style for annotated points. The default, \code{"pair"},
 labels top hits as reporter-perturbation pairs.}
 
+\item{label_hits_only}{If \code{TRUE}, annotations are selected only from pairs
+passing the FDR and effect-size thresholds.}
+
 \item{max_label_chars}{Maximum characters per annotation label. Longer
 labels are truncated with \code{...}. Use \code{Inf} to keep full labels.}
 
 \item{repel_labels}{If \code{TRUE} and the optional \code{ggrepel} package is
 installed, use repelled labels for the annotated top hits.}
 
-\item{point_alpha}{Point transparency.}
+\item{point_size, point_alpha}{Point size and transparency.}
+
+\item{hit_color, background_color}{Colors used when
+\code{color_by = "significance"}.}
+
+\item{call_labels}{Two labels for non-called and called pairs when
+\code{color_by = "significance"}.}
 }
 \value{
 A \code{ggplot} object.
@@ -71,8 +94,8 @@ A \code{ggplot} object.
 \description{
 Creates a standard volcano plot from a DStressR result table. The x-axis is a
 reporter-perturbation effect size and the y-axis is the negative log10 adjusted
-p-value. Significant hits are emphasized, top reporter groups can be colored,
-and the most significant reporter-perturbation pairs are annotated.
+p-value. Significant hits are emphasized and the most significant
+reporter-perturbation pairs can be annotated.
 }
 \details{
 The defaults work with \code{\link[=results]{results()}} followed by \code{\link[=adjust_pvalues]{adjust_pvalues()}} or

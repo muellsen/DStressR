@@ -2,8 +2,8 @@
 #'
 #' Creates a standard volcano plot from a DStressR result table. The x-axis is a
 #' reporter-perturbation effect size and the y-axis is the negative log10 adjusted
-#' p-value. Significant hits are emphasized, top reporter groups can be colored,
-#' and the most significant reporter-perturbation pairs are annotated.
+#' p-value. Significant hits are emphasized and the most significant
+#' reporter-perturbation pairs can be annotated.
 #'
 #' The defaults work with [results()] followed by [adjust_pvalues()] or
 #' [call_hits()]. For workflow comparison tables, pass the corresponding column
@@ -13,32 +13,44 @@
 #'
 #' @param table A data frame with one row per reporter-perturbation pair.
 #' @param effect Effect-size column to plot on the x-axis.
-#' @param padj Adjusted p-value column to plot on the y-axis.
-#' @param pvalue Optional raw p-value column used only if `padj = NULL`.
+#' @param padj Adjusted p-value column used for FDR calls.
+#' @param pvalue Optional raw p-value column. When supplied, the default
+#'   y-axis is `-log10(pvalue)` while calls are still defined by `padj`.
+#' @param y Which p-value scale to show on the y-axis. The default `"auto"`
+#'   uses `pvalue` when available and otherwise uses `padj`.
 #' @param reporter,perturbation Columns identifying the reporter and perturbation.
 #' @param perturbation_label Optional column with human-readable perturbation names used
 #'   for annotations. Defaults to `perturbation`.
 #' @param fdr FDR threshold for hit highlighting.
 #' @param lfc Minimum absolute effect size for hit highlighting.
-#' @param top_n Number of significant pairs to annotate.
+#' @param top_n Number of pairs to annotate. By default these are selected from
+#'   significant hits.
 #' @param top_reporters Number of reporter groups to color. Remaining reporters
-#'   are shown in grey.
+#'   are shown in grey when `color_by = "reporter"`.
+#' @param color_by Color points by `"significance"` or by `"reporter"`.
 #' @param title,subtitle Plot title and subtitle.
 #' @param xlab,ylab Axis labels. Defaults to readable labels based on the
 #'   selected columns.
 #' @param label_by Label style for annotated points. The default, `"pair"`,
 #'   labels top hits as reporter-perturbation pairs.
+#' @param label_hits_only If `TRUE`, annotations are selected only from pairs
+#'   passing the FDR and effect-size thresholds.
 #' @param max_label_chars Maximum characters per annotation label. Longer
 #'   labels are truncated with `...`. Use `Inf` to keep full labels.
 #' @param repel_labels If `TRUE` and the optional `ggrepel` package is
 #'   installed, use repelled labels for the annotated top hits.
-#' @param point_alpha Point transparency.
+#' @param point_size,point_alpha Point size and transparency.
+#' @param hit_color,background_color Colors used when
+#'   `color_by = "significance"`.
+#' @param call_labels Two labels for non-called and called pairs when
+#'   `color_by = "significance"`.
 #' @return A `ggplot` object.
 #' @export
 plot_volcano <- function(table,
                          effect = "specific_effect",
                          padj = "specific_padj",
                          pvalue = NULL,
+                         y = c("auto", "pvalue", "padj"),
                          reporter = "reporter",
                          perturbation = "perturbation",
                          perturbation_label = perturbation,
@@ -46,24 +58,42 @@ plot_volcano <- function(table,
                          lfc = 0,
                          top_n = 12,
                          top_reporters = 6,
+                         color_by = c("significance", "reporter"),
                          title = "DStressR volcano plot",
                          subtitle = NULL,
                          xlab = NULL,
                          ylab = NULL,
                          label_by = c("pair", "reporter", "perturbation"),
+                         label_hits_only = TRUE,
                          max_label_chars = 46,
                          repel_labels = TRUE,
-                         point_alpha = 0.65) {
+                         point_size = 1.35,
+                         point_alpha = 0.78,
+                         hit_color = "#D95F02",
+                         background_color = "#D1D5DB",
+                         call_labels = c("Not called", "Called")) {
   if (!requireNamespace("ggplot2", quietly = TRUE)) {
     stop("Package `ggplot2` is required for plot_volcano().", call. = FALSE)
   }
   stopifnot(is.data.frame(table))
   label_by <- match.arg(label_by)
-  y_col <- if (!is.null(padj)) padj else pvalue
+  color_by <- match.arg(color_by)
+  if (length(call_labels) != 2) {
+    stop("`call_labels` must have length two.", call. = FALSE)
+  }
+  y <- match.arg(y)
+  if (y == "auto") {
+    y <- if (!is.null(pvalue)) "pvalue" else "padj"
+  }
+  y_col <- if (y == "pvalue") pvalue else padj
+  call_col <- if (!is.null(padj)) padj else y_col
   if (is.null(y_col)) {
+    stop("Provide the p-value column requested by `y`.", call. = FALSE)
+  }
+  if (is.null(call_col)) {
     stop("Provide either `padj` or `pvalue`.", call. = FALSE)
   }
-  required <- c(effect, y_col, reporter, perturbation, perturbation_label)
+  required <- c(effect, y_col, call_col, reporter, perturbation, perturbation_label)
   missing_cols <- setdiff(required, names(table))
   if (length(missing_cols) > 0) {
     stop("Missing required columns: ", paste(missing_cols, collapse = ", "), call. = FALSE)
@@ -72,41 +102,56 @@ plot_volcano <- function(table,
   d <- table
   d$.effect <- as.numeric(d[[effect]])
   d$.p_for_plot <- as.numeric(d[[y_col]])
+  d$.p_for_call <- as.numeric(d[[call_col]])
   d$.reporter <- as.character(d[[reporter]])
   d$.perturbation <- as.character(d[[perturbation]])
   d$.perturbation_label <- as.character(d[[perturbation_label]])
   missing_label <- is.na(d$.perturbation_label) | !nzchar(d$.perturbation_label)
   d$.perturbation_label[missing_label] <- d$.perturbation[missing_label]
-  d <- d[is.finite(d$.effect) & is.finite(d$.p_for_plot) & d$.p_for_plot > 0, , drop = FALSE]
+  d <- d[
+    is.finite(d$.effect) &
+      is.finite(d$.p_for_plot) & d$.p_for_plot > 0 &
+      is.finite(d$.p_for_call) & d$.p_for_call > 0,
+    ,
+    drop = FALSE
+  ]
   if (nrow(d) == 0) {
     stop("No finite effect and p-value rows available for plotting.", call. = FALSE)
   }
 
   d$.neg_log10_p <- -log10(pmax(d$.p_for_plot, .Machine$double.xmin))
-  d$.hit <- d$.p_for_plot < fdr & abs(d$.effect) >= lfc
-  d$.direction <- ifelse(
-    d$.hit & d$.effect > 0,
-    "Up",
-    ifelse(d$.hit & d$.effect < 0, "Down", "Not significant")
-  )
+  d$.hit <- d$.p_for_call < fdr & abs(d$.effect) >= lfc
+  d$.call <- ifelse(d$.hit, "Called", "Not called")
+  d$.call <- factor(d$.call, levels = c("Not called", "Called"))
 
-  hit_counts <- stats::aggregate(
-    d$.hit,
-    by = list(reporter = d$.reporter),
-    FUN = sum
-  )
-  names(hit_counts)[2] <- "hit_n"
-  total_counts <- as.data.frame(table(d$.reporter), stringsAsFactors = FALSE)
-  names(total_counts) <- c("reporter", "total_n")
-  reporter_counts <- merge(hit_counts, total_counts, by = "reporter", all = TRUE)
-  reporter_counts$hit_n[is.na(reporter_counts$hit_n)] <- 0
-  reporter_counts <- reporter_counts[order(-reporter_counts$hit_n, -reporter_counts$total_n, reporter_counts$reporter), ]
-  colored_reporters <- utils::head(reporter_counts$reporter, top_reporters)
-  d$.reporter_group <- ifelse(d$.reporter %in% colored_reporters, d$.reporter, "Other reporters")
-  d$.reporter_group <- factor(d$.reporter_group, levels = c(colored_reporters, "Other reporters"))
+  if (color_by == "reporter") {
+    hit_counts <- stats::aggregate(
+      d$.hit,
+      by = list(reporter = d$.reporter),
+      FUN = sum
+    )
+    names(hit_counts)[2] <- "hit_n"
+    total_counts <- as.data.frame(table(d$.reporter), stringsAsFactors = FALSE)
+    names(total_counts) <- c("reporter", "total_n")
+    reporter_counts <- merge(hit_counts, total_counts, by = "reporter", all = TRUE)
+    reporter_counts$hit_n[is.na(reporter_counts$hit_n)] <- 0
+    reporter_counts <- reporter_counts[
+      order(-reporter_counts$hit_n, -reporter_counts$total_n, reporter_counts$reporter),
+    ]
+    colored_reporters <- utils::head(reporter_counts$reporter, top_reporters)
+    d$.reporter_group <- ifelse(
+      d$.hit & d$.reporter %in% colored_reporters,
+      d$.reporter,
+      ifelse(d$.hit, "Other called reporters", "Not called")
+    )
+    d$.reporter_group <- factor(
+      d$.reporter_group,
+      levels = c("Not called", colored_reporters, "Other called reporters")
+    )
+  }
 
-  label_df <- d[d$.hit, , drop = FALSE]
-  label_df <- label_df[order(label_df$.p_for_plot, -abs(label_df$.effect)), , drop = FALSE]
+  label_df <- if (isTRUE(label_hits_only)) d[d$.hit, , drop = FALSE] else d
+  label_df <- label_df[order(label_df$.p_for_call, label_df$.p_for_plot, -abs(label_df$.effect)), , drop = FALSE]
   label_df <- utils::head(label_df, top_n)
   if (label_by == "pair") {
     label_df$.label <- paste(label_df$.reporter, label_df$.perturbation_label, sep = " / ")
@@ -123,49 +168,76 @@ plot_volcano <- function(table,
     )
   }
 
-  palette <- c("#0072B2", "#D55E00", "#009E73", "#CC79A7", "#E69F00", "#56B4E9")
-  values <- stats::setNames(rep(palette, length.out = length(colored_reporters)), colored_reporters)
-  values <- c(values, "Other reporters" = "#C5C5C5")
   if (is.null(subtitle)) {
     subtitle <- paste0(
-      "Hits: adjusted p < ", fdr,
+      "Calls: ",
+      if (!is.null(padj)) "adjusted p" else "p",
+      " < ", fdr,
       if (lfc > 0) paste0(" and |effect| >= ", lfc) else ""
     )
   }
   if (is.null(xlab)) {
-    xlab <- paste0("Effect size: ", effect)
+    xlab <- destress_effect_axis_label(effect, type = "mean")
   }
   if (is.null(ylab)) {
-    ylab <- paste0("-log10 adjusted p-value: ", y_col)
+    ylab <- if (identical(y, "pvalue")) {
+      expression(-log[10]("p-value"))
+    } else {
+      expression(-log[10]("adjusted p-value"))
+    }
   }
 
   p <- ggplot2::ggplot(d, ggplot2::aes(x = .effect, y = .neg_log10_p)) +
-    ggplot2::geom_point(
-      ggplot2::aes(color = .reporter_group, shape = .direction, alpha = .direction),
-      size = 1.8,
-      stroke = 0.25
-    ) +
     ggplot2::geom_hline(
       yintercept = -log10(fdr),
       linetype = "longdash",
-      color = "#505050",
-      linewidth = 0.35
+      color = "#9CA3AF",
+      linewidth = 0.3
     ) +
     ggplot2::geom_vline(
-      xintercept = c(-lfc, lfc),
-      linetype = if (lfc > 0) "longdash" else "blank",
-      color = "#505050",
-      linewidth = 0.35
+      xintercept = 0,
+      color = "#9CA3AF",
+      linewidth = 0.3
     ) +
-    ggplot2::scale_color_manual(values = values, drop = FALSE) +
-    ggplot2::scale_shape_manual(values = c("Down" = 25, "Not significant" = 16, "Up" = 24)) +
-    ggplot2::scale_alpha_manual(values = c("Down" = 0.95, "Not significant" = point_alpha, "Up" = 0.95), guide = "none") +
+    ggplot2::geom_vline(
+      xintercept = if (lfc > 0) c(-lfc, lfc) else numeric(),
+      linetype = if (lfc > 0) "longdash" else "blank",
+      color = "#9CA3AF",
+      linewidth = 0.3
+    )
+
+  if (color_by == "significance") {
+    p <- p +
+      ggplot2::geom_point(
+        ggplot2::aes(color = .call),
+        size = point_size,
+        alpha = point_alpha
+      ) +
+      ggplot2::scale_color_manual(
+        values = c("Not called" = background_color, "Called" = hit_color),
+        labels = c("Not called" = call_labels[1], "Called" = call_labels[2]),
+        drop = FALSE
+      )
+  } else {
+    palette <- c("#0072B2", "#D55E00", "#009E73", "#CC79A7", "#E69F00", "#56B4E9")
+    values <- stats::setNames(rep(palette, length.out = length(colored_reporters)), colored_reporters)
+    values <- c("Not called" = background_color, values, "Other called reporters" = "#111827")
+    p <- p +
+      ggplot2::geom_point(
+        ggplot2::aes(color = .reporter_group),
+        size = point_size,
+        alpha = point_alpha
+      ) +
+      ggplot2::scale_color_manual(values = values, drop = FALSE)
+  }
+
+  p <- p +
     ggplot2::coord_cartesian(clip = "off") +
-    ggplot2::theme_light() +
+    destress_diagnostic_theme(base_size = 10, legend_position = "bottom", legend_justification = c(0.5, 0.5)) +
     ggplot2::theme(
-      legend.position = "bottom",
-      panel.grid.minor = ggplot2::element_blank(),
       plot.title.position = "plot",
+      legend.background = ggplot2::element_blank(),
+      legend.box.background = ggplot2::element_blank(),
       plot.margin = ggplot2::margin(8, 34, 8, 8)
     ) +
     ggplot2::labs(
@@ -173,8 +245,7 @@ plot_volcano <- function(table,
       subtitle = subtitle,
       x = xlab,
       y = ylab,
-      color = "Reporter",
-      shape = "Hit"
+      color = if (color_by == "significance") "Call" else "Reporter"
     )
 
   if (nrow(label_df) > 0) {
@@ -183,10 +254,10 @@ plot_volcano <- function(table,
         ggrepel::geom_text_repel(
           data = label_df,
           ggplot2::aes(label = .label),
-          size = 2.7,
+          size = 2.45,
           min.segment.length = 0,
-          box.padding = 0.3,
-          point.padding = 0.15,
+          box.padding = 0.24,
+          point.padding = 0.1,
           max.overlaps = Inf,
           seed = 1,
           show.legend = FALSE
@@ -196,7 +267,7 @@ plot_volcano <- function(table,
         ggplot2::geom_text(
           data = label_df,
           ggplot2::aes(label = .label),
-          size = 2.7,
+          size = 2.45,
           vjust = -0.65,
           check_overlap = TRUE,
           show.legend = FALSE
@@ -204,6 +275,8 @@ plot_volcano <- function(table,
     }
   }
 
+  attr(p, "plot_data") <- d
+  attr(p, "label_data") <- label_df
   p
 }
 
