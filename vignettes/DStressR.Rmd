@@ -16,17 +16,29 @@ knitr::opts_chunk$set(
 )
 ```
 
-`DStressR` models reporter-activity responses in high-throughput chemical
-genomics screens. The package is designed as the stress-response counterpart to
-[`DGrowthR`](https://bio-datascience.github.io/DGrowthR/): DGrowthR handles
-growth-curve modeling, while DStressR handles reporter-perturbation effects after
-accounting for growth and technical structure.
+`DStressR` models reporter-activity responses in high-throughput reporter and
+chemical-genomics screens. It constructs growth-adjusted responses, estimates
+reporter-perturbation effects, moderates uncertainty, and returns reproducible
+hit tables with diagnostic plots. Growth summaries can come from any upstream
+workflow, including simple AUC or endpoint summaries and, when available,
+growth-curve models.
+
+The package site contains use-case articles for the main analysis settings:
+
+- *E. coli* promoter-compound screen with empty-vector calibration
+- PFIbox fluorescence promoter-activity screen
+- *E. coli* fluorescence stress screen
+- Kochanowski promoter-activity compendium with supplied variances
+- Campylobacter median-polish and Salmonella empty-vector-control
+  screen-specific workflows
 
 This vignette uses a small simulated screen so that the model-based named
 workflow can be run without private data files. DStressR also exposes
-compatibility workflows through the same entry point:
-`workflow = "median_polish"` for the original median-polish p-value workflow
-and `workflow = "empty_vector_control"` for the empty-vector-control workflow.
+published screen-specific workflows through the same entry point:
+`workflow = "median_polish"` for the Campylobacter workflow of Zannoni et al.
+(2026, bioRxiv, doi:10.64898/2026.10.05.755907) and
+`workflow = "empty_vector_control"` for the Salmonella workflow of Amstalden
+et al. (2026, bioRxiv, doi:10.64898/2026.09.30.755304).
 
 ## Input files and table shape
 
@@ -152,16 +164,16 @@ assay_fixed <- prepare_assay(
 
 ## Fit the model workflow
 
-`fit_destress()` fits reporter and perturbation effects while accounting for
-technical covariates. The result table reports both the DMSO-relative total
-effect and the reporter-specific effect after subtracting the perturbation-wide
-effect.
+`fit_destress()` creates the fitted model object while accounting for technical
+covariates. Inference is extracted in a second step with `results()`. The
+result table reports both the DMSO-relative total effect and the
+reporter-specific effect after subtracting the perturbation-wide effect.
 
 ```{r fit}
 fit <- fit_destress(
   assay,
   technical = c("batch", "replicate"),
-  empirical_bayes = TRUE
+  testing = "moderated_t"
 )
 
 tab <- results(fit)
@@ -205,7 +217,7 @@ assay_bg <- prepare_assay(
 fit_bg <- fit_destress(
   assay_bg,
   technical = c("batch", "replicate"),
-  empirical_bayes = TRUE
+  testing = "moderated_t"
 )
 ```
 

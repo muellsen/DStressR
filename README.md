@@ -3,21 +3,16 @@
 # DStressR: Differential stress-response modeling for chemical genomics screens
 
 This repository hosts the `DStressR` R package and companion analysis workflow
-for high-throughput reporter-perturbation screens. `DStressR` is designed
-to go hand in hand with
-[`DGrowthR`](https://bio-datascience.github.io/DGrowthR/): `DGrowthR` models
-bacterial growth curves, while `DStressR` models reporter responses after
-accounting for growth, perturbation-wide effects, technical covariates, and
-reporter-specific uncertainty.
+for high-throughput reporter-perturbation screens. `DStressR` models reporter
+responses after accounting for growth, perturbation-wide effects, technical
+covariates, and reporter-specific uncertainty.
 
 ![DStressR statistical workflow: response estimation, effect estimation and diagnostics, and inference.](man/figures/dstressr-workflow.png)
 
 > [!TIP]
-> `DStressR` is intended as the reporter-response counterpart to
-> [`DGrowthR`](https://bio-datascience.github.io/DGrowthR/). The current default
-> hit-determination workflow is based on the original exported luminescence and
-> growth summaries; DGrowthR-derived growth parameters can be handed over
-> explicitly for sensitivity analyses.
+> Growth summaries can come from simple AUC or endpoint summaries, from the
+> original screen export, or from upstream growth-curve modeling workflows.
+> DGrowthR-derived growth parameters can be handed over explicitly when desired.
 
 ## Installation Guide
 
@@ -47,11 +42,24 @@ install()
 DStressR exposes statistical analyses through a staged `fit_destress()`
 interface. The major choices are explicit: normalization, test statistic and
 p-value calculation, replicate aggregation, and p-value adjustment. Named
-presets reproduce the established workflows:
+presets reproduce published screen-specific workflows:
 
 - `preset = "model"` for the model-based DStressR analysis
-- `preset = "median_polish"` for the original median-polish p-value workflow
-- `preset = "empty_vector_control"` for the Empty Vector Control workflow
+- `preset = "median_polish"` for the Campylobacter median-polish workflow from
+  Zannoni et al. (2026, bioRxiv, doi:10.64898/2026.10.05.755907)
+- `preset = "empty_vector_control"` for the Salmonella empty-vector-control
+  workflow from Amstalden et al. (2026, bioRxiv,
+  doi:10.64898/2026.09.30.755304)
+
+The GitHub Pages site organizes the reproducible examples as DStressR articles:
+
+- [Get started with DStressR](https://muellsen.github.io/DStressR/articles/DStressR.html)
+- [E. coli promoter-compound screen](https://muellsen.github.io/DStressR/articles/ecoli-promoter-screen.html)
+- [PFIbox promoter-activity screen](https://muellsen.github.io/DStressR/articles/pfibox-promoter-activity-screen.html)
+- [E. coli fluorescence stress screen](https://muellsen.github.io/DStressR/articles/ecoli-fluorescence-stress-screen.html)
+- [Kochanowski summary response matrix](https://muellsen.github.io/DStressR/articles/kochanowski-summary-response-matrix.html)
+- [Campylobacter median-polish workflow](https://muellsen.github.io/DStressR/articles/median-polish-workflow.html)
+- [Salmonella empty-vector-control workflow](https://muellsen.github.io/DStressR/articles/salmonella-empty-vector-workflow.html)
 
 The model workflow starts from an assay prepared with `prepare_assay()`:
 
@@ -75,7 +83,7 @@ fit <- fit_destress(
   assay,
   preset = "model",
   technical = c("batch", "replicate"),
-  empirical_bayes = TRUE
+  testing = "moderated_t"
 )
 
 tab <- results(fit)
@@ -116,7 +124,7 @@ fit <- fit_destress(
   assay,
   preset = "model",
   technical = c("replicate", "dose_level"),
-  empirical_bayes = TRUE,
+  testing = "moderated_t",
   adjustment = "by_reporter",
   interaction = FALSE
 )
@@ -164,10 +172,10 @@ Use `growth_exponent = 1` for the fixed log2(LUX / OD) normalization,
 `growth_exponent = "estimate"` to estimate reporter-specific `alpha_g` values
 from controls, or pass a named reporter vector.
 
-In model-based analyses, `empirical_bayes = TRUE` is the default moderated
-model and `empirical_bayes = FALSE` is the ordinary Student-$t$ sensitivity
-model. The local Campylobacter comparison uses the default moderated
-model against the median-polish max-p workflow.
+In model-based analyses, `testing = "moderated_t"` is the default moderated
+model and `testing = "student_t"` is the ordinary Student-$t$ comparison model.
+The local Campylobacter comparison uses the default moderated model against the
+median-polish max-p workflow.
 
 ## Summary-level analyses with supplied variances
 
@@ -242,11 +250,12 @@ growth_parameters <- params$growth_exponents
 reporter_effects <- params$reporter_effects
 ```
 
-The median-polish compatibility workflow starts from the original exported
-expression table and DMSO library-well IDs:
+The Campylobacter median-polish workflow starts from the exported expression
+table and DMSO library-well IDs used by Zannoni et al. (2026, bioRxiv,
+doi:10.64898/2026.10.05.755907):
 
 ```r
-legacy <- fit_destress(
+campy_fit <- fit_destress(
   expression_df,
   preset = "median_polish",
   response = "log2.auc.16hmeasured.normed",
@@ -255,12 +264,13 @@ legacy <- fit_destress(
   normality = TRUE
 )
 
-dmso_normality <- legacy$normality_results
-replicate_pvalues <- legacy$replicate_results
-hit_table <- legacy$pair_results
+dmso_normality <- campy_fit$normality_results
+replicate_pvalues <- campy_fit$replicate_results
+hit_table <- campy_fit$pair_results
 ```
 
-The Empty Vector Control workflow uses the same named interface:
+The Salmonella empty-vector-control workflow from Amstalden et al. (2026,
+bioRxiv, doi:10.64898/2026.09.30.755304) uses the same named interface:
 
 ```r
 evc <- fit_destress(
@@ -436,15 +446,16 @@ The public template script
 `scripts/export_campy_default_model_template.R` records the exact
 Campylobacter default-model call used to regenerate the local package output
 `analysis/outputs/package_results/destress_moderated_pair_results.tsv` from the
-proprietary expression table. It sets `empirical_bayes = TRUE`,
+proprietary expression table. It sets `testing = "moderated_t"`,
 `interaction = FALSE`, `background_rank = 0`, uses reporter-specific estimated
 growth exponents, and exports the `specific_*` result columns expected by the
 downstream analysis scripts. The `scripts/README.md` file highlights this
 data-free export template as the canonical place to inspect the actual
 local model call.
 
-To reproduce the original median-polish workflow, provide the DMSO library-well
-IDs and optional noisy-DMSO well IDs from `LibMap.txt`:
+To reproduce the Campylobacter median-polish workflow from Zannoni et al.
+(2026, bioRxiv, doi:10.64898/2026.10.05.755907), provide the DMSO
+library-well IDs and optional noisy-DMSO well IDs from `LibMap.txt`:
 
 ```r
 libmap <- read.delim("LibMap.txt", check.names = FALSE)
@@ -453,7 +464,7 @@ libmap$srn_code <- paste0("lp", libmap[["Library plate"]], "_", libmap[["Well"]]
 dmso_srn_codes <- libmap$srn_code[libmap$ProductName == "DMSO"]
 dmso_noisy_srn_codes <- libmap$srn_code[libmap$ProductName == "DMSO noisy"]
 
-legacy <- fit_destress(
+campy_fit <- fit_destress(
   expression_df,
   preset = "median_polish",
   response = "log2.auc.16hmeasured.normed",
@@ -462,14 +473,15 @@ legacy <- fit_destress(
   normality = TRUE
 )
 
-dmso_normality <- legacy$normality_results
-replicate_pvalues <- legacy$replicate_results
-hit_table <- legacy$pair_results
+dmso_normality <- campy_fit$normality_results
+replicate_pvalues <- campy_fit$replicate_results
+hit_table <- campy_fit$pair_results
 ```
 
-## Salmonella Empty Vector workflow
+## Salmonella empty-vector-control workflow
 
-The Salmonella workflow uses a stronger control design than DMSO-only
+The Salmonella workflow from Amstalden et al. (2026, bioRxiv,
+doi:10.64898/2026.09.30.755304) uses a stronger control design than DMSO-only
 normalization. In addition to DMSO wells, it includes Empty Vector Control
 reporters, especially `PEVC3`, which measure compound-specific background Lux
 signal without a promoter insert. DStressR exposes this baseline through

@@ -20,7 +20,15 @@ articles:
     navbar: "Get started"
     contents:
       - DStressR
+  - title: "DStressR use cases"
+    navbar: "Use cases"
+    contents:
       - ecoli-promoter-screen
+      - pfibox-promoter-activity-screen
       - ecoli-fluorescence-stress-screen
+      - kochanowski-summary-response-matrix
+  - title: "Published screen-specific workflows"
+    navbar: "Screen-specific workflows"
+    contents:
       - median-polish-workflow
       - salmonella-empty-vector-workflow

@@ -28,10 +28,16 @@
   <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" role="button" aria-expanded="false" aria-haspopup="true" id="dropdown-articles">Articles</a>
   <div class="dropdown-menu" aria-labelledby="dropdown-articles">
     <h6 class="dropdown-header" data-toc-skip>Get started</h6>
+    <div class="dropdown-divider"></div>
+    <h6 class="dropdown-header" data-toc-skip>Use cases</h6>
     <a class="dropdown-item" href="../articles/ecoli-promoter-screen.html">E. coli reporter-perturbation screen</a>
+    <a class="dropdown-item" href="../articles/pfibox-promoter-activity-screen.html">PFIbox promoter-activity screen</a>
     <a class="dropdown-item" href="../articles/ecoli-fluorescence-stress-screen.html">E. coli fluorescence stress screen</a>
-    <a class="dropdown-item" href="../articles/median-polish-workflow.html">Original median-polish workflow</a>
-    <a class="dropdown-item" href="../articles/salmonella-empty-vector-workflow.html">Salmonella Empty Vector workflow</a>
+    <a class="dropdown-item" href="../articles/kochanowski-summary-response-matrix.html">Kochanowski summary response matrix</a>
+    <div class="dropdown-divider"></div>
+    <h6 class="dropdown-header" data-toc-skip>Screen-specific workflows</h6>
+    <a class="dropdown-item" href="../articles/median-polish-workflow.html">Campylobacter median-polish workflow</a>
+    <a class="dropdown-item" href="../articles/salmonella-empty-vector-workflow.html">Salmonella empty-vector-control workflow</a>
   </div>
 </li>
 <li class="nav-item">
@@ -68,13 +74,13 @@
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">results</span><span class="op">(</span><span class="va">fit</span>, perturbations <span class="op">=</span> <span class="cn">NULL</span>, reporters <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">results</span><span class="op">(</span><span class="va">fit</span>, perturbations <span class="op">=</span> <span class="cn">NULL</span>, reporters <span class="op">=</span> <span class="cn">NULL</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
     <h2 id="arguments">Arguments<a class="anchor" aria-label="anchor" href="#arguments"></a></h2>
     <dl><dt>fit</dt>
-<dd><p>A <code>destress_fit</code> object.</p></dd>
+<dd><p>A <code>destress_fit</code> or <code>destress_summary_fit</code> object.</p></dd>
 
 
 <dt>perturbations</dt>
@@ -83,6 +89,11 @@
 
 <dt>reporters</dt>
 <dd><p>Optional reporter subset.</p></dd>
+
+
+<dt>verbose</dt>
+<dd><p>If <code>TRUE</code>, print stage-level progress messages while
+extracting model results.</p></dd>
 
 </dl></div>
     <div class="section level2">

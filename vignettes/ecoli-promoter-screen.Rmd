@@ -97,13 +97,14 @@ fit <- fit_destress(
   assay,
   preset = "model",
   technical = c("replicate", "dose_level"),
-  empirical_bayes = TRUE,
+  testing = "moderated_t",
   adjustment = "by_reporter",
   interaction = FALSE
 )
 
+tab <- results(fit)
 hits <- call_hits(
-  results(fit),
+  tab,
   fdr = 0.05,
   effect = "specific_effect"
 )

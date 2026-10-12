@@ -5,9 +5,11 @@ articles:
   DStressR: DStressR.html
   ecoli-fluorescence-stress-screen: ecoli-fluorescence-stress-screen.html
   ecoli-promoter-screen: ecoli-promoter-screen.html
+  kochanowski-summary-response-matrix: kochanowski-summary-response-matrix.html
   median-polish-workflow: median-polish-workflow.html
+  pfibox-promoter-activity-screen: pfibox-promoter-activity-screen.html
   salmonella-empty-vector-workflow: salmonella-empty-vector-workflow.html
-last_built: 2026-08-25T15:41Z
+last_built: 2026-10-12T13:58Z
 urls:
   reference: https://muellsen.github.io/DStressR/reference
   article: https://muellsen.github.io/DStressR/articles
