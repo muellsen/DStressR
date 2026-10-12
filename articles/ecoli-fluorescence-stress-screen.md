@@ -83,7 +83,7 @@ assay <- prepare_assay(
 fit <- fit_destress(
   assay,
   technical = "replicate",
-  empirical_bayes = TRUE,
+  testing = "moderated_t",
   adjustment = "by_reporter",
   interaction = FALSE
 )

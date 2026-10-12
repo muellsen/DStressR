@@ -1,10 +1,10 @@
-# Original median-polish workflow
+# Campylobacter median-polish workflow
 
-`DStressR` includes a legacy-compatible median-polish path so that the
-original workflow can be reproduced before moving to the model-based
-DStressR analyses. This is useful for regression testing, method
-comparison, and explaining which parts of the new framework are
-replacements rather than silent changes.
+`DStressR` includes the Campylobacter median-polish path used in the
+human-targeted-drug screen of Zannoni et al. (2026, bioRxiv,
+<doi:10.64898/2026.10.05.755907>). This data-specific workflow is useful
+for reproducing the published screen-specific hit calls and comparing
+them with the model-based DStressR analysis.
 
 The named workflow entry point is
 `fit_workflow(..., workflow = "median_polish")`. The lower-level
@@ -13,8 +13,8 @@ function remains available for existing scripts.
 
 ## Required input files
 
-For the original Campylobacter reporter-library workflow, the
-median-polish baseline starts from two exported files.
+For the Campylobacter reporter-library workflow, the median-polish
+baseline starts from two exported files.
 
 ### `expression_values.tsv.gz`
 
@@ -48,15 +48,15 @@ well. The required columns are:
 - `ProductName`
 - `Catalog Number`
 
-The original workflow identifies ordinary DMSO controls and noisy DMSO
-wells from this table. DStressR uses the same perturbation key:
+The screen-specific workflow identifies ordinary DMSO controls and noisy
+DMSO wells from this table. DStressR uses the same perturbation key:
 
 ``` r
 
 srn_code = paste0("lp", `Library plate`, "_", Well)
 ```
 
-## Reproduce the original workflow
+## Reproduce the Campylobacter workflow
 
 ``` r
 
@@ -73,7 +73,7 @@ libmap$srn_code <- paste0("lp", libmap[["Library plate"]], "_", libmap[["Well"]]
 dmso_srn_codes <- libmap$srn_code[libmap$ProductName == "DMSO"]
 dmso_noisy_srn_codes <- libmap$srn_code[libmap$ProductName == "DMSO noisy"]
 
-legacy <- fit_workflow(
+campy_fit <- fit_workflow(
   expression_df,
   workflow = "median_polish",
   reporter = "reporter",
@@ -89,29 +89,29 @@ legacy <- fit_workflow(
 )
 ```
 
-The optional `normality_results` table corresponds to the original DMSO
-normality check: Shapiro-Wilk and Lilliefors p-values are computed from
-pre-polish DMSO-centered fold changes within each
-reporter-libplate-replicate group, then BH-adjusted across groups.
+The optional `normality_results` table corresponds to the DMSO normality
+check: Shapiro-Wilk and Lilliefors p-values are computed from pre-polish
+DMSO-centered fold changes within each reporter-libplate-replicate
+group, then BH-adjusted across groups.
 
-The replicate-level table corresponds to the original
+The replicate-level table corresponds to the Campylobacter paper
 `expression_df.pvalues.tsv.gz` output:
 
 ``` r
 
-replicate_pvalues <- legacy$replicate_results
+replicate_pvalues <- campy_fit$replicate_results
 
 head(replicate_pvalues)
 ```
 
-The pair-level table corresponds to the original hit-calling table: DMSO
-and excluded controls are removed, the largest replicate-level p-value
-is retained for each reporter-perturbation pair, and BH correction is
-applied within reporter.
+The pair-level table corresponds to the screen-specific hit-calling
+table: DMSO and excluded controls are removed, the largest
+replicate-level p-value is retained for each reporter-perturbation pair,
+and BH correction is applied within reporter.
 
 ``` r
 
-hit_table <- legacy$pair_results
+hit_table <- campy_fit$pair_results
 
 head(hit_table)
 table(hit_table$hit)
@@ -119,8 +119,8 @@ table(hit_table$hit)
 
 ## What the function does
 
-`fit_workflow(..., workflow = "median_polish")` follows the original
-hit-determination steps:
+`fit_workflow(..., workflow = "median_polish")` follows the
+Campylobacter hit-determination steps:
 
 1.  Build
     `promoter_libplate_replicate = paste(reporter, libplate, replicate, sep = "_")`.
@@ -150,7 +150,7 @@ Shapiro-Wilk check is needed.
 ## Minimal executable example
 
 This toy example is deliberately tiny; it only shows the mechanics of
-the legacy path. Real screens need multiple DMSO wells per
+the data-specific path. Real screens need multiple DMSO wells per
 reporter-libplate-replicate group to estimate the DMSO null
 distribution.
 
@@ -171,13 +171,13 @@ toy$log2.auc.16hmeasured.normed <- c(
   12.1, 12.3, 13.7, 11.7
 )
 
-legacy <- fit_workflow(
+campy_fit <- fit_workflow(
   toy,
   workflow = "median_polish",
   control = c("DMSO1", "DMSO2")
 )
 
-legacy$replicate_results
+campy_fit$replicate_results
 #>    promoter_libplate_replicate reporter libplate replicate srn_code
 #> 1                    P1_lp1_r1       P1      lp1        r1       C1
 #> 2                    P1_lp1_r1       P1      lp1        r1       C2
@@ -212,7 +212,7 @@ legacy$replicate_results
 #> 14            0.05           -0.05     3.140185e-16 2  3.184526e+14 0.0000000
 #> 15           -0.05           -0.05     3.140185e-16 2  7.071068e-01 0.4795001
 #> 16           -0.05           -0.05     3.140185e-16 2 -7.071068e-01 0.4795001
-legacy$pair_results
+campy_fit$pair_results
 #>    promoter_libplate_replicate reporter libplate replicate srn_code
 #> 1                    P1_lp1_r1       P1      lp1        r1       C1
 #> 2                    P1_lp1_r1       P1      lp1        r1       C2
@@ -232,8 +232,9 @@ legacy$pair_results
 
 ## Compare against DStressR model-based inference
 
-The median-polish path is intended as a reproducible baseline. The
-model-based DStressR analysis starts from the same long table but uses
+The median-polish path is intended as a reproducible screen-specific
+baseline. The model-based DStressR analysis starts from the same long
+table but uses
 [`prepare_assay()`](https://muellsen.github.io/DStressR/reference/prepare_assay.md)
 and
 [`fit_destress()`](https://muellsen.github.io/DStressR/reference/fit_destress.md):
@@ -255,13 +256,13 @@ assay <- prepare_assay(
 fit <- fit_destress(
   assay,
   technical = c("batch", "libplate", "replicate"),
-  empirical_bayes = TRUE
+  testing = "moderated_t"
 )
 
 model_results <- results(fit)
 ```
 
-This gives a direct apples-to-apples setup: `workflow = "median_polish"`
-recovers the legacy workflow, while
+This gives a direct comparison: `workflow = "median_polish"` recovers
+the published Campylobacter workflow, and
 [`fit_destress()`](https://muellsen.github.io/DStressR/reference/fit_destress.md)
-provides the model-based replacement.
+provides the model-based DStressR analysis on the same table.

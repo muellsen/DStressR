@@ -5,12 +5,12 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>Salmonella Empty Vector workflow • DStressR</title>
+<title>Salmonella empty-vector-control workflow • DStressR</title>
 <script src="../lightswitch.js"></script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Salmonella Empty Vector workflow">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Salmonella empty-vector-control workflow">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -36,10 +36,16 @@
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Get started</h6></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Use cases</h6></li>
     <li><a class="dropdown-item" href="../articles/ecoli-promoter-screen.html">E. coli reporter-perturbation screen</a></li>
+    <li><a class="dropdown-item" href="../articles/pfibox-promoter-activity-screen.html">PFIbox promoter-activity screen</a></li>
     <li><a class="dropdown-item" href="../articles/ecoli-fluorescence-stress-screen.html">E. coli fluorescence stress screen</a></li>
-    <li><a class="dropdown-item" href="../articles/median-polish-workflow.html">Original median-polish workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/salmonella-empty-vector-workflow.html">Salmonella Empty Vector workflow</a></li>
+    <li><a class="dropdown-item" href="../articles/kochanowski-summary-response-matrix.html">Kochanowski summary response matrix</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Screen-specific workflows</h6></li>
+    <li><a class="dropdown-item" href="../articles/median-polish-workflow.html">Campylobacter median-polish workflow</a></li>
+    <li><a class="dropdown-item" href="../articles/salmonella-empty-vector-workflow.html">Salmonella empty-vector-control workflow</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="external-link nav-link" href="https://bio-datascience.github.io/" target="_blank" aria-label="Bio Data Science"><span class="fa fa-arrow-up-right-from-square"></span> BioDS</a></li>
@@ -70,7 +76,7 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
 
-      <h1>Salmonella Empty Vector workflow</h1>
+      <h1>Salmonella empty-vector-control workflow</h1>
             
       
       <small class="dont-index">Source: <a href="https://github.com/muellsen/DStressR/blob/main/vignettes/salmonella-empty-vector-workflow.Rmd" class="external-link"><code>vignettes/salmonella-empty-vector-workflow.Rmd</code></a></small>
@@ -79,14 +85,14 @@
 
     
     
-<p>The Salmonella StressRegNet workflow uses Empty Vector Control (EVC)
-reporter strains to estimate perturbation-specific background Lux
-signal. In the original analysis, the <code>PEVC3</code> reporter is
-used as the reference. For each perturbation, the two PEVC3 replicate
-values are averaged, and this perturbation-specific EVC average is
-subtracted from every reporter strain.</p>
-<p>This is different from the Campylobacter median-polish baseline. The
-Salmonella baseline is:</p>
+<p>The Salmonella workflow of Amstalden et al. (2026, bioRxiv, <a href="doi:10.64898/2026.09.30.755304" class="uri">doi:10.64898/2026.09.30.755304</a>) uses Empty Vector
+Control (EVC) reporter strains to estimate perturbation-specific
+background Lux signal. In that published analysis, the
+<code>PEVC3</code> reporter is used as the reference. For each
+perturbation, the two PEVC3 replicate values are averaged, and this
+perturbation-specific EVC average is subtracted from every reporter
+strain.</p>
+<p>The Salmonella data-specific workflow is:</p>
 <pre class="text"><code>growth-normalized Lux
   -&gt; reporter-replicate median centering
   -&gt; subtract perturbation-specific PEVC3 average
@@ -94,7 +100,7 @@ Salmonella baseline is:</p>
   -&gt; z-test p-values
   -&gt; retain largest replicate p-value per reporter-perturbation
   -&gt; BH adjustment within reporter</code></pre>
-<p>DStressR implements this compatibility path with
+<p>DStressR implements this screen-specific path with
 <code>fit_workflow(..., workflow = "empty_vector_control")</code>. The
 lower-level <code><a href="../reference/fit_empty_vector_control.html">fit_empty_vector_control()</a></code> function remains
 available for existing scripts.</p>
@@ -145,7 +151,7 @@ Required columns are:</p>
 </div>
 </div>
 <div class="section level2">
-<h2 id="reproduce-the-original-salmonella-workflow">Reproduce the original Salmonella workflow<a class="anchor" aria-label="anchor" href="#reproduce-the-original-salmonella-workflow"></a>
+<h2 id="reproduce-the-salmonella-workflow">Reproduce the Salmonella workflow<a class="anchor" aria-label="anchor" href="#reproduce-the-salmonella-workflow"></a>
 </h2>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">expression_df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.delim</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/connections.html" class="external-link">gzfile</a></span><span class="op">(</span><span class="st">"lux_auc_filtered_median.tsv.gz"</span><span class="op">)</span>,</span>
@@ -189,7 +195,7 @@ replicate-level p-value and apply BH adjustment within reporter.</p>
 <h2 id="what-the-function-does">What the function does<a class="anchor" aria-label="anchor" href="#what-the-function-does"></a>
 </h2>
 <p><code>fit_workflow(..., workflow = "empty_vector_control")</code>
-follows the original Salmonella hit-determination logic:</p>
+follows the Salmonella hit-determination logic:</p>
 <ol style="list-style-type: decimal">
 <li>Remove noisy DMSO wells and failed reporters, for example
 <code>PmgrR</code>.</li>
@@ -291,8 +297,9 @@ reporter-perturbation pair.</li>
 </h2>
 <p>Using the local Salmonella workflow files,
 <code>fit_workflow(..., workflow = "empty_vector_control")</code>
-recovers the original <code>04-hit_determination/hit_table.tsv.gz</code>
-output numerically:</p>
+recovers the published
+<code>04-hit_determination/hit_table.tsv.gz</code> output
+numerically:</p>
 <pre class="text"><code>pair rows: 68238
 max absolute delta in log.evcfc: 4.44e-16
 max absolute delta in zscore:    3.55e-15
@@ -300,7 +307,7 @@ max absolute delta in pvalue:    1.22e-15
 max absolute delta in BH pvalue: 2.11e-15
 hit label mismatches: 0</code></pre>
 <p>Those values are floating-point roundoff, so this is effectively a
-one-to-one reproduction of the original Salmonella workflow.</p>
+one-to-one reproduction of the Salmonella workflow.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

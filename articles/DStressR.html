@@ -36,10 +36,16 @@
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Get started</h6></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Use cases</h6></li>
     <li><a class="dropdown-item" href="../articles/ecoli-promoter-screen.html">E. coli reporter-perturbation screen</a></li>
+    <li><a class="dropdown-item" href="../articles/pfibox-promoter-activity-screen.html">PFIbox promoter-activity screen</a></li>
     <li><a class="dropdown-item" href="../articles/ecoli-fluorescence-stress-screen.html">E. coli fluorescence stress screen</a></li>
-    <li><a class="dropdown-item" href="../articles/median-polish-workflow.html">Original median-polish workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/salmonella-empty-vector-workflow.html">Salmonella Empty Vector workflow</a></li>
+    <li><a class="dropdown-item" href="../articles/kochanowski-summary-response-matrix.html">Kochanowski summary response matrix</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Screen-specific workflows</h6></li>
+    <li><a class="dropdown-item" href="../articles/median-polish-workflow.html">Campylobacter median-polish workflow</a></li>
+    <li><a class="dropdown-item" href="../articles/salmonella-empty-vector-workflow.html">Salmonella empty-vector-control workflow</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="external-link nav-link" href="https://bio-datascience.github.io/" target="_blank" aria-label="Bio Data Science"><span class="fa fa-arrow-up-right-from-square"></span> BioDS</a></li>
@@ -80,17 +86,33 @@
     
     
 <p><code>DStressR</code> models reporter-activity responses in
-high-throughput chemical genomics screens. The package is designed as
-the stress-response counterpart to <a href="https://bio-datascience.github.io/DGrowthR/" class="external-link"><code>DGrowthR</code></a>:
-DGrowthR handles growth-curve modeling, while DStressR handles
-reporter-perturbation effects after accounting for growth and technical
-structure.</p>
+high-throughput reporter and chemical-genomics screens. It constructs
+growth-adjusted responses, estimates reporter-perturbation effects,
+moderates uncertainty, and returns reproducible hit tables with
+diagnostic plots. Growth summaries can come from any upstream workflow,
+including simple AUC or endpoint summaries and, when available,
+growth-curve models.</p>
+<p>The package site contains use-case articles for the main analysis
+settings:</p>
+<ul>
+<li>
+<em>E. coli</em> promoter-compound screen with empty-vector
+calibration</li>
+<li>PFIbox fluorescence promoter-activity screen</li>
+<li>
+<em>E. coli</em> fluorescence stress screen</li>
+<li>Kochanowski promoter-activity compendium with supplied
+variances</li>
+<li>Campylobacter median-polish and Salmonella empty-vector-control
+screen-specific workflows</li>
+</ul>
 <p>This vignette uses a small simulated screen so that the model-based
 named workflow can be run without private data files. DStressR also
-exposes compatibility workflows through the same entry point:
-<code>workflow = "median_polish"</code> for the original median-polish
-p-value workflow and <code>workflow = "empty_vector_control"</code> for
-the empty-vector-control workflow.</p>
+exposes published screen-specific workflows through the same entry
+point: <code>workflow = "median_polish"</code> for the Campylobacter
+workflow of Zannoni et al. (2026, bioRxiv, <a href="doi:10.64898/2026.10.05.755907" class="uri">doi:10.64898/2026.10.05.755907</a>) and
+<code>workflow = "empty_vector_control"</code> for the Salmonella
+workflow of Amstalden et al. (2026, bioRxiv, <a href="doi:10.64898/2026.09.30.755304" class="uri">doi:10.64898/2026.09.30.755304</a>).</p>
 <div class="section level2">
 <h2 id="input-files-and-table-shape">Input files and table shape<a class="anchor" aria-label="anchor" href="#input-files-and-table-shape"></a>
 </h2>
@@ -282,15 +304,16 @@ shrinks them toward a global control-well slope.</p>
 <div class="section level2">
 <h2 id="fit-the-model-workflow">Fit the model workflow<a class="anchor" aria-label="anchor" href="#fit-the-model-workflow"></a>
 </h2>
-<p><code><a href="../reference/fit_destress.html">fit_destress()</a></code> fits reporter and perturbation effects
-while accounting for technical covariates. The result table reports both
-the DMSO-relative total effect and the reporter-specific effect after
+<p><code><a href="../reference/fit_destress.html">fit_destress()</a></code> creates the fitted model object while
+accounting for technical covariates. Inference is extracted in a second
+step with <code><a href="../reference/results.html">results()</a></code>. The result table reports both the
+DMSO-relative total effect and the reporter-specific effect after
 subtracting the perturbation-wide effect.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fit_destress.html">fit_destress</a></span><span class="op">(</span></span>
 <span>  <span class="va">assay</span>,</span>
 <span>  technical <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"batch"</span>, <span class="st">"replicate"</span><span class="op">)</span>,</span>
-<span>  empirical_bayes <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>  testing <span class="op">=</span> <span class="st">"moderated_t"</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">tab</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/results.html">results</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span>
@@ -412,7 +435,7 @@ and direct subtraction remain available through
 <span><span class="va">fit_bg</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fit_destress.html">fit_destress</a></span><span class="op">(</span></span>
 <span>  <span class="va">assay_bg</span>,</span>
 <span>  technical <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"batch"</span>, <span class="st">"replicate"</span><span class="op">)</span>,</span>
-<span>  empirical_bayes <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>  testing <span class="op">=</span> <span class="st">"moderated_t"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">

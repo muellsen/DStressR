@@ -5,12 +5,12 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>Original median-polish workflow • DStressR</title>
+<title>Campylobacter median-polish workflow • DStressR</title>
 <script src="../lightswitch.js"></script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Original median-polish workflow">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Campylobacter median-polish workflow">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -36,10 +36,16 @@
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Get started</h6></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Use cases</h6></li>
     <li><a class="dropdown-item" href="../articles/ecoli-promoter-screen.html">E. coli reporter-perturbation screen</a></li>
+    <li><a class="dropdown-item" href="../articles/pfibox-promoter-activity-screen.html">PFIbox promoter-activity screen</a></li>
     <li><a class="dropdown-item" href="../articles/ecoli-fluorescence-stress-screen.html">E. coli fluorescence stress screen</a></li>
-    <li><a class="dropdown-item" href="../articles/median-polish-workflow.html">Original median-polish workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/salmonella-empty-vector-workflow.html">Salmonella Empty Vector workflow</a></li>
+    <li><a class="dropdown-item" href="../articles/kochanowski-summary-response-matrix.html">Kochanowski summary response matrix</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Screen-specific workflows</h6></li>
+    <li><a class="dropdown-item" href="../articles/median-polish-workflow.html">Campylobacter median-polish workflow</a></li>
+    <li><a class="dropdown-item" href="../articles/salmonella-empty-vector-workflow.html">Salmonella empty-vector-control workflow</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="external-link nav-link" href="https://bio-datascience.github.io/" target="_blank" aria-label="Bio Data Science"><span class="fa fa-arrow-up-right-from-square"></span> BioDS</a></li>
@@ -70,7 +76,7 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
 
-      <h1>Original median-polish workflow</h1>
+      <h1>Campylobacter median-polish workflow</h1>
             
       
       <small class="dont-index">Source: <a href="https://github.com/muellsen/DStressR/blob/main/vignettes/median-polish-workflow.Rmd" class="external-link"><code>vignettes/median-polish-workflow.Rmd</code></a></small>
@@ -79,11 +85,11 @@
 
     
     
-<p><code>DStressR</code> includes a legacy-compatible median-polish path
-so that the original workflow can be reproduced before moving to the
-model-based DStressR analyses. This is useful for regression testing,
-method comparison, and explaining which parts of the new framework are
-replacements rather than silent changes.</p>
+<p><code>DStressR</code> includes the Campylobacter median-polish path
+used in the human-targeted-drug screen of Zannoni et al. (2026, bioRxiv,
+<a href="doi:10.64898/2026.10.05.755907" class="uri">doi:10.64898/2026.10.05.755907</a>). This data-specific
+workflow is useful for reproducing the published screen-specific hit
+calls and comparing them with the model-based DStressR analysis.</p>
 <p>The named workflow entry point is
 <code>fit_workflow(..., workflow = "median_polish")</code>. The
 lower-level <code><a href="../reference/fit_median_polish.html">fit_median_polish()</a></code> function remains available
@@ -91,8 +97,8 @@ for existing scripts.</p>
 <div class="section level2">
 <h2 id="required-input-files">Required input files<a class="anchor" aria-label="anchor" href="#required-input-files"></a>
 </h2>
-<p>For the original Campylobacter reporter-library workflow, the
-median-polish baseline starts from two exported files.</p>
+<p>For the Campylobacter reporter-library workflow, the median-polish
+baseline starts from two exported files.</p>
 <div class="section level3">
 <h3 id="expression_values-tsv-gz">
 <code>expression_values.tsv.gz</code><a class="anchor" aria-label="anchor" href="#expression_values-tsv-gz"></a>
@@ -132,14 +138,15 @@ perturbation/library well. The required columns are:</p>
 <li><code>ProductName</code></li>
 <li><code>Catalog Number</code></li>
 </ul>
-<p>The original workflow identifies ordinary DMSO controls and noisy
-DMSO wells from this table. DStressR uses the same perturbation key:</p>
+<p>The screen-specific workflow identifies ordinary DMSO controls and
+noisy DMSO wells from this table. DStressR uses the same perturbation
+key:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">srn_code</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"lp"</span>, <span class="va">`Library plate`</span>, <span class="st">"_"</span>, <span class="va">Well</span><span class="op">)</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
-<h2 id="reproduce-the-original-workflow">Reproduce the original workflow<a class="anchor" aria-label="anchor" href="#reproduce-the-original-workflow"></a>
+<h2 id="reproduce-the-campylobacter-workflow">Reproduce the Campylobacter workflow<a class="anchor" aria-label="anchor" href="#reproduce-the-campylobacter-workflow"></a>
 </h2>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://muellsen.github.io/DStressR/">DStressR</a></span><span class="op">)</span></span>
@@ -155,7 +162,7 @@ DMSO wells from this table. DStressR uses the same perturbation key:</p>
 <span><span class="va">dmso_srn_codes</span> <span class="op">&lt;-</span> <span class="va">libmap</span><span class="op">$</span><span class="va">srn_code</span><span class="op">[</span><span class="va">libmap</span><span class="op">$</span><span class="va">ProductName</span> <span class="op">==</span> <span class="st">"DMSO"</span><span class="op">]</span></span>
 <span><span class="va">dmso_noisy_srn_codes</span> <span class="op">&lt;-</span> <span class="va">libmap</span><span class="op">$</span><span class="va">srn_code</span><span class="op">[</span><span class="va">libmap</span><span class="op">$</span><span class="va">ProductName</span> <span class="op">==</span> <span class="st">"DMSO noisy"</span><span class="op">]</span></span>
 <span></span>
-<span><span class="va">legacy</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fit_workflow.html">fit_workflow</a></span><span class="op">(</span></span>
+<span><span class="va">campy_fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fit_workflow.html">fit_workflow</a></span><span class="op">(</span></span>
 <span>  <span class="va">expression_df</span>,</span>
 <span>  workflow <span class="op">=</span> <span class="st">"median_polish"</span>,</span>
 <span>  reporter <span class="op">=</span> <span class="st">"reporter"</span>,</span>
@@ -170,21 +177,21 @@ DMSO wells from this table. DStressR uses the same perturbation key:</p>
 <span>  eps <span class="op">=</span> <span class="fl">1e-8</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>The optional <code>normality_results</code> table corresponds to the
-original DMSO normality check: Shapiro-Wilk and Lilliefors p-values are
-computed from pre-polish DMSO-centered fold changes within each
+DMSO normality check: Shapiro-Wilk and Lilliefors p-values are computed
+from pre-polish DMSO-centered fold changes within each
 reporter-libplate-replicate group, then BH-adjusted across groups.</p>
-<p>The replicate-level table corresponds to the original
+<p>The replicate-level table corresponds to the Campylobacter paper
 <code>expression_df.pvalues.tsv.gz</code> output:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">replicate_pvalues</span> <span class="op">&lt;-</span> <span class="va">legacy</span><span class="op">$</span><span class="va">replicate_results</span></span>
+<code class="sourceCode R"><span><span class="va">replicate_pvalues</span> <span class="op">&lt;-</span> <span class="va">campy_fit</span><span class="op">$</span><span class="va">replicate_results</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">replicate_pvalues</span><span class="op">)</span></span></code></pre></div>
-<p>The pair-level table corresponds to the original hit-calling table:
-DMSO and excluded controls are removed, the largest replicate-level
-p-value is retained for each reporter-perturbation pair, and BH
-correction is applied within reporter.</p>
+<p>The pair-level table corresponds to the screen-specific hit-calling
+table: DMSO and excluded controls are removed, the largest
+replicate-level p-value is retained for each reporter-perturbation pair,
+and BH correction is applied within reporter.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">hit_table</span> <span class="op">&lt;-</span> <span class="va">legacy</span><span class="op">$</span><span class="va">pair_results</span></span>
+<code class="sourceCode R"><span><span class="va">hit_table</span> <span class="op">&lt;-</span> <span class="va">campy_fit</span><span class="op">$</span><span class="va">pair_results</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">hit_table</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">hit_table</span><span class="op">$</span><span class="va">hit</span><span class="op">)</span></span></code></pre></div>
@@ -193,7 +200,7 @@ correction is applied within reporter.</p>
 <h2 id="what-the-function-does">What the function does<a class="anchor" aria-label="anchor" href="#what-the-function-does"></a>
 </h2>
 <p><code>fit_workflow(..., workflow = "median_polish")</code> follows
-the original hit-determination steps:</p>
+the Campylobacter hit-determination steps:</p>
 <ol style="list-style-type: decimal">
 <li>Build
 <code>promoter_libplate_replicate = paste(reporter, libplate, replicate, sep = "_")</code>.</li>
@@ -226,7 +233,7 @@ when only the Shapiro-Wilk check is needed.</p>
 <h2 id="minimal-executable-example">Minimal executable example<a class="anchor" aria-label="anchor" href="#minimal-executable-example"></a>
 </h2>
 <p>This toy example is deliberately tiny; it only shows the mechanics of
-the legacy path. Real screens need multiple DMSO wells per
+the data-specific path. Real screens need multiple DMSO wells per
 reporter-libplate-replicate group to estimate the DMSO null
 distribution.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
@@ -245,13 +252,13 @@ distribution.</p>
 <span>  <span class="fl">12.1</span>, <span class="fl">12.3</span>, <span class="fl">13.7</span>, <span class="fl">11.7</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">legacy</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fit_workflow.html">fit_workflow</a></span><span class="op">(</span></span>
+<span><span class="va">campy_fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fit_workflow.html">fit_workflow</a></span><span class="op">(</span></span>
 <span>  <span class="va">toy</span>,</span>
 <span>  workflow <span class="op">=</span> <span class="st">"median_polish"</span>,</span>
 <span>  control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"DMSO1"</span>, <span class="st">"DMSO2"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">legacy</span><span class="op">$</span><span class="va">replicate_results</span></span>
+<span><span class="va">campy_fit</span><span class="op">$</span><span class="va">replicate_results</span></span>
 <span><span class="co">#&gt;    promoter_libplate_replicate reporter libplate replicate srn_code</span></span>
 <span><span class="co">#&gt; 1                    P1_lp1_r1       P1      lp1        r1       C1</span></span>
 <span><span class="co">#&gt; 2                    P1_lp1_r1       P1      lp1        r1       C2</span></span>
@@ -286,7 +293,7 @@ distribution.</p>
 <span><span class="co">#&gt; 14            0.05           -0.05     3.140185e-16 2  3.184526e+14 0.0000000</span></span>
 <span><span class="co">#&gt; 15           -0.05           -0.05     3.140185e-16 2  7.071068e-01 0.4795001</span></span>
 <span><span class="co">#&gt; 16           -0.05           -0.05     3.140185e-16 2 -7.071068e-01 0.4795001</span></span>
-<span><span class="va">legacy</span><span class="op">$</span><span class="va">pair_results</span></span>
+<span><span class="va">campy_fit</span><span class="op">$</span><span class="va">pair_results</span></span>
 <span><span class="co">#&gt;    promoter_libplate_replicate reporter libplate replicate srn_code</span></span>
 <span><span class="co">#&gt; 1                    P1_lp1_r1       P1      lp1        r1       C1</span></span>
 <span><span class="co">#&gt; 2                    P1_lp1_r1       P1      lp1        r1       C2</span></span>
@@ -306,9 +313,10 @@ distribution.</p>
 <div class="section level2">
 <h2 id="compare-against-dstressr-model-based-inference">Compare against DStressR model-based inference<a class="anchor" aria-label="anchor" href="#compare-against-dstressr-model-based-inference"></a>
 </h2>
-<p>The median-polish path is intended as a reproducible baseline. The
-model-based DStressR analysis starts from the same long table but uses
-<code><a href="../reference/prepare_assay.html">prepare_assay()</a></code> and <code><a href="../reference/fit_destress.html">fit_destress()</a></code>:</p>
+<p>The median-polish path is intended as a reproducible screen-specific
+baseline. The model-based DStressR analysis starts from the same long
+table but uses <code><a href="../reference/prepare_assay.html">prepare_assay()</a></code> and
+<code><a href="../reference/fit_destress.html">fit_destress()</a></code>:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">assay</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/prepare_assay.html">prepare_assay</a></span><span class="op">(</span></span>
 <span>  <span class="va">expression_df</span>,</span>
@@ -325,14 +333,14 @@ model-based DStressR analysis starts from the same long table but uses
 <span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fit_destress.html">fit_destress</a></span><span class="op">(</span></span>
 <span>  <span class="va">assay</span>,</span>
 <span>  technical <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"batch"</span>, <span class="st">"libplate"</span>, <span class="st">"replicate"</span><span class="op">)</span>,</span>
-<span>  empirical_bayes <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>  testing <span class="op">=</span> <span class="st">"moderated_t"</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">model_results</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/results.html">results</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></code></pre></div>
-<p>This gives a direct apples-to-apples setup:
-<code>workflow = "median_polish"</code> recovers the legacy workflow,
-while <code><a href="../reference/fit_destress.html">fit_destress()</a></code> provides the model-based
-replacement.</p>
+<p>This gives a direct comparison:
+<code>workflow = "median_polish"</code> recovers the published
+Campylobacter workflow, and <code><a href="../reference/fit_destress.html">fit_destress()</a></code> provides the
+model-based DStressR analysis on the same table.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

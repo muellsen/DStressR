@@ -1,0 +1,80 @@
+# Kochanowski summary response matrix
+
+This article documents the summary-level DStressR analysis of the
+promoter-activity compendium of Kochanowski et al. (2017), *Molecular
+Systems Biology*. The public supplementary tables provide processed
+promoter activities and reported standard deviations, not
+replicate-level well measurements. This is therefore a supplied-response
+analysis using
+[`fit_destress_summary()`](https://muellsen.github.io/DStressR/reference/fit_destress_summary.md).
+
+## Data provenance
+
+The local workflow expects the supplementary Excel files under:
+
+``` text
+data-raw/kochanowski2017/source/
+```
+
+The files are external source data and are intentionally not committed
+to the repository. The analysis script reads the condition table,
+promoter-activity matrix, standard-deviation matrix, and published
+singular-vector summaries from the supplementary tables.
+
+## Response and variance
+
+For reporter `a` and condition `j`, let `A_aj` be the supplied promoter
+activity and `S_aj` its reported standard deviation. The DStressR
+summary-level analysis uses:
+
+``` text
+response_aj = log2(A_aj)
+variance_aj = S_aj^2 / (A_aj^2 * log(2)^2)
+```
+
+Glucose is used as the reference condition. The fitted total effect is
+the glucose-relative log2 promoter-activity change. Since the data are
+already summarized, p-values are Gaussian summary-level approximations
+from supplied variances rather than replicate-level moderated DStressR
+tests.
+
+## Reproduce the analysis
+
+From the repository root, run:
+
+``` sh
+Rscript analysis/kochanowski_promoter_scaling/run_kochanowski_destress_analysis.R
+```
+
+The script writes tables and figures to:
+
+``` text
+analysis/outputs/kochanowski_promoter_scaling/
+```
+
+## DStressR summary-level call
+
+The core model call is:
+
+``` r
+
+summary_fit <- fit_destress_summary(
+  activity,
+  reporter = "reporter",
+  perturbation = "perturbation",
+  response = "response",
+  response_variance = "response_variance",
+  reference_perturbation = "glucose",
+  global_method = "weighted_mean",
+  background_rank = 1,
+  adjustment = "global"
+)
+
+tab <- results(summary_fit)
+```
+
+The resulting table contains total effects, perturbation-wide global
+effects, centered specific effects, rank-adjusted total effects, and
+approximate p-values. The manuscript analysis uses the rank-1 component
+to compare the DStressR total-effect decomposition with the
+growth-associated singular-vector axis reported by Kochanowski et al.

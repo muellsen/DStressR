@@ -1,14 +1,14 @@
-# Salmonella Empty Vector workflow
+# Salmonella empty-vector-control workflow
 
-The Salmonella StressRegNet workflow uses Empty Vector Control (EVC)
+The Salmonella workflow of Amstalden et al. (2026, bioRxiv,
+<doi:10.64898/2026.09.30.755304>) uses Empty Vector Control (EVC)
 reporter strains to estimate perturbation-specific background Lux
-signal. In the original analysis, the `PEVC3` reporter is used as the
+signal. In that published analysis, the `PEVC3` reporter is used as the
 reference. For each perturbation, the two PEVC3 replicate values are
 averaged, and this perturbation-specific EVC average is subtracted from
 every reporter strain.
 
-This is different from the Campylobacter median-polish baseline. The
-Salmonella baseline is:
+The Salmonella data-specific workflow is:
 
 ``` text
 growth-normalized Lux
@@ -20,7 +20,7 @@ growth-normalized Lux
   -> BH adjustment within reporter
 ```
 
-DStressR implements this compatibility path with
+DStressR implements this screen-specific path with
 `fit_workflow(..., workflow = "empty_vector_control")`. The lower-level
 [`fit_empty_vector_control()`](https://muellsen.github.io/DStressR/reference/fit_empty_vector_control.md)
 function remains available for existing scripts.
@@ -70,7 +70,7 @@ The perturbation key used by the workflow is:
 srn_code = paste(sub("LibPlate", "lp", `Library plate`), `New well`, sep = "_")
 ```
 
-## Reproduce the original Salmonella workflow
+## Reproduce the Salmonella workflow
 
 ``` r
 
@@ -123,7 +123,7 @@ table(hit_table$hit)
 ## What the function does
 
 `fit_workflow(..., workflow = "empty_vector_control")` follows the
-original Salmonella hit-determination logic:
+Salmonella hit-determination logic:
 
 1.  Remove noisy DMSO wells and failed reporters, for example `PmgrR`.
 2.  Keep the already centered response column, usually
@@ -221,7 +221,7 @@ evc$pair_results
 
 Using the local Salmonella workflow files,
 `fit_workflow(..., workflow = "empty_vector_control")` recovers the
-original `04-hit_determination/hit_table.tsv.gz` output numerically:
+published `04-hit_determination/hit_table.tsv.gz` output numerically:
 
 ``` text
 pair rows: 68238
@@ -233,4 +233,4 @@ hit label mismatches: 0
 ```
 
 Those values are floating-point roundoff, so this is effectively a
-one-to-one reproduction of the original Salmonella workflow.
+one-to-one reproduction of the Salmonella workflow.
