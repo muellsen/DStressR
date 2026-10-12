@@ -795,15 +795,30 @@ if (file.exists(comparison_file)) {
       show.legend = FALSE
     ) +
     ggplot2$facet_wrap(ggplot2$vars(method), scales = "free_x", nrow = 1) +
-    ggplot2$scale_color_manual(values = promoter_colors[names(promoter_colors) != "Not called"]) +
+    ggplot2$scale_color_manual(values = promoter_colors[names(promoter_colors) != "Not called"], name = "Promoter") +
     ggplot2$scale_x_continuous(expand = ggplot2$expansion(mult = c(0.04, 0.1))) +
     ggplot2$scale_y_continuous(limits = c(0, volcano_y_max), expand = ggplot2$expansion(mult = c(0.02, 0.12))) +
     ggplot2$theme_light(base_size = 11) +
     ggplot2$theme(
       panel.grid.minor = ggplot2$element_blank(),
       strip.text = ggplot2$element_text(face = "bold", hjust = 0.5, size = 10),
-      legend.position = "none",
+      legend.position = c(0.02, 0.98),
+      legend.justification = c(0, 1),
+      legend.direction = "horizontal",
+      legend.background = ggplot2$element_rect(fill = grDevices::adjustcolor("white", alpha.f = 0.86), color = "#D1D5DB", linewidth = 0.2),
+      legend.key.size = grid::unit(3.5, "mm"),
+      legend.text = ggplot2$element_text(size = 6.3),
+      legend.title = ggplot2$element_text(size = 6.9, face = "bold"),
       plot.margin = ggplot2$margin(4, 4, 4, 4)
+    ) +
+    ggplot2$guides(
+      color = ggplot2$guide_legend(
+        nrow = 2,
+        byrow = TRUE,
+        title.position = "top",
+        title.hjust = 0,
+        override.aes = list(size = 1.8, alpha = 1)
+      )
     ) +
     ggplot2$labs(
       x = "Method-specific effect estimate",
