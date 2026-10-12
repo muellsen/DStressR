@@ -7,7 +7,7 @@
 model_parameters(fit)
 }
 \arguments{
-\item{fit}{A \code{destress_fit} object.}
+\item{fit}{A \code{destress_fit} or \code{destress_summary_fit} object.}
 }
 \value{
 A named list of estimated parameter tables available for the fitted

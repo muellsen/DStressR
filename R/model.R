@@ -6,6 +6,12 @@ technical_formula <- function(technical) {
   }
 }
 
+destress_progress <- function(verbose, ...) {
+  if (isTRUE(verbose)) {
+    message(...)
+  }
+}
+
 make_formulas <- function(technical) {
   tech <- technical_formula(technical)
   list(
@@ -83,9 +89,13 @@ contrast_estimate <- function(fit, newdata_a, newdata_b) {
   x_b <- stats::model.matrix(terms_obj, newdata_b, contrasts.arg = fit_contrasts(fit))
   contrast <- drop(x_a - x_b)
   beta <- fit_coef(fit)
+  keep <- intersect(names(beta), names(contrast))
+  contrast <- contrast[keep]
+  beta <- beta[keep]
   beta[is.na(beta)] <- 0
   estimate <- sum(contrast * beta)
   vc <- safe_vcov(fit)
+  vc <- vc[keep, keep, drop = FALSE]
   se <- sqrt(drop(t(contrast) %*% vc %*% contrast))
   df <- fit_df_residual(fit)
   statistic <- estimate / se
@@ -99,9 +109,13 @@ contrast_estimates <- function(fit, newdata_a, newdata_b) {
   x_b <- stats::model.matrix(terms_obj, newdata_b, contrasts.arg = fit_contrasts(fit))
   contrast <- x_a - x_b
   beta <- fit_coef(fit)
+  keep <- intersect(names(beta), colnames(contrast))
+  contrast <- contrast[, keep, drop = FALSE]
+  beta <- beta[keep]
   beta[is.na(beta)] <- 0
   estimate <- as.numeric(contrast %*% beta)
   vc <- safe_vcov(fit)
+  vc <- vc[keep, keep, drop = FALSE]
   se <- sqrt(rowSums((contrast %*% vc) * contrast))
   df <- fit_df_residual(fit)
   statistic <- estimate / se
@@ -183,7 +197,9 @@ estimate_eb_prior_variance <- function(var_raw, df, max_prior_df = 1e6) {
 
 eb_moderate_se <- function(se, df) {
   var_raw <- se^2
-  prior <- estimate_eb_prior_variance(var_raw, df)
+  df <- as.numeric(df)
+  prior_df_for_estimation <- stats::median(df[is.finite(df) & df > 0], na.rm = TRUE)
+  prior <- estimate_eb_prior_variance(var_raw, prior_df_for_estimation)
   if (!is.finite(prior$var) || !is.finite(prior$df) || prior$df <= 0) {
     return(list(se = se, df = df, prior_var = prior$var, prior_df = prior$df))
   }
@@ -505,17 +521,95 @@ independent_columns <- function(x) {
   x[, sort(qr_x$pivot[seq_len(qr_x$rank)]), drop = FALSE]
 }
 
-fit_reporter_effects <- function(assay, technical, control) {
+technical_reference_row <- function(d, technical, n) {
+  out <- data.frame(row.names = seq_len(n))
+  for (col in technical) {
+    x <- d[[col]]
+    if (is.factor(x)) {
+      level <- modal_factor_level(x)
+      out[[col]] <- factor(level, levels = levels(x), ordered = is.ordered(x))
+    } else if (is.numeric(x) || is.integer(x)) {
+      out[[col]] <- stats::median(as.numeric(x), na.rm = TRUE)
+    } else {
+      level <- names(sort(table(x), decreasing = TRUE))[1]
+      out[[col]] <- rep(level, n)
+    }
+  }
+  out
+}
+
+active_reporter_technical <- function(d, technical) {
+  keep <- vapply(technical, function(col) {
+    x <- d[[col]]
+    if (is.factor(x)) {
+      nlevels(droplevels(x)) > 1
+    } else if (is.numeric(x) || is.integer(x)) {
+      vals <- unique(as.numeric(x[is.finite(x)]))
+      length(vals) > 1
+    } else {
+      length(unique(x[!is.na(x)])) > 1
+    }
+  }, logical(1))
+  technical[keep]
+}
+
+fit_reporter_effects_lm <- function(d, reporter, perturbations, control, technical) {
+  technical <- active_reporter_technical(d, technical)
+  d <- droplevels(d)
+  form <- stats::as.formula(paste(".response ~ .perturbation +", technical_formula(technical)))
+  reporter_fit <- stats::lm(form, data = d, na.action = stats::na.exclude)
+  perturbation_levels <- levels(d$.perturbation)
+
+  base <- data.frame(.perturbation = factor(control, levels = perturbation_levels))
+  base <- base[rep(1, length(perturbations)), , drop = FALSE]
+  comp <- base
+  comp$.perturbation <- factor(perturbations, levels = perturbation_levels)
+  tech_ref <- technical_reference_row(d, technical, length(perturbations))
+  base <- cbind(base, tech_ref)
+  comp <- cbind(comp, tech_ref)
+
+  total <- contrast_estimates(reporter_fit, comp, base)
+  data.frame(
+    reporter = reporter,
+    perturbation = perturbations,
+    total_effect = total[, "estimate"],
+    total_se = total[, "std_error"],
+    total_statistic = total[, "statistic"],
+    total_pvalue = total[, "pvalue"],
+    residual_df = fit_df_residual(reporter_fit),
+    sigma = fit_sigma(reporter_fit),
+    n_observations = fit_nobs(reporter_fit),
+    n_coefficients = length(stats::coef(reporter_fit)),
+    stringsAsFactors = FALSE
+  )
+}
+
+fit_reporter_effects <- function(assay, technical, control, verbose = FALSE, progress_every = 100L) {
   technical_terms <- technical_formula(technical)
   technical_design_formula <- stats::as.formula(paste("~", technical_terms))
   by_reporter <- split(assay, assay$.reporter)
 
-  rows <- lapply(names(by_reporter), function(reporter) {
+  reporter_names <- names(by_reporter)
+  rows <- lapply(seq_along(reporter_names), function(k) {
+    reporter <- reporter_names[k]
+    if (isTRUE(verbose) &&
+        (k == 1L || k == length(reporter_names) || k %% progress_every == 0L)) {
+      destress_progress(
+        TRUE,
+        "DStressR: reporter-specific fits ",
+        k,
+        "/",
+        length(reporter_names),
+        "."
+      )
+    }
     d <- by_reporter[[reporter]]
     d <- d[is.finite(d$.response), , drop = FALSE]
     if (nrow(d) == 0) {
       return(NULL)
     }
+    active_technical <- active_reporter_technical(d, technical)
+    d <- droplevels(d)
 
     perturbation <- as.character(d$.perturbation)
     perturbations <- sort(setdiff(unique(perturbation), control))
@@ -523,51 +617,72 @@ fit_reporter_effects <- function(assay, technical, control) {
       return(NULL)
     }
 
-    y <- d$.response
-    z <- stats::model.matrix(technical_design_formula, data = d)
-    z <- independent_columns(z)
-    ztz_inv <- solve(crossprod(z))
-    mz_y <- as.numeric(stats::lm.fit(z, y)$residuals)
-    y_mz_y <- sum(mz_y^2)
+    closed_form <- tryCatch({
+      y <- d$.response
+      technical_terms <- technical_formula(active_technical)
+      technical_design_formula <- stats::as.formula(paste("~", technical_terms))
+      z <- stats::model.matrix(technical_design_formula, data = d)
+      z <- independent_columns(z)
+      ztz_inv <- solve(crossprod(z))
+      mz_y <- as.numeric(stats::lm.fit(z, y)$residuals)
+      y_mz_y <- sum(mz_y^2)
 
-    counts_all <- table(factor(perturbation, levels = c(control, perturbations)))
-    n_perturbation <- as.numeric(counts_all[perturbations])
-    names(n_perturbation) <- perturbations
+      counts_all <- table(factor(perturbation, levels = c(control, perturbations)))
+      n_perturbation <- as.numeric(counts_all[perturbations])
+      names(n_perturbation) <- perturbations
 
-    z_sum_all <- rowsum(z, factor(perturbation, levels = c(control, perturbations)), reorder = FALSE)
-    b <- z_sum_all[perturbations, , drop = FALSE]
-    u_all <- rowsum(mz_y, factor(perturbation, levels = c(control, perturbations)), reorder = FALSE)
-    u <- as.numeric(u_all[perturbations, , drop = TRUE])
-    names(u) <- perturbations
+      z_sum_all <- rowsum(z, factor(perturbation, levels = c(control, perturbations)), reorder = FALSE)
+      b <- z_sum_all[perturbations, , drop = FALSE]
+      u_all <- rowsum(mz_y, factor(perturbation, levels = c(control, perturbations)), reorder = FALSE)
+      u <- as.numeric(u_all[perturbations, , drop = TRUE])
+      names(u) <- perturbations
 
-    n_inv <- 1 / n_perturbation
-    s <- solve(solve(ztz_inv) - crossprod(b, b * n_inv))
-    w <- n_inv * u
-    beta <- w + n_inv * as.numeric(b %*% (s %*% crossprod(b, w)))
-    a_inv_diag <- n_inv + n_inv^2 * rowSums((b %*% s) * b)
+      n_inv <- 1 / n_perturbation
+      s <- solve(solve(ztz_inv) - crossprod(b, b * n_inv))
+      w <- n_inv * u
+      beta <- w + n_inv * as.numeric(b %*% (s %*% crossprod(b, w)))
+      a_inv_diag <- n_inv + n_inv^2 * rowSums((b %*% s) * b)
 
-    sse <- y_mz_y - sum(beta * u)
-    if (is.finite(sse) && sse < 0 && abs(sse) < sqrt(.Machine$double.eps)) {
-      sse <- 0
+      sse <- y_mz_y - sum(beta * u)
+      if (is.finite(sse) && sse < 0 && abs(sse) < sqrt(.Machine$double.eps)) {
+        sse <- 0
+      }
+      df <- length(y) - ncol(z) - length(perturbations)
+      sigma2 <- sse / df
+      se <- sqrt(sigma2 * a_inv_diag)
+      test <- wald_t_test(beta, se, df)
+
+      data.frame(
+        reporter = reporter,
+        perturbation = perturbations,
+        total_effect = beta,
+        total_se = se,
+        total_statistic = test$statistic,
+        total_pvalue = test$pvalue,
+        residual_df = df,
+        sigma = sqrt(sigma2),
+        n_observations = length(y),
+        n_coefficients = ncol(z) + length(perturbations),
+        stringsAsFactors = FALSE
+      )
+    }, error = function(e) NULL)
+
+    if (!is.null(closed_form) &&
+        nrow(closed_form) > 0 &&
+        all(is.finite(closed_form$total_effect)) &&
+        all(is.finite(closed_form$total_se))) {
+      return(closed_form)
     }
-    df <- length(y) - ncol(z) - length(perturbations)
-    sigma2 <- sse / df
-    se <- sqrt(sigma2 * a_inv_diag)
-    test <- wald_t_test(beta, se, df)
 
-    data.frame(
-      reporter = reporter,
-      perturbation = perturbations,
-      total_effect = beta,
-      total_se = se,
-      total_statistic = test$statistic,
-      total_pvalue = test$pvalue,
-      residual_df = df,
-      sigma = sqrt(sigma2),
-      n_observations = length(y),
-      n_coefficients = ncol(z) + length(perturbations),
-      stringsAsFactors = FALSE
-    )
+    if (isTRUE(verbose)) {
+      destress_progress(
+        TRUE,
+        "DStressR: reporter-specific QR fallback for reporter ",
+        reporter,
+        "."
+      )
+    }
+    fit_reporter_effects_lm(d, reporter, perturbations, control, active_technical)
   })
 
   out <- do.call(rbind, rows)
@@ -586,18 +701,30 @@ reporter_effect_results <- function(fit, perturbations = NULL, reporters = NULL)
     return(data.frame())
   }
 
+  valid_inference <- is.finite(out$total_effect) &
+    is.finite(out$total_se) &
+    is.finite(out$residual_df) &
+    out$residual_df > 0
+  out <- out[valid_inference, , drop = FALSE]
+  if (nrow(out) == 0) {
+    return(data.frame())
+  }
+
   out$additive_total_effect <- NA_real_
   out$additive_total_se <- NA_real_
-  df <- min(out$residual_df, na.rm = TRUE)
+  df <- stats::median(out$residual_df[out$residual_df > 0], na.rm = TRUE)
+  total_df <- out$residual_df
   if (isTRUE(fit$empirical_bayes)) {
-    moderated <- eb_moderate_se(out$total_se, df)
+    moderated <- eb_moderate_se(out$total_se, out$residual_df)
     out$total_se <- moderated$se
     total_test <- wald_t_test(out$total_effect, out$total_se, moderated$df)
     out$total_statistic <- total_test$statistic
     out$total_pvalue <- total_test$pvalue
+    total_df <- moderated$df
   }
 
   out$total_var <- out$total_se^2
+  out$total_df_for_test <- total_df
   evc <- fit$empty_vector_reporter
   if (!is.null(evc) && nzchar(evc)) {
     evc_rows <- out[out$reporter == evc, c("perturbation", "total_effect", "total_var"), drop = FALSE]
@@ -656,12 +783,18 @@ reporter_effect_results <- function(fit, perturbations = NULL, reporters = NULL)
   )
   out <- merge(out, variance_summary, by = "perturbation", all.x = TRUE, sort = FALSE)
   m <- out$n_reporters_for_perturbation
+  row_df <- out$residual_df
   out$global_se <- sqrt(out$sum_total_var / m^2 + out$empty_vector_var_for_perturbation)
   global_test <- wald_t_test(out$global_effect, out$global_se, df)
   out$global_statistic <- global_test$statistic
   out$global_pvalue <- global_test$pvalue
   out$rank_adjusted_total_se <- sqrt(out$background_adjusted_var)
-  rank_adjusted_total_test <- wald_t_test(out$rank_adjusted_total_effect, out$rank_adjusted_total_se, df)
+  rank_adjusted_total_df <- if (isTRUE(fit$empirical_bayes)) out$total_df_for_test else row_df
+  rank_adjusted_total_test <- wald_t_test(
+    out$rank_adjusted_total_effect,
+    out$rank_adjusted_total_se,
+    rank_adjusted_total_df
+  )
   out$rank_adjusted_total_statistic <- rank_adjusted_total_test$statistic
   out$rank_adjusted_total_pvalue <- rank_adjusted_total_test$pvalue
   rank_adjusted_global <- stats::aggregate(rank_adjusted_total_effect ~ perturbation, out, mean, na.rm = TRUE)
@@ -672,9 +805,9 @@ reporter_effect_results <- function(fit, perturbations = NULL, reporters = NULL)
     (out$sum_total_var - out$total_var) / m^2
   out$specific_se <- sqrt(out$specific_var)
   out$specific_se[!is.finite(out$specific_se) | m <= 1] <- NA_real_
-  specific_df <- df
+  specific_df <- row_df
   if (isTRUE(fit$empirical_bayes)) {
-    moderated <- eb_moderate_se(out$specific_se, df)
+    moderated <- eb_moderate_se(out$specific_se, row_df)
     out$specific_se <- moderated$se
     specific_df <- moderated$df
   }
@@ -1199,6 +1332,8 @@ resolve_destress_stages <- function(preset,
 #' @param preset Optional named preset: `"model"`, `"median_polish_legacy"`, or
 #'   `"empty_vector_control"`. Common aliases such as `"median_polish"` and
 #'   `"evc"` are accepted.
+#' @param verbose If `TRUE`, print stage-level progress messages during model
+#'   fitting. This is useful for large screens and full interaction models.
 #' @param ... For `normalization = "linear_model"` with a raw data frame,
 #'   arguments passed to [prepare_assay()], including `growth_exponent`. For
 #'   compatibility presets, arguments passed to the selected engine.
@@ -1221,7 +1356,9 @@ fit_destress <- function(assay,
                          adjustment = NULL,
                          interaction = FALSE,
                          preset = NULL,
+                         verbose = FALSE,
                          ...) {
+  destress_progress(verbose, "DStressR: resolving staged model options.")
   preset <- normalize_destress_preset(preset)
   stages <- resolve_destress_stages(
     preset = preset,
@@ -1233,12 +1370,14 @@ fit_destress <- function(assay,
   )
 
   if (stages$normalization == "median_polish") {
+    destress_progress(verbose, "DStressR: running median-polish preset.")
     fit <- fit_median_polish(assay, ...)
     attr(fit, "destress_preset") <- if (is.null(preset)) "median_polish_legacy" else preset
     attr(fit, "destress_stages") <- stages
     return(fit)
   }
   if (stages$normalization == "empty_vector") {
+    destress_progress(verbose, "DStressR: running empty-vector-control preset.")
     fit <- fit_empty_vector_control(assay, ...)
     attr(fit, "destress_preset") <- if (is.null(preset)) "empty_vector_control" else preset
     attr(fit, "destress_stages") <- stages
@@ -1255,6 +1394,7 @@ fit_destress <- function(assay,
     if (!is.data.frame(assay)) {
       stop("`assay` must be a data frame or be produced by prepare_assay().", call. = FALSE)
     }
+    destress_progress(verbose, "DStressR: preparing assay object.")
     assay <- prepare_assay(assay, ...)
   }
   background_reporter <- attr(assay, "destress")$background_reporter
@@ -1271,6 +1411,18 @@ fit_destress <- function(assay,
     stop("Unknown technical columns: ", paste(missing_technical, collapse = ", "), call. = FALSE)
   }
   interaction <- isTRUE(interaction)
+  destress_progress(
+    verbose,
+    "DStressR: fitting ",
+    if (interaction) "full reporter-by-perturbation interaction model" else "scalable reporter-specific model",
+    " with ",
+    nlevels(assay_for_model$.reporter),
+    " reporters, ",
+    max(0, nlevels(assay_for_model$.perturbation) - 1),
+    " non-reference perturbations, and ",
+    nrow(assay_for_model),
+    " observations."
+  )
   if (isTRUE(background_rank_request$auto) && interaction) {
     stop("`background_rank = \"auto\"` is currently supported for the scalable reporter-specific model only.", call. = FALSE)
   }
@@ -1285,11 +1437,13 @@ fit_destress <- function(assay,
   }
   formulas <- make_formulas(technical)
   total_fit <- if (interaction) {
+    destress_progress(verbose, "DStressR: fitting additive linear model.")
     stats::lm(formulas$total, data = assay_for_model, na.action = stats::na.exclude)
   } else {
     NULL
   }
   full_fit <- if (interaction) {
+    destress_progress(verbose, "DStressR: fitting full interaction linear model.")
     stats::lm(formulas$full, data = assay_for_model, na.action = stats::na.exclude)
   } else {
     NULL
@@ -1308,11 +1462,18 @@ fit_destress <- function(assay,
   reporter_effects <- if (interaction) {
     NULL
   } else {
-    fit_reporter_effects(assay_for_model, technical, attr(assay, "destress")$control)
+    destress_progress(verbose, "DStressR: estimating reporter-specific perturbation effects.")
+    fit_reporter_effects(
+      assay_for_model,
+      technical,
+      attr(assay, "destress")$control,
+      verbose = verbose
+    )
   }
   background_rank_diagnostics_table <- NULL
   selected_background_rank <- background_rank_request$rank
   if (isTRUE(background_rank_request$auto)) {
+    destress_progress(verbose, "DStressR: selecting low-rank background by permutation diagnostics.")
     background_rank_diagnostics_table <- background_rank_diagnostics(
       reporter_effects,
       effect = "total_effect",
@@ -1325,8 +1486,10 @@ fit_destress <- function(assay,
       seed = background_rank_seed
     )
     selected_background_rank <- select_background_rank(background_rank_diagnostics_table)
+    destress_progress(verbose, "DStressR: selected low-rank background rank ", selected_background_rank, ".")
   }
 
+  destress_progress(verbose, "DStressR: assembling fitted object.")
   structure(
     list(
       total_fit = total_fit,
@@ -1361,14 +1524,35 @@ fit_destress <- function(assay,
 
 #' Extract estimated model parameters
 #'
-#' @param fit A `destress_fit` object.
+#' @param fit A `destress_fit` or `destress_summary_fit` object.
 #' @return A named list of estimated parameter tables available for the fitted
 #'   model. The scalable model path includes reporter-specific growth
 #'   normalization estimates and reporter-perturbation effect estimates.
 #' @export
 model_parameters <- function(fit) {
+  if (inherits(fit, "destress_summary_fit")) {
+    out <- list(
+      background = data.frame(
+        background_rank = validate_background_rank(fit$background_rank),
+        background_rank_requested = if (is.null(fit$background_rank_requested)) fit$background_rank else as.character(fit$background_rank_requested),
+        background_rank_threshold = if (is.null(fit$background_rank_threshold)) NA_real_ else fit$background_rank_threshold,
+        background_impute = if (is.null(fit$background_impute)) "column_mean" else fit$background_impute
+      ),
+      summary_level = data.frame(
+        reference_perturbation = fit$reference_perturbation,
+        inference = fit$inference,
+        global_method = fit$global_method,
+        adjustment = fit$adjustment
+      ),
+      effects = fit$effects
+    )
+    if (!is.null(fit$background_rank_diagnostics)) {
+      out$background_rank_diagnostics <- fit$background_rank_diagnostics
+    }
+    return(out)
+  }
   if (!inherits(fit, "destress_fit")) {
-    stop("`fit` must be a destress_fit.", call. = FALSE)
+    stop("`fit` must be a destress_fit or destress_summary_fit.", call. = FALSE)
   }
 
   out <- list(
@@ -1425,18 +1609,333 @@ adjust_destress_pvalues <- function(pvalue, groups = NULL, adjustment = "global"
   out
 }
 
+summary_level_effects <- function(d,
+                                  reference_perturbation,
+                                  reporter,
+                                  perturbation,
+                                  response,
+                                  response_variance,
+                                  global_method,
+                                  background_rank,
+                                  background_impute,
+                                  adjustment) {
+  d <- data.frame(
+    reporter = as.character(d[[reporter]]),
+    perturbation = as.character(d[[perturbation]]),
+    response = as.numeric(d[[response]]),
+    response_variance = as.numeric(d[[response_variance]]),
+    stringsAsFactors = FALSE
+  )
+  d$response_variance[!is.finite(d$response_variance) | d$response_variance < 0] <- NA_real_
+
+  ref <- d[d$perturbation == reference_perturbation, c(
+    "reporter", "response", "response_variance"
+  )]
+  names(ref) <- c("reporter", "reference_response", "reference_response_variance")
+  if (anyDuplicated(ref$reporter)) {
+    stop("Each reporter must have at most one reference response.", call. = FALSE)
+  }
+  out <- merge(d, ref, by = "reporter", all.x = TRUE, sort = FALSE)
+  out <- out[out$perturbation != reference_perturbation, , drop = FALSE]
+  out$total_effect <- out$response - out$reference_response
+  out$total_variance <- out$response_variance + out$reference_response_variance
+  out$total_se <- sqrt(out$total_variance)
+  out$total_statistic <- out$total_effect / out$total_se
+  out$total_pvalue <- 2 * stats::pnorm(-abs(out$total_statistic))
+
+  compute_center <- function(effect, variance) {
+    finite <- is.finite(effect) & is.finite(variance) & variance > 0
+    if (!any(finite)) {
+      return(list(center = NA_real_, center_variance = NA_real_, weights = rep(NA_real_, length(effect))))
+    }
+    weights <- rep(NA_real_, length(effect))
+    if (global_method == "weighted_mean") {
+      w <- 1 / variance[finite]
+      w <- w / sum(w)
+      weights[finite] <- w
+      center <- sum(w * effect[finite])
+      center_variance <- sum((w^2) * variance[finite])
+    } else if (global_method == "mean") {
+      w <- rep(1 / sum(finite), sum(finite))
+      weights[finite] <- w
+      center <- mean(effect[finite])
+      center_variance <- sum((w^2) * variance[finite])
+    } else {
+      stop("Unknown global method.", call. = FALSE)
+    }
+    list(center = center, center_variance = center_variance, weights = weights)
+  }
+
+  split_idx <- split(seq_len(nrow(out)), out$perturbation)
+  out$global_effect <- NA_real_
+  out$global_variance <- NA_real_
+  out$global_weight <- NA_real_
+  out$specific_effect <- NA_real_
+  out$specific_variance <- NA_real_
+  for (idx in split_idx) {
+    center <- compute_center(out$total_effect[idx], out$total_variance[idx])
+    out$global_effect[idx] <- center$center
+    out$global_variance[idx] <- center$center_variance
+    out$global_weight[idx] <- center$weights
+    out$specific_effect[idx] <- out$total_effect[idx] - center$center
+    out$specific_variance[idx] <-
+      out$total_variance[idx] - 2 * center$weights * out$total_variance[idx] +
+      center$center_variance
+  }
+  out$specific_se <- sqrt(out$specific_variance)
+  out$specific_statistic <- out$specific_effect / out$specific_se
+  out$specific_pvalue <- 2 * stats::pnorm(-abs(out$specific_statistic))
+
+  out$low_rank_effect <- low_rank_background_effect(
+    out,
+    effect = "total_effect",
+    rank = background_rank,
+    impute = background_impute
+  )
+  out$rank_adjusted_total_effect <- out$total_effect - out$low_rank_effect
+  out$rank_adjusted_total_variance <- out$total_variance
+  out$rank_adjusted_total_se <- out$total_se
+  out$rank_adjusted_total_statistic <-
+    out$rank_adjusted_total_effect / out$rank_adjusted_total_se
+  out$rank_adjusted_total_pvalue <-
+    2 * stats::pnorm(-abs(out$rank_adjusted_total_statistic))
+
+  out$rank_adjusted_global_effect <- NA_real_
+  out$rank_adjusted_global_variance <- NA_real_
+  out$rank_adjusted_global_weight <- NA_real_
+  out$rank_adjusted_specific_effect <- NA_real_
+  out$rank_adjusted_specific_variance <- NA_real_
+  for (idx in split_idx) {
+    center <- compute_center(out$rank_adjusted_total_effect[idx], out$total_variance[idx])
+    out$rank_adjusted_global_effect[idx] <- center$center
+    out$rank_adjusted_global_variance[idx] <- center$center_variance
+    out$rank_adjusted_global_weight[idx] <- center$weights
+    out$rank_adjusted_specific_effect[idx] <-
+      out$rank_adjusted_total_effect[idx] - center$center
+    out$rank_adjusted_specific_variance[idx] <-
+      out$total_variance[idx] - 2 * center$weights * out$total_variance[idx] +
+      center$center_variance
+  }
+  out$rank_adjusted_specific_se <- sqrt(out$rank_adjusted_specific_variance)
+  out$rank_adjusted_specific_statistic <-
+    out$rank_adjusted_specific_effect / out$rank_adjusted_specific_se
+  out$rank_adjusted_specific_pvalue <-
+    2 * stats::pnorm(-abs(out$rank_adjusted_specific_statistic))
+
+  out$total_padj_global <- adjust_destress_pvalues(out$total_pvalue, out$reporter, "global")
+  out$total_padj_by_reporter <- adjust_destress_pvalues(out$total_pvalue, out$reporter, "by_reporter")
+  out$specific_padj_global <- adjust_destress_pvalues(out$specific_pvalue, out$reporter, "global")
+  out$specific_padj_by_reporter <- adjust_destress_pvalues(out$specific_pvalue, out$reporter, "by_reporter")
+  out$rank_adjusted_total_padj_global <-
+    adjust_destress_pvalues(out$rank_adjusted_total_pvalue, out$reporter, "global")
+  out$rank_adjusted_total_padj_by_reporter <-
+    adjust_destress_pvalues(out$rank_adjusted_total_pvalue, out$reporter, "by_reporter")
+  out$rank_adjusted_specific_padj_global <-
+    adjust_destress_pvalues(out$rank_adjusted_specific_pvalue, out$reporter, "global")
+  out$rank_adjusted_specific_padj_by_reporter <-
+    adjust_destress_pvalues(out$rank_adjusted_specific_pvalue, out$reporter, "by_reporter")
+
+  out$total_padj <- if (adjustment == "by_reporter") {
+    out$total_padj_by_reporter
+  } else if (adjustment == "none") {
+    out$total_pvalue
+  } else {
+    out$total_padj_global
+  }
+  out$specific_padj <- if (adjustment == "by_reporter") {
+    out$specific_padj_by_reporter
+  } else if (adjustment == "none") {
+    out$specific_pvalue
+  } else {
+    out$specific_padj_global
+  }
+  out$rank_adjusted_total_padj <- if (adjustment == "by_reporter") {
+    out$rank_adjusted_total_padj_by_reporter
+  } else if (adjustment == "none") {
+    out$rank_adjusted_total_pvalue
+  } else {
+    out$rank_adjusted_total_padj_global
+  }
+  out$rank_adjusted_specific_padj <- if (adjustment == "by_reporter") {
+    out$rank_adjusted_specific_padj_by_reporter
+  } else if (adjustment == "none") {
+    out$rank_adjusted_specific_pvalue
+  } else {
+    out$rank_adjusted_specific_padj_global
+  }
+  out[order(out$reporter, out$perturbation), , drop = FALSE]
+}
+
+#' Fit DStressR from supplied response estimates and variances
+#'
+#' `fit_destress_summary()` analyzes data where each reporter-perturbation
+#' combination is already summarized by a response estimate and an estimated
+#' sampling variance. This is useful for public datasets that release processed
+#' promoter activities with uncertainty estimates, but not replicate-level wells.
+#' The resulting p-values are summary-level Gaussian approximations rather than
+#' replicate-level moderated DStressR tests.
+#'
+#' @param data A data frame with one row per reporter and perturbation.
+#' @param reporter,perturbation Columns identifying reporters and perturbations.
+#' @param response Numeric response estimate column.
+#' @param response_variance Numeric response-variance column. This is the
+#'   primary uncertainty input.
+#' @param response_se Optional response-standard-error column. Used only when
+#'   `response_variance` is `NULL`, in which case it is squared internally.
+#' @param reference_perturbation Reference perturbation/condition.
+#' @param global_method How to estimate perturbation-level global effects.
+#'   `"weighted_mean"` uses inverse-variance weights; `"mean"` uses equal
+#'   weights.
+#' @param background_rank Non-negative integer or `"auto"` for permutation-based
+#'   rank selection.
+#' @inheritParams fit_destress
+#' @return A `destress_summary_fit` object. Use [results()] to extract the
+#'   effect table.
+#' @export
+fit_destress_summary <- function(data,
+                                 reporter = "reporter",
+                                 perturbation = "perturbation",
+                                 response = "response",
+                                 response_variance = "response_variance",
+                                 response_se = NULL,
+                                 reference_perturbation,
+                                 global_method = c("weighted_mean", "mean"),
+                                 background_rank = 0,
+                                 background_rank_max = 5,
+                                 background_rank_permutations = 100,
+                                 background_rank_threshold = 0.99,
+                                 background_rank_seed = NULL,
+                                 background_impute = c("column_mean", "global_mean", "zero"),
+                                 adjustment = c("global", "by_reporter", "none")) {
+  stopifnot(is.data.frame(data))
+  global_method <- match.arg(global_method)
+  adjustment <- match.arg(adjustment)
+  background_rank_request <- validate_background_rank_request(background_rank)
+  background_rank_max <- validate_background_rank(background_rank_max)
+  background_rank_permutations <- validate_background_rank(background_rank_permutations)
+  background_rank_threshold <- validate_background_rank_threshold(background_rank_threshold)
+  background_impute <- validate_background_impute(background_impute)
+  if (missing(reference_perturbation) || length(reference_perturbation) != 1 ||
+      is.na(reference_perturbation) || !nzchar(as.character(reference_perturbation))) {
+    stop("`reference_perturbation` must be one non-empty label.", call. = FALSE)
+  }
+  required <- c(reporter, perturbation, response)
+  if (is.null(response_variance)) {
+    if (is.null(response_se)) {
+      stop("Supply `response_variance`, or supply `response_se` and set `response_variance = NULL`.", call. = FALSE)
+    }
+    required <- c(required, response_se)
+  } else {
+    required <- c(required, response_variance)
+  }
+  missing_cols <- setdiff(required, names(data))
+  if (length(missing_cols) > 0) {
+    stop("Missing required columns: ", paste(missing_cols, collapse = ", "), call. = FALSE)
+  }
+  d <- data
+  if (is.null(response_variance)) {
+    d$.destress_response_variance <- as.numeric(d[[response_se]])^2
+    response_variance <- ".destress_response_variance"
+  }
+
+  initial_rank <- if (isTRUE(background_rank_request$auto)) 0L else background_rank_request$rank
+  effects0 <- summary_level_effects(
+    d,
+    reference_perturbation = as.character(reference_perturbation),
+    reporter = reporter,
+    perturbation = perturbation,
+    response = response,
+    response_variance = response_variance,
+    global_method = global_method,
+    background_rank = initial_rank,
+    background_impute = background_impute,
+    adjustment = adjustment
+  )
+  background_rank_diagnostics_table <- NULL
+  selected_background_rank <- initial_rank
+  if (isTRUE(background_rank_request$auto)) {
+    background_rank_diagnostics_table <- background_rank_diagnostics(
+      effects0,
+      effect = "total_effect",
+      reporter = "reporter",
+      perturbation = "perturbation",
+      rank_max = background_rank_max,
+      permutations = background_rank_permutations,
+      threshold = background_rank_threshold,
+      impute = background_impute,
+      seed = background_rank_seed
+    )
+    selected_background_rank <- select_background_rank(background_rank_diagnostics_table)
+  }
+  effects <- if (selected_background_rank == initial_rank) {
+    effects0
+  } else {
+    summary_level_effects(
+      d,
+      reference_perturbation = as.character(reference_perturbation),
+      reporter = reporter,
+      perturbation = perturbation,
+      response = response,
+      response_variance = response_variance,
+      global_method = global_method,
+      background_rank = selected_background_rank,
+      background_impute = background_impute,
+      adjustment = adjustment
+    )
+  }
+
+  structure(
+    list(
+      data = data,
+      effects = effects,
+      reference_perturbation = as.character(reference_perturbation),
+      columns = list(
+        reporter = reporter,
+        perturbation = perturbation,
+        response = response,
+        response_variance = response_variance,
+        response_se = response_se
+      ),
+      inference = "summary_level_gaussian",
+      global_method = global_method,
+      background_rank = selected_background_rank,
+      background_rank_requested = background_rank,
+      background_rank_diagnostics = background_rank_diagnostics_table,
+      background_rank_threshold = background_rank_threshold,
+      background_rank_seed = background_rank_seed,
+      background_impute = background_impute,
+      adjustment = adjustment
+    ),
+    class = "destress_summary_fit"
+  )
+}
+
 #' Extract model results
 #'
-#' @param fit A `destress_fit` object.
+#' @param fit A `destress_fit` or `destress_summary_fit` object.
 #' @param perturbations Optional perturbation subset.
 #' @param reporters Optional reporter subset.
+#' @param verbose If `TRUE`, print stage-level progress messages while
+#'   extracting model results.
 #' @return A data frame with total and reporter-specific effects.
 #' @export
-results <- function(fit, perturbations = NULL, reporters = NULL) {
+results <- function(fit, perturbations = NULL, reporters = NULL, verbose = FALSE) {
+  if (inherits(fit, "destress_summary_fit")) {
+    destress_progress(verbose, "DStressR: extracting summary-level results.")
+    out <- fit$effects
+    if (!is.null(perturbations)) {
+      out <- out[out$perturbation %in% perturbations, , drop = FALSE]
+    }
+    if (!is.null(reporters)) {
+      out <- out[out$reporter %in% reporters, , drop = FALSE]
+    }
+    return(out[order(out$reporter, out$perturbation), , drop = FALSE])
+  }
   if (!inherits(fit, "destress_fit")) {
-    stop("`fit` must be a destress_fit.", call. = FALSE)
+    stop("`fit` must be a destress_fit or destress_summary_fit.", call. = FALSE)
   }
   if (!isTRUE(fit$interaction)) {
+    destress_progress(verbose, "DStressR: extracting scalable reporter-specific results.")
     return(reporter_effect_results(fit, perturbations = perturbations, reporters = reporters))
   }
   if (!is.null(fit$empty_vector_reporter)) {
@@ -1456,6 +1955,14 @@ results <- function(fit, perturbations = NULL, reporters = NULL) {
   if (nrow(grid) == 0) {
     return(data.frame())
   }
+  destress_progress(
+    verbose,
+    "DStressR: extracting interaction-model contrasts for ",
+    length(reporters),
+    " reporters and ",
+    length(perturbations),
+    " perturbations."
+  )
 
   base <- data.frame(
     .reporter = factor(grid$reporter, levels = fit$levels$reporter),
@@ -1479,20 +1986,17 @@ results <- function(fit, perturbations = NULL, reporters = NULL) {
     comp[[col]] <- base[[col]]
   }
 
-  total <- t(vapply(seq_len(nrow(grid)), function(i) {
-    contrast_estimate(fit$total_fit, comp[i, , drop = FALSE], base[i, , drop = FALSE])
-  }, numeric(4)))
+  destress_progress(verbose, "DStressR: extracting additive total-effect contrasts.")
+  total <- contrast_estimates(fit$total_fit, comp, base)
 
-  full_total <- t(vapply(seq_len(nrow(grid)), function(i) {
-    contrast_estimate(fit$full_fit, comp[i, , drop = FALSE], base[i, , drop = FALSE])
-  }, numeric(4)))
+  destress_progress(verbose, "DStressR: extracting full interaction contrasts.")
+  full_total <- contrast_estimates(fit$full_fit, comp, base)
 
+  destress_progress(verbose, "DStressR: estimating perturbation-level global effects.")
   global <- t(vapply(perturbations, function(cmp) {
     rows <- comp[grid$perturbation == cmp, , drop = FALSE]
     refs <- base[grid$perturbation == cmp, , drop = FALSE]
-    vals <- t(vapply(seq_len(nrow(rows)), function(i) {
-      contrast_estimate(fit$full_fit, rows[i, , drop = FALSE], refs[i, , drop = FALSE])
-    }, numeric(4)))
+    vals <- contrast_estimates(fit$full_fit, rows, refs)
     colMeans(vals, na.rm = TRUE)
   }, numeric(4)))
   global_df <- data.frame(perturbation = perturbations, global_effect = global[, "estimate"])
@@ -1509,6 +2013,7 @@ results <- function(fit, perturbations = NULL, reporters = NULL) {
     stringsAsFactors = FALSE
   )
   out <- merge(out, global_df, by = "perturbation", sort = FALSE)
+  destress_progress(verbose, "DStressR: applying low-rank background and p-value adjustment.")
   out$low_rank_effect <- low_rank_background_effect(
     out,
     effect = "total_effect",
@@ -1558,6 +2063,7 @@ results <- function(fit, perturbations = NULL, reporters = NULL) {
     "specific_padj_global",
     "specific_padj_by_reporter", "total_padj", "specific_padj"
   ), drop = FALSE]
+  destress_progress(verbose, "DStressR: finished extracting model results.")
   out[order(out$reporter, out$perturbation), ]
 }
 

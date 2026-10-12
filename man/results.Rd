@@ -4,14 +4,17 @@
 \alias{results}
 \title{Extract model results}
 \usage{
-results(fit, perturbations = NULL, reporters = NULL)
+results(fit, perturbations = NULL, reporters = NULL, verbose = FALSE)
 }
 \arguments{
-\item{fit}{A \code{destress_fit} object.}
+\item{fit}{A \code{destress_fit} or \code{destress_summary_fit} object.}
 
 \item{perturbations}{Optional perturbation subset.}
 
 \item{reporters}{Optional reporter subset.}
+
+\item{verbose}{If \code{TRUE}, print stage-level progress messages while
+extracting model results.}
 }
 \value{
 A data frame with total and reporter-specific effects.

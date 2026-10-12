@@ -129,6 +129,35 @@ test_that("fit_destress detects simulated specific effects", {
   expect_gt(stats::cor(joined$specific_effect[active], joined$truth_specific[active]), 0.7)
 })
 
+test_that("fit_destress can report progress messages", {
+  dat <- simulate_screen(seed = 12, n_reporters = 4, n_perturbations = 4, n_replicates = 2)
+  assay <- prepare_assay(
+    dat,
+    reporter = "reporter",
+    perturbation = "perturbation",
+    lux = "LUX.AUC_16",
+    growth = "od_16h.measured",
+    growth_exponent = 1,
+    replicate = "replicate"
+  )
+
+  expect_message(
+    fit <- fit_destress(
+      assay,
+      technical = "replicate",
+      empirical_bayes = FALSE,
+      verbose = TRUE
+    ),
+    "DStressR: fitting scalable reporter-specific model"
+  )
+  expect_s3_class(fit, "destress_fit")
+  expect_message(
+    res <- results(fit, verbose = TRUE),
+    "DStressR: extracting scalable reporter-specific results"
+  )
+  expect_s3_class(res, "data.frame")
+})
+
 test_that("perturbation diagnostics rank mean effects and variance residuals", {
   tab <- data.frame(
     reporter = rep(paste0("P", 1:4), times = 3),
@@ -382,6 +411,49 @@ test_that("fit_destress interaction model supports numeric technical covariates"
   expect_true(all(res$specific_padj_by_reporter >= 0 & res$specific_padj_by_reporter <= 1))
 })
 
+test_that("fit_destress scalable path handles reporter-specific dose trends", {
+  dat <- expand.grid(
+    reporter = paste0("P", seq_len(4)),
+    perturbation = c("DMSO", "DrugA", "DrugB"),
+    replicate = paste0("r", seq_len(5)),
+    stringsAsFactors = FALSE
+  )
+  reporter_slope <- stats::setNames(c(0.00, 0.10, -0.08, 0.05), paste0("P", seq_len(4)))
+  reporter_base <- stats::setNames(c(1.0, 1.2, 0.9, 1.1), paste0("P", seq_len(4)))
+  perturbation_effect <- c(DMSO = 0, DrugA = 0.4, DrugB = -0.3)
+
+  dat$dose <- ifelse(dat$perturbation == "DMSO", 0, ifelse(dat$perturbation == "DrugA", 1, 2))
+  dat$response <- reporter_base[dat$reporter] +
+    perturbation_effect[dat$perturbation] +
+    reporter_slope[dat$reporter] * dat$dose +
+    rep(seq(-0.02, 0.02, length.out = 5), times = 12)
+
+  assay <- prepare_assay(
+    dat,
+    reporter = "reporter",
+    perturbation = "perturbation",
+    control = "DMSO",
+    response = "response",
+    batch = "dose",
+    replicate = "replicate",
+    numeric_covariates = "dose"
+  )
+
+  fit <- fit_destress(
+    assay,
+    technical = "dose",
+    interaction = FALSE,
+    empirical_bayes = FALSE,
+    adjustment = "by_reporter"
+  )
+  res <- results(fit)
+
+  expect_false(fit$interaction)
+  expect_equal(nrow(res), 8)
+  expect_true(all(is.finite(res$total_effect)))
+  expect_true(all(is.finite(res$total_pvalue)))
+})
+
 test_that("fit_destress separates global perturbation effects from reporter-specific effects", {
   dat <- expand.grid(
     reporter = paste0("P", seq_len(6)),
@@ -461,6 +533,37 @@ test_that("fit_destress can remove a low-rank perturbation background", {
   sparse1 <- rank1[rank1$perturbation == "C_specific", ]
   expected_sparse <- sparse_specific[sparse1$reporter]
   expect_equal(sparse1$specific_effect, unname(expected_sparse), tolerance = 1e-8)
+})
+
+test_that("fit_destress_summary uses supplied response variances", {
+  tab <- expand.grid(
+    reporter = c("A", "B", "C"),
+    perturbation = c("ref", "drug"),
+    stringsAsFactors = FALSE
+  )
+  tab$response <- c(0, 1, -1, 0, 0, 0)
+  tab$response_variance <- 0.04
+
+  fit <- fit_destress_summary(
+    tab,
+    reference_perturbation = "ref",
+    background_rank = 0,
+    global_method = "weighted_mean",
+    adjustment = "none"
+  )
+  out <- results(fit)
+
+  expect_s3_class(fit, "destress_summary_fit")
+  expect_equal(nrow(out), 3)
+  expect_true(all(c(
+    "total_effect", "total_variance", "specific_effect", "specific_variance",
+    "rank_adjusted_total_effect", "rank_adjusted_specific_effect"
+  ) %in% names(out)))
+  expect_equal(out$total_variance, rep(0.08, 3))
+  expect_equal(unique(out$global_effect), 0)
+  expect_equal(out$specific_effect, out$total_effect)
+  expect_equal(out$specific_variance, rep(0.08 * 2 / 3, 3), tolerance = 1e-12)
+  expect_equal(out$rank_adjusted_total_effect, out$total_effect)
 })
 
 test_that("background_rank_diagnostics detects broad low-rank structure", {

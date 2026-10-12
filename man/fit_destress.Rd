@@ -21,6 +21,7 @@ fit_destress(
   adjustment = NULL,
   interaction = FALSE,
   preset = NULL,
+  verbose = FALSE,
   ...
 )
 }
@@ -86,6 +87,9 @@ reporter-by-perturbation interaction model.}
 \item{preset}{Optional named preset: \code{"model"}, \code{"median_polish_legacy"}, or
 \code{"empty_vector_control"}. Common aliases such as \code{"median_polish"} and
 \code{"evc"} are accepted.}
+
+\item{verbose}{If \code{TRUE}, print stage-level progress messages during model
+fitting. This is useful for large screens and full interaction models.}
 
 \item{...}{For \code{normalization = "linear_model"} with a raw data frame,
 arguments passed to \code{\link[=prepare_assay]{prepare_assay()}}, including \code{growth_exponent}. For

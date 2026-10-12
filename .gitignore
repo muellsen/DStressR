@@ -12,6 +12,8 @@ analysis/outputs/
 analysis/dryad_global_regulators/raw/
 analysis/zaslaver_promoter_activity/raw/
 data-raw/zaslaver/source/
+data-raw/keren2013/
+data-raw/kochanowski2017/
 VennDiagram.*.log
 tmp/
 tmp_report_text.txt
