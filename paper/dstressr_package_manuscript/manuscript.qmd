@@ -209,29 +209,26 @@ regulator-stress experiment [@Dash2024GlobalRegulators].
 
 ### Overview of the Statistical Workflow
 
-DStressR separates the analysis into a sequence of statistically distinct
-operations (@fig-statistical-workflow). We first define the experimental units,
-the reporter and growth summaries, the reference conditions, and the technical
+The analysis proceeds through statistically distinct operations
+(@fig-statistical-workflow). We first define the experimental units, the
+reporter and growth summaries, the reference conditions, and the technical
 covariates that describe the screen. We then construct a well-level response
 from the paired reporter and growth measurements. This response can be further
 calibrated with a matched background reporter, such as an empty-vector control,
 when such measurements are available.
 
-Once the response vector has been fixed, the downstream model estimates
-reference-relative reporter-perturbation effects while accounting for technical
-covariates. The default estimand is obtained by centering these total effects
-against the fitted perturbation-wide response across the reporter library,
-thereby separating reporter-specific responses from broad perturbation effects.
-Optional low-rank adjustment acts on the fitted total-effect
-matrix before this centering step when latent structured background is analyzed.
-Finally, DStressR attaches uncertainty to the resulting contrasts using ordinary
-or moderated $t$-statistics and false-discovery-rate control.
+The model estimates reference-relative reporter-perturbation effects while
+accounting for technical covariates. Centering these total effects against the
+fitted perturbation-wide response gives the default reporter-specific
+estimand. Optional low-rank adjustment acts on the fitted total-effect matrix
+when latent structured background is analyzed. Uncertainty is quantified with
+ordinary or moderated $t$-statistics and false-discovery-rate control.
 
 ![Statistical workflow implemented by DStressR. Reporter and growth summaries are first mapped to a response scale; optional background-reporter calibration acts on this response before model fitting. The downstream layers estimate reference-relative reporter-perturbation effects, center them into reporter-specific contrasts, optionally remove latent structured background, moderate uncertainty, control false discovery rates, and return directional hit calls.](../figures/Figure2-cropped.pdf){#fig-statistical-workflow width="95%" fig-align="center" fig-pos="htbp"}
 
-The following subsections formalize this sequence. We begin with the filtered
-screen design, then define the response scale, the estimands, and the inference
-procedure used by the default analysis and optional model extensions.
+We begin with the filtered screen design, then define the response scale, the
+estimands, and the inference procedure used by the default analysis and
+optional model extensions.
 
 ### Experimental Design and Dimensions
 
@@ -271,10 +268,10 @@ Here $\mathcal L_{uh}$ and $\mathcal G_{uh}$ are the reporter and growth
 summaries for promoter-replicate unit $u$ in physical assay column $h$.
 
 Control wells are measured instances of the corresponding reporter strains on
-particular plates, batches, days, and replicate contexts. DStressR therefore
-stores the analysis table in long format, so the balanced matrix representation
-may be incomplete. The long-format table is obtained by unfolding the retained
-matrix entries. Thus, for row
+particular plates, batches, days, and replicate contexts. We therefore use a
+long-format analysis table, so the balanced matrix representation may be
+incomplete. The long-format table is obtained by unfolding the retained matrix
+entries. Thus, for row
 $i=1,\ldots,M$, let $u_i$ be the corresponding promoter-replicate unit and
 $h_i$ the physical assay column. The observed reporter and growth summaries are
 $l_i=\mathcal L_{u_i h_i}$ and $g_i=\mathcal G_{u_i h_i}$.
@@ -285,8 +282,7 @@ time $t^\star$, for example $l_i=\ell_i(t^\star)$ and
 $g_i=\gamma_i(t^\star)$, Area-Under-the-Curve (AUC) summaries over a fixed
 window, or quantities from
 an upstream time-series model, such as fitted endpoint biomass or other
-growth-curve summaries, e.g., from DGrowthR [@DGrowthR]. Once $l_i$ and $g_i$ are
-chosen, the same downstream contrast and testing machinery applies.
+growth-curve summaries, e.g., from DGrowthR [@DGrowthR].
 
 For the same row, we use $a_i$ for the corresponding promoter, $j_i$ for the
 modeled compound or reference condition induced by $h_i$, and
@@ -322,14 +318,11 @@ perturbation.
 
 ### Response Construction
 
-DStressR separates response construction from effect estimation and
-hypothesis testing. Response construction defines the well-level quantity that
-enters all downstream models. In DStressR, this response layer has two
-conceptual components. Growth-response modeling combines the reporter and
-growth summaries from the same well into a growth-adjusted reporter response.
-Optional background-reporter calibration then uses a matched reference reporter
-such as an empty-vector control when one is available. These operations change
-the response vector itself.
+Response construction defines the well-level quantity that enters all
+downstream models. Growth-response modeling combines the reporter and growth
+summaries from the same well into a growth-adjusted reporter response.
+Optional background-reporter calibration uses a matched reference reporter such
+as an empty-vector control when one is available.
 
 #### Model Definition
 
@@ -376,12 +369,10 @@ additive on the log scale, so that downstream linear models can separate
 growth-adjusted reporter variation from technical covariates and compound
 effects.
 
-Fluorescence promoter-activity workflows often define the response upstream by
+Fluorescence promoter-activity workflows often define the response by
 background-correcting fluorescence, normalizing by biomass, and differentiating
 or integrating the resulting time series [@Zaslaver2006ReporterLibrary;
-@Gerosa2013SpecificGlobal; @French2018PFIbox]. In that setting, DStressR treats
-the constructed promoter activity as the analyzed well-level response and
-applies the same effect-estimation and testing layers downstream.
+@Gerosa2013SpecificGlobal; @French2018PFIbox].
 
 The exponent may be fixed at $\alpha_a=1$ for ordinary ratio normalization. The
 default DStressR analysis estimates promoter-specific exponents from
@@ -471,9 +462,7 @@ Promoters without a usable raw slope use the global slope. The default response
 model then uses $\widehat\alpha_a$ in Eq.\eqref{eq:response-scale}; final
 exponents are clipped to $[-2,3]$ unless clipping is disabled.
 
-This shrinkage is a response-scale operation: it changes the transformation
-from the original reporter and growth summaries to the analyzed response. In
-particular, the default well-level response is
+The resulting default well-level response is
 
 \begin{equation}
 \label{eq:default-shrunk-response-scale}
@@ -491,14 +480,14 @@ particular, the default well-level response is
 DStressR distinguishes a condition reference, such as DMSO or water, from a
 reporter-background reference, such as an empty-vector control. The condition
 reference defines the treatment contrast between non-control compounds and the
-within-promoter baseline. A background reporter can be used before effect
-estimation to calibrate the response scale. Let $e$ denote the
+within-promoter baseline. A background reporter can calibrate the response
+scale before effect estimation. Let $e$ denote the
 background reporter and let $b_i$ be the matched background response for
 observation $i$, matched on compound and, where available, concentration,
 plate, batch, or replicate. For promoter $a\ne e$, let
 $\mathcal I_a^{\mathrm{bg}}$ denote the set of matched, finite observations for that
-promoter; equivalently, $a=a_i$ for observations in this set. DStressR can fit
-the response-level calibration model
+promoter; equivalently, $a=a_i$ for observations in this set. The
+response-level calibration model is
 
 \begin{equation}
 \label{eq:background-reporter-calibration}
@@ -515,12 +504,12 @@ the response-level calibration model
 \end{equation}
 
 Here $b_i,\gamma_{0a},\gamma_{1a},\varepsilon_i^{\mathrm{bg}}\in\mathbb R$.
-The fitted calibration can use ordinary least squares or Huber robust regression. The Huber option
-follows the robust calibration idea used in the
+The fitted calibration can use ordinary least squares or Huber robust
+regression. The Huber option follows the robust calibration idea used in the
 original *E. coli* analysis [@Binsfeld2025PLoSBiol] and estimates the
-calibration coefficients with Huber's loss [@Huber1981RobustStatistics]. In
-the R implementation, this optimization is carried out by iteratively
-reweighted least squares via `MASS::rlm` [@MASS]. Equivalently, for each
+calibration coefficients with Huber's loss [@Huber1981RobustStatistics], using
+iteratively reweighted least squares via `MASS::rlm` [@MASS]. Equivalently, for
+each
 promoter $a\ne e$, the coefficients solve
 
 \begin{equation}
@@ -549,12 +538,9 @@ where $\rho_H(\cdot)$ is the Huber loss. The calibrated response is the residual
   \right),
 \end{equation}
 
-and the background reporter is removed from the tested promoter set. All
-subsequent model-based contrasts can then be computed by replacing
-$\widehat y_i$ with $\widehat y_i^{\mathrm{bg}}$ in the downstream
-promoter-specific effect models. This calibration estimates promoter-specific
-background coupling through $\gamma_{1a}$ and occurs before promoter-level
-contrasts are estimated.
+and the background reporter is removed from the tested promoter set. This
+calibration estimates promoter-specific background coupling through
+$\gamma_{1a}$.
 
 The response vector passed to differential analysis is therefore
 $\mathbf y^\star=(y_1^\star,\ldots,y_M^\star)^\top\in\mathbb R^M$, with
@@ -694,34 +680,28 @@ is obtained by centering the rank-adjusted total effects within compound:
 
 The default specific estimand uses $k=0$, for which $B^{(0)}=0$ and
 Eq.\eqref{eq:rank-adjusted-specific-effect} reduces to
-Eq.\eqref{eq:specific-effect}. Positive ranks, typically $k=1$ or $k=2$, define
-additional low-rank adjusted estimands for screens with evidence of structured
-total-effect variation. We diagnose such structure by a permutation version of
-parallel analysis: the observed singular values of $T$ are compared with
-singular values obtained after independently permuting reporter labels within
-each perturbation column. This preserves perturbation-wise marginal effect
-distributions while breaking coherent reporter-loading structure. The approach
-follows the logic of parallel analysis [@Horn1965ParallelAnalysis] and its
-permutation interpretation [@BujaEyuboglu1992ParallelAnalysis], with modern
-theoretical justification for permutation-based PCA diagnostics developed by
-@Dobriban2017PermutationPCA and related deterministic refinements by
-@DobribanOwen2019DeterministicParallelAnalysis. In the implementation, the
-singular-value decomposition is applied to the fitted total-effect matrix after
-replacing missing entries by the observed mean of the corresponding
-perturbation column for the matrix decomposition; inference is reported only
-for reporter-perturbation pairs with fitted effects. The rank can either be
-specified by the analyst or selected by the permutation parallel-analysis
-diagnostic. For each specified or selected rank, DStressR can report both the
-rank-adjusted total-effect matrix and its centered reporter-specific residual
-matrix.
+Eq.\eqref{eq:specific-effect}. Positive ranks, typically $k=1$ or $k=2$, are
+used when the fitted total-effect matrix shows structured background
+variation. We diagnose this structure by permutation parallel analysis: the
+observed singular values of $T$ are compared with singular values obtained
+after independently permuting reporter labels within each perturbation column.
+This preserves perturbation-wise marginal effect distributions while breaking
+coherent reporter-loading structure. The diagnostic follows parallel analysis
+[@Horn1965ParallelAnalysis] and its permutation interpretation
+[@BujaEyuboglu1992ParallelAnalysis], with modern theoretical support from
+permutation-based PCA diagnostics [@Dobriban2017PermutationPCA] and
+deterministic refinements [@DobribanOwen2019DeterministicParallelAnalysis].
+Missing entries are replaced by the observed perturbation-column mean for the
+singular-value decomposition; inference is reported only for fitted
+reporter-perturbation pairs. The rank can be specified by the analyst or
+selected by this diagnostic.
 
 ### Model-Based Inference
 
 #### Linear Model
 
-The model-based workflow estimates the conditional means in
-Eq.\eqref{eq:standardized-mean-response} from the filtered data
-$\mathcal D$. For large-scale screens, the default implementation fits one
+The filtered data $\mathcal D$ estimate the conditional means in
+Eq.\eqref{eq:standardized-mean-response}. For large-scale screens, we fit one
 Gaussian linear model per promoter, which gives a scalable decomposition of the
 reporter-perturbation effect matrix. For promoter $a$, define
 $\mathcal I_a=\{i:a_i=a\}$. On this set $a=a_i$, and the working model is
@@ -750,8 +730,7 @@ promoter-specific baseline, $\delta_{a,j_i}$ is the compound effect within
 promoter $a$, and $x_i^\top\gamma_a$ adjusts for technical covariates within
 that promoter. The reference condition has
 $\delta_{a,0}=0$ under the usual reference coding. The normal model is a
-working sampling model for the constructed response $y_i^\star$. The
-response-construction choices are treated as fixed inputs at this stage.
+working sampling model for the constructed response $y_i^\star$.
 If an ordered or quantitative design column, such as a concentration index, is
 included in $x_i$, its systematic contribution is adjusted as a numeric
 nuisance covariate. Categorical technical variables, such as replicate or plate
@@ -781,9 +760,9 @@ $\beta_a\in\mathbb R^{d_a}$, we write
 
 Here $X_a$ contains an intercept, compound indicators, and the selected
 technical covariates for promoter $a$. This decomposition is numerically
-scalable because each fit involves one promoter at a time. If the analysis is
-restricted to a small number of compounds, the same scalar target can also be
-estimated from a full interaction model. With
+scalable because each fit involves one promoter at a time. For small compound
+panels, the same scalar target can also be estimated from a full interaction
+model. With
 $\mathbf y^\star,\varepsilon_{\mathrm{int}}\in\mathbb R^M$,
 $X_{\mathrm{int}}\in\mathbb R^{M\times d_{\mathrm{int}}}$, and
 $\beta_{\mathrm{int}}\in\mathbb R^{d_{\mathrm{int}}}$, this model is
@@ -883,8 +862,8 @@ promoter-specific estimates are then computed as
 \end{equation}
 
 This averaging and subtraction is applied for each compound across its tested
-promoters. When low-rank background adjustment is requested, DStressR applies a
-rank-$k$ singular-value approximation to the total-effect matrix with entries
+promoters. Low-rank background adjustment applies a rank-$k$ singular-value
+approximation to the total-effect matrix with entries
 $\widehat{\Delta y}_{aj}^{\mathrm{tot}}$. The rank-adjusted total estimate is
 
 \begin{equation}
@@ -900,11 +879,8 @@ $\widehat{\Delta y}_{aj}^{\mathrm{tot}}$. The rank-adjusted total estimate is
 
 The corresponding rank-adjusted specific estimate is obtained by centering
 $\widehat{\Delta y}_{aj}^{\mathrm{tot},k}$ across promoters within compound.
-The default background rank is $k=0$, so that
-$\widehat B^{(0)}_{aj}=0$ and the tested quantities are the scalar entries
-$\widehat{\Delta y}_{aj}^{\mathrm{spec}}$. Positive ranks, most naturally
-$k=1$ or $k=2$, are used when broad structured total-effect variation is part
-of the fitted response decomposition.
+With $k=0$, $\widehat B^{(0)}_{aj}=0$ and the tested quantities are the scalar
+entries $\widehat{\Delta y}_{aj}^{\mathrm{spec}}$.
 
 Under the promoter-specific fitting decomposition, the variance of the centered
 specific-effect estimate is
@@ -929,9 +905,9 @@ s_{aj}^{\mathrm{spec}}
 
 #### Additive Empty-Vector Adjustment
 
-Additive empty-vector adjustment can also be applied after model fitting. This extension
-is useful for reporting background-adjusted total responses and compound-level
-summaries. Let $e$ denote the empty-vector reporter; the tested promoter set is
+Additive empty-vector adjustment after model fitting defines
+background-adjusted total responses and compound-level summaries. Let $e$
+denote the empty-vector reporter; the tested promoter set is
 $\mathcal A^\star$, excluding $e$. For each compound, the fitted
 empty-vector response is the reference-relative contrast
 
@@ -1007,15 +983,12 @@ background term, it cancels from the centered promoter-specific contrast:
 \end{aligned}
 \end{equation}
 
-Thus, under the additive background model, an empty-vector reporter contributes
-the same perturbation-specific shift to the background-adjusted total response
-and to the background-adjusted centering term. In a complete design, the
-resulting centered promoter-specific contrast equals
-Eq.\eqref{eq:specific-effect}; in an incomplete design, DStressR uses the
-corresponding $n_j$-promoter version. This is the same invariance by which
-compound-wise centering removes any effect shared by all promoters. For
-inference on background-adjusted total responses, the variance of the adjusted
-total effect is
+Thus, under the additive background model, the empty-vector term cancels from
+the centered contrast. In a complete design, the resulting promoter-specific
+contrast equals Eq.\eqref{eq:specific-effect}; in an incomplete design, the
+corresponding $n_j$-promoter version is used. For inference on
+background-adjusted total responses, the variance of the adjusted total effect
+is
 
 \begin{equation}
 \label{eq:model-empty-vector-adjusted-variance}
@@ -1045,12 +1018,11 @@ H_{0,aj}:
 0 .
 \end{equation}
 
-When an empty-vector reporter is used only under the additive background model,
-the same null hypothesis is tested because
+Under the additive background model,
 Eq.\eqref{eq:model-empty-vector-specific-effect} equals the rank-zero case of
-Eq.\eqref{eq:rank-adjusted-specific-effect}. When response-level background
-calibration is used, the same form of null is tested after replacing
-$\widehat y_i$ by $\widehat y_i^{\mathrm{bg}}$.
+Eq.\eqref{eq:rank-adjusted-specific-effect}. With response-level background
+calibration, the null is evaluated after replacing $\widehat y_i$ by
+$\widehat y_i^{\mathrm{bg}}$.
 
 Let $\nu_{aj}$ denote the residual degrees of freedom inherited by the fitted
 contrast from the reporter-wise fit, or from the full interaction model when
@@ -1110,9 +1082,9 @@ differential-analysis workflows [@Smyth2004limmaEB; @McCarthy2012edgeRGLM;
 
 #### Moderated Hypothesis Testing
 
-DStressR uses by default a moderated test that leaves the
-fitted contrast unchanged and replaces only the raw model-based variance by a
-stabilized variance. For each tested reporter-perturbation contrast
+The default test is moderated: the fitted contrast is unchanged, and only the
+raw model-based variance is replaced by a stabilized variance. For each tested
+reporter-perturbation contrast
 $\omega=(a,j)\in\mathcal A^\star\times\mathcal C$, let
 $\widehat\Delta_\omega$ denote the selected numerator and $v_\omega$ its
 model-based variance:
@@ -1160,8 +1132,8 @@ residual degrees of freedom of that interaction model. This contrast-specific
 degree-of-freedom accounting is important for unbalanced screens, so sparse or
 aliased reporter-wise fits keep their own reference distributions.
 
-DStressR estimates a common prior variance $s_0^2$ and prior degrees of
-freedom $\nu_0$ from the empirical distribution of finite positive contrast
+A common prior variance $s_0^2$ and prior degrees of freedom $\nu_0$ are
+estimated from the empirical distribution of finite positive contrast
 variances, following the empirical-Bayes variance-moderation logic of
 differential-expression workflows [@Smyth2004limmaEB; @Ritchie2015limma].
 The moment equations used for this estimation are given in Supplementary Note C.
@@ -1197,8 +1169,8 @@ The moderated standard error and moderated t statistic are
 \end{aligned}
 \end{equation}
 
-Thus the ordinary and moderated tests use the same numerator,
-$\widehat\Delta_\omega$, but different variance estimates.
+The ordinary and moderated tests use the same numerator,
+$\widehat\Delta_\omega$, and differ only in the variance estimate.
 
 The two-sided moderated p-value is then
 
@@ -1214,21 +1186,16 @@ The two-sided moderated p-value is then
   \right\}.
 \end{equation}
 
-This empirical-Bayes moderation leaves the response scale, fitted effect,
-centering operation, and low-rank background term unchanged; only the contrast
-variance is stabilized by borrowing strength across all tested
-reporter-perturbation pairs. Setting the testing stage to the ordinary
-$t$ statistic removes this moderation while leaving
-$\widehat{\Delta y}_{aj}^{\mathrm{spec},k}$ unchanged.
+Empirical-Bayes moderation stabilizes the contrast variance by borrowing
+strength across all tested reporter-perturbation pairs.
 
 #### Multiple Testing
 
 Let $\Omega$ denote the fitted set of reporter-perturbation contrasts after
 filtering. The model-based default treats $\Omega$ as one hypothesis family and
 adjusts the moderated p-values globally with the Benjamini-Hochberg procedure
-[@BenjaminiHochberg1995]. DStressR also reports reporter-wise adjusted
-p-values; the applications below use this option when it matches the
-screen-specific hit-calling convention.
+[@BenjaminiHochberg1995]. Reporter-wise adjusted p-values are also reported
+for screen-specific hit-calling conventions.
 
 ## Analysis of an E. coli Promoter-Compound Screen
 
@@ -1402,8 +1369,7 @@ Eq.\eqref{eq:ecoli-dstressr-response} directly. DStressR with EVC first construc
 the growth-modeled response for all reporters and then calibrates each tested
 promoter against the matched empty-vector response using the Huber
 background-calibration model in
-Eq.\eqref{eq:background-reporter-calibration}. In both variants, response
-construction precedes promoter-compound effect estimation.
+Eq.\eqref{eq:background-reporter-calibration}.
 
 The downstream model adjusts for replicate and concentration-index position.
 Because the source index increases with dilution, we use a reversed coding
@@ -1694,12 +1660,9 @@ scale,
   \overline{\Delta y}_{\cdot j}^{\mathrm{tot}}(\mathcal T).
 \end{equation}
 
-This section illustrates a use case in which the analyzed response is supplied
-by the established fluorescence promoter-activity workflow in
-Eq.\eqref{eq:pfibox-promoter-activity}. DStressR then contributes the
-downstream differential-analysis layer: explicit total and specific effects,
-moderated uncertainty, multiplicity correction, and diagnostic plots for the
-resulting reporter-perturbation matrix.
+The fitted promoter-activity response is analyzed through total and specific
+effects, moderated uncertainty, multiplicity correction, and diagnostic plots
+for the resulting reporter-perturbation matrix.
 
 ### Clustering and Inference Results
 
@@ -1753,14 +1716,11 @@ therefore give two coordinated views of the reanalysis.
 `DStressR` addresses a recurrent statistical problem in arrayed reporter
 screens: a noisy reporter measurement and a matched growth measurement must be
 combined into interpretable reporter-perturbation effects, while accounting for
-technical design and multiplicity. The framework separates this task into
-response construction, effect estimation, uncertainty moderation, and hit
-calling. This separation is important because choices that are often bundled in
-screen-specific workflows correspond to distinct statistical targets. A growth
-exponent defines the reporter response scale, empty-vector calibration defines
-a response-level background correction, total effects compare perturbations
-with a reference condition, and centered specific effects compare a reporter
-with the perturbation-wide response of the reporter panel.
+technical design and multiplicity. A growth exponent defines the reporter
+response scale, empty-vector calibration defines a response-level background
+correction, total effects compare perturbations with a reference condition, and
+centered specific effects compare a reporter with the perturbation-wide
+response of the reporter panel.
 
 The main applications and supplementary use cases illustrate why this
 decomposition is useful. In the promoter-compound screen, DStressR preserves
@@ -1771,18 +1731,14 @@ deviation after growth adjustment, technical normalization, and centering
 across promoters. In the PFIbox promoter-reporter screen, the response is
 derived from an established dynamic promoter-activity estimator constructed
 from fluorescence traces, promoterless background controls, and
-constitutive-reporter biomass proxies. This example shows that DStressR can
-operate on supplied promoter-activity responses when the biologically
-meaningful response scale has already been defined upstream. In the
+constitutive-reporter biomass proxies. In the
 Kochanowski promoter-activity compendium, supplied activity summaries are
 represented as a DStressR response matrix (Supplementary Note G). This analysis
 shows that total effects and low-rank decomposition recover a published global
 growth-associated promoter-activity axis and make the residual
 condition-specific structure explicit. In the Dash fluorescence/OD experiment,
 response-scale estimation uses a larger no-stress panel and inference uses the
-targeted weak-stress design (Supplementary Note G). This example illustrates
-how DStressR can use data-rich calibration experiments with a targeted testing
-panel.
+targeted weak-stress design (Supplementary Note G).
 
 The framework is also intended to make global perturbation effects visible.
 Many chemical or stress conditions affect growth,
@@ -1808,18 +1764,15 @@ effect matrix. Diagnostic plots of effects, variances, p-values, and hit
 overlaps can therefore be interpreted as different views of the same fitted
 model.
 
-DStressR is therefore most naturally used as the differential-response layer in
-a larger high-throughput workflow. Upstream steps include plate-reader or image
-processing, quality control, replicate filtering, and growth-curve summarization
-or modeling. Existing tools and workflows address parts of this upstream layer,
+DStressR fits into larger high-throughput workflows that include plate-reader
+or image processing, quality control, replicate filtering, and growth-curve
+summarization or modeling. Existing tools and workflows address upstream tasks,
 including colony-screen analysis and microbial growth modeling
 [@Kritikos2017Iris; @Doherty2023ChemGAPP; @Sprouffske2016Growthcurver;
 @DGrowthR; @Angaroni2025Kinbiont; @Williams2025ChemicalGenomicsWorkflow].
-Downstream steps include annotation of significant reporter-perturbation pairs,
+Subsequent steps include annotation of significant reporter-perturbation pairs,
 comparison with known regulatory modules, pathway or network visualization, and
-selection of candidates for validation. DStressR sits between these layers: it
-defines the response scale and the inferential target that downstream biology
-will interpret.
+selection of candidates for validation.
 
 Several limitations remain. First, promoter-wise linear models make the
 specific-effect variance use a cross-promoter independence approximation.
