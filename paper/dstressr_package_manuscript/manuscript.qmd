@@ -195,12 +195,17 @@ large luminescence promoter-compound screen with matched empty-vector controls
 [@Binsfeld2025PLoSBiol], comparing response construction and hit calls with the
 published workflow. Second, we use a high-density fluorescence promoter-reporter
 screen from the PFIbox study [@French2018PFIbox], analyzing image-derived
-promoter-activity time series. Additional supplementary analyses use a summarized promoter-activity
-compendium [@Kochanowski2017PromoterScaling] and a fluorescence/OD
-regulator-stress experiment [@Dash2024GlobalRegulators]. The datasets span
+promoter-activity time series. We also consider the processed
+promoter-activity compendium of Kochanowski et al. and the paired
+fluorescence/OD global-regulator experiment of Dash et al. in supplementary
+use cases (Suppl. Note G) [@Kochanowski2017PromoterScaling;
+@Dash2024GlobalRegulators]. The datasets span
 common screen geometries, ranging from small reporter panels
 measured against many perturbations to large reporter libraries measured
-under a smaller set of perturbation conditions (see Suppl. Table 5).
+under a smaller set of perturbation conditions (see Suppl. Table 5), thus
+illustrating the scalability and versatility of the `DStressR` framework. The
+manuscript and all analyses are fully reproducible and available on GitHub
+<https://github.com/muellsen/DStressR>.
 
 ## Statistical Framework {#sec-statistical-framework}
 
@@ -266,18 +271,14 @@ summaries can be viewed as matrices
 
 In Eq.\eqref{eq:balanced-reporter-growth-matrices},
 $\mathcal L_{uh}$ and $\mathcal G_{uh}$ are the reporter and growth
-summaries for promoter-replicate unit $u$ in physical assay column $h$.
-In colony-array experiments, the same notation applies after replacing wells
-by colony positions or other repeated spatial assay units.
-
-Control observations are measured instances of the corresponding reporter strains on
-particular plates, batches, days, and replicate contexts. We therefore use a
-long-format analysis table, so the balanced matrix representation may be
-incomplete. The long-format table is obtained by unfolding the retained matrix
-entries. Thus, for row
-$i=1,\ldots,M$, let $u_i$ be the corresponding promoter-replicate unit and
-$h_i$ the physical assay column. The observed reporter and growth summaries are
-$l_i=\mathcal L_{u_i h_i}$ and $g_i=\mathcal G_{u_i h_i}$.
+summaries for promoter-replicate unit $u$ in physical assay column $h$. In
+colony-array experiments, rows instead represent repeated spatial assay units.
+For analysis, the retained matrix entries are unfolded into a long-format
+table with rows $i=1,\ldots,M$: $u_i$ and $h_i$ identify the corresponding
+assay unit and physical assay column, and $l_i=\mathcal L_{u_i h_i}$ and
+$g_i=\mathcal G_{u_i h_i}$ are the observed summaries. This representation
+retains the plate, batch, day, and replicate context of each control
+observation and accommodates incomplete filtered designs.
 
 The primary reporter measurement $l_i$ and growth measurement $g_i$ are positive
 time-series summaries. They may be endpoint measurements at a fixed analysis
@@ -289,23 +290,16 @@ including promoter-activity (PA) workflows [@Zaslaver2006ReporterLibrary],
 the upstream processing only provides a scalar response that effectively combines
 reporter and growth measurements into a single quantity.
 
-For the same row, we use $a_i$ for the corresponding promoter, $j_i$ for the
-modeled compound or reference condition induced by $h_i$, and
-$x_i\in\mathbb R^{d_x}$ for the encoded technical covariates, such as batch,
-plate, day, or replicate effects. Thus $u_i\in\{1,\ldots,N\}$,
-$a_i\in\mathcal A$, and $j_i\in\{0\}\cup\mathcal C$, where condition $0$
-denotes the reference condition after the recorded reference columns have
-been mapped to the assay reference class. The index $u_i$ identifies the
-reporter replicate or repeated colony observation that produced the scalar
-summary; $x_i$ contains variables used only for adjustment in the linear model.
-These variables may encode true experimental replicates, plate or batch
-structure, or repeated spatial measurements, depending on the assay design.
-This distinction is determined by the experimental metadata. A true replicate
-indexes an independent experimental realization. A repeated spatial measurement
-indexes another observation of the same reporter construct under the same assay
-layout.
-A complete filtered design has $M=N(p+p_0)$ rows; in practice, upstream
-filtering may make the table incomplete. The observed data can be written as
+The same row carries promoter index $a_i\in\mathcal A$, modeled condition
+$j_i\in\{0\}\cup\mathcal C$ induced by $h_i$, and encoded technical
+covariates $x_i\in\mathbb R^{d_x}$, such as plate, batch, day, or replicate
+effects; $j_i=0$ denotes the assay reference class. The unit index
+$u_i\in\{1,\ldots,N\}$ identifies either a true replicate, representing an
+independent experimental realization, or a repeated spatial measurement of
+the same reporter construct, as specified by the experimental metadata. The
+covariates $x_i$ adjust for this structure in the linear model. A complete
+filtered design has $M=N(p+p_0)$ rows, although upstream filtering may make the
+table incomplete. The observed data are
 
 \begin{equation}
 \label{eq:observed-data}
@@ -422,12 +416,13 @@ L_i
 \end{equation}
 
 Here $z_i\in\mathbb R^{d_z}$ contains the technical covariates selected for
-reference-response-scale estimation, $\theta_a\in\mathbb R^{d_z}$, and
+response-scale estimation, with coefficient vector
+$\theta_a\in\mathbb R^{d_z}$, while
 $\eta_a,\alpha_a^{\mathrm{raw}},\xi_i\in\mathbb R$. These covariates account
-for plates, batches, replicate labels, or other contexts in which the
-reference observations are measured, and need not match the covariates $x_i$ used for
-promoter-specific effect estimation. Promoters with too few reference observations or
-zero reference-observation growth variation use the global slope.
+for the contexts in which reference observations are measured and may differ
+from the covariates $x_i$ used for effect estimation. Promoters with
+insufficient reference data or no reference-observation growth variation use
+the global slope.
 
 A global reference slope is also estimated from all reference observations by fitting
 
@@ -446,13 +441,12 @@ L_i
   \xi_i.
 \end{equation}
 
-Here $\eta,\alpha_0,\rho^{(0)}_{a_i},\xi_i\in\mathbb R$,
-$z_i,\theta\in\mathbb R^{d_z}$, and $\rho^{(0)}_{a_i}$ is the
-promoter-specific intercept adjustment for observation $i$, encoded with an
-identifiable contrast because the model also contains the intercept $\eta$. To
-stabilize noisy promoter-specific growth-response estimates, DStressR shrinks
-usable raw slopes toward the global slope, following the empirical-Bayes
-principle used in high-throughput genomic assays
+Here $z_i,\theta\in\mathbb R^{d_z}$ and
+$\eta,\alpha_0,\rho^{(0)}_{a_i},\xi_i\in\mathbb R$. The promoter-specific
+intercept adjustment $\rho^{(0)}_{a_i}$ is encoded with an identifiable
+contrast because the model contains the intercept $\eta$. DStressR stabilizes
+usable promoter-specific slopes by shrinking them toward the global slope,
+following the empirical-Bayes principle used in high-throughput genomic assays
 [@Smyth2004limmaEB; @Love2014DESeq2]. Let $\widehat s_a^2$ denote the squared
 standard error of $\widehat\alpha_a^{\mathrm{raw}}$, and let
 $\widehat\tau^2$ denote a positive estimate of between-promoter exponent
@@ -509,13 +503,11 @@ response-level calibration model is
 \end{equation}
 
 Here $b_i,\gamma_{0a},\gamma_{1a},\varepsilon_i^{\mathrm{bg}}\in\mathbb R$.
-The fitted calibration can use ordinary least squares or Huber robust
-regression. The Huber option follows the robust calibration idea used in the
-original *E. coli* analysis [@Binsfeld2025PLoSBiol] and estimates the
-calibration coefficients with Huber's loss [@Huber1981RobustStatistics], using
-iteratively reweighted least squares via `MASS::rlm` [@MASS]. Equivalently, for
-each
-promoter $a\ne e$, the coefficients solve
+Calibration uses ordinary least squares or promoter-wise Huber robust
+regression. The latter follows the calibration used in the original *E. coli*
+analysis [@Binsfeld2025PLoSBiol] and estimates the coefficients with Huber's
+loss [@Huber1981RobustStatistics]. For each promoter $a\ne e$, the robust
+coefficients solve
 
 \begin{equation}
 \label{eq:background-reporter-huber-objective}
@@ -954,43 +946,12 @@ not over the empty-vector reporter:
 \end{aligned}
 \end{equation}
 
-If the empty-vector contribution is modeled as an additive compound-level
-background term, it cancels from the centered promoter-specific contrast:
-
-\begin{equation}
-\label{eq:model-empty-vector-specific-effect}
-\begin{aligned}
-\Delta y_{aj}^{\mathrm{adj}}
-  -
-  \overline{\Delta y}_{j}^{\mathrm{adj}}
-  &=
-  \Delta y_{aj}^{\mathrm{tot}}
-  -
-  \Delta y_{ej}^{\mathrm{evc}}
-  -
-  \frac{1}{n_j}
-  \sum_{a'\in\mathcal A_j}
-  \left(
-    \Delta y_{a'j}^{\mathrm{tot}}
-    -
-    \Delta y_{ej}^{\mathrm{evc}}
-  \right)
-  \\
-  &=
-  \Delta y_{aj}^{\mathrm{tot}}
-  -
-  \frac{1}{n_j}
-  \sum_{a'\in\mathcal A_j}
-  \Delta y_{a'j}^{\mathrm{tot}}.
-\end{aligned}
-\end{equation}
-
-Thus, under the additive background model, the empty-vector term cancels from
-the centered contrast. In a complete design, the resulting promoter-specific
-contrast equals Eq.\eqref{eq:specific-effect}; in an incomplete design, the
-corresponding $n_j$-promoter version is used. For inference on
-background-adjusted total responses, the variance of the adjusted total effect
-is
+Because the additive background shift $\Delta y_{ej}^{\mathrm{evc}}$ enters
+every adjusted promoter response for compound $j$, it cancels during the
+centering in Eq.\eqref{eq:model-empty-vector-centering}. The resulting
+promoter-specific contrast equals Eq.\eqref{eq:specific-effect} in a complete
+design; an incomplete design uses the corresponding $n_j$-promoter mean. For
+inference on background-adjusted total responses, the variance is
 
 \begin{equation}
 \label{eq:model-empty-vector-adjusted-variance}
@@ -1013,11 +974,10 @@ so the centered-effect variance remains Eq.\eqref{eq:specific-effect-variance}.
 For promoter-specific hit calling, the null hypothesis is
 $H_{0,aj}:\Delta y_{aj}^{\mathrm{spec},k}=0$.
 
-Under the additive background model,
-Eq.\eqref{eq:model-empty-vector-specific-effect} equals the rank-zero case of
-Eq.\eqref{eq:rank-adjusted-specific-effect}. With response-level background
-calibration, the null is evaluated after replacing $\widehat y_i$ by
-$\widehat y_i^{\mathrm{bg}}$.
+Under the additive background model, the centered adjusted contrast equals the
+rank-zero case of Eq.\eqref{eq:rank-adjusted-specific-effect}. With
+response-level background calibration, the null is evaluated after replacing
+$\widehat y_i$ by $\widehat y_i^{\mathrm{bg}}$.
 
 Let $\nu_{aj}$ denote the residual degrees of freedom inherited by the fitted
 contrast from the reporter-wise fit, or from the full interaction model when
@@ -1069,8 +1029,9 @@ differential-analysis workflows [@Smyth2004limmaEB; @McCarthy2012edgeRGLM;
 
 #### Moderated Hypothesis Testing
 
-The default test is moderated: the fitted contrast is unchanged, and only the
-raw model-based variance is replaced by a stabilized variance. For each tested
+DStressR uses empirical-Bayes variance moderation by default, borrowing
+information across the complete set of fitted contrasts to stabilize their
+uncertainty while preserving the estimated effects. For each tested
 reporter-perturbation contrast
 $\omega=(a,j)\in\mathcal A^\star\times\mathcal C$, let
 $\widehat\Delta_\omega$ denote the selected numerator and $v_\omega$ its
@@ -1100,12 +1061,11 @@ $\widehat\Delta_\omega=
 $v_\omega=(s_{aj}^{\mathrm{tot}})^2$. When $k>0$, inference is conditional on
 the estimated low-rank background.
 
-The residual degrees of freedom are attached to the fitted contrast. For a
-reporter-wise fit, the contrast $\omega=(a,j)$ inherits the residual degrees of
-freedom $\nu_\omega=\nu_a$ of reporter $a$. In the optional full interaction model, all contrasts inherit the
-residual degrees of freedom of that interaction model. This contrast-specific
-degree-of-freedom accounting is important for unbalanced screens, so sparse or
-aliased reporter-wise fits keep their own reference distributions.
+For a reporter-wise fit, $\omega=(a,j)$ inherits the residual degrees of
+freedom $\nu_\omega=\nu_a$ of reporter $a$; contrasts from the optional full
+interaction model inherit that model's residual degrees of freedom. Thus,
+unbalanced or sparse reporter-wise fits retain their own reference
+distributions.
 
 A common prior variance $s_0^2$ and prior degrees of freedom $\nu_0$ are
 estimated from the empirical distribution of finite positive contrast
@@ -1143,9 +1103,6 @@ The moderated standard error and moderated $t$ statistic are
   \frac{\widehat\Delta_\omega}{\widetilde s_\omega}.
 \end{aligned}
 \end{equation}
-
-The ordinary and moderated tests use the same numerator,
-$\widehat\Delta_\omega$, and differ only in the variance estimate.
 
 The two-sided moderated p-value is then
 
@@ -1343,11 +1300,6 @@ $\mathrm{dose\_level}=5-\mathrm{concentration\_index}$ so that larger values
 denote higher concentration for non-water wells; for water controls, the same
 column records matched layout position. Both variants report one covariate-adjusted total effect per promoter-compound pair using Eq.\eqref{eq:total-contrast-estimate}, compute centered specific effects with Eq.\eqref{eq:implemented-global-specific-estimates}, use no low-rank adjustment, compute empirical-Bayes moderated p-values with Eq.\eqref{eq:moderated-pvalue}, and adjust p-values within promoter at FDR 0.05 to match the original hit-calling rule.
 
-Supplementary Note G.2 applies the same paired-summary response model to GFP
-and OD AUCs. In that analysis, reporter-specific growth-response exponents are
-estimated from a larger no-stress panel before inference is restricted to a
-smaller reporter-window/stress design.
-
 ### Results
 
 **Response-scale construction.** We first compared DStressR's response modeling
@@ -1389,10 +1341,14 @@ promoter-wise variance. PMS, Clarithromycin, Azithromycin, Procaine, and
 Paraquat show stronger promoter heterogeneity on top of their fitted
 compound-level responses.
 
-Supplementary Note G.1 applies rank-1 adjustment to a supplied
-promoter-activity summary matrix. Supplementary Note G.2 compares total,
-specific, and rank-adjusted total effects in a time-windowed fluorescence/OD
-experiment.
+Two additional *E. coli* applications use this diagnostic under distinct data
+regimes. The public Kochanowski promoter-activity compendium supplies processed
+activity summaries and reported standard deviations; our reanalysis examines
+rank-1 structure in this supplied response matrix (Suppl. Note G.1)
+[@Kochanowski2017PromoterScaling]. The Dash global-regulator experiment retains
+matched GFP and OD time series, allowing total, specific, and rank-adjusted
+total effects to be compared across post-ramp-up time windows (Suppl. Note G.2)
+[@Dash2024GlobalRegulators].
 
 ![DStressR effect-matrix estimation and diagnostics for the *E. coli* WT screen. Panels a and b show total promoter-compound effects estimated by Eq.\eqref{eq:total-contrast-estimate}, without EVC and with EVC, respectively. Rows are promoters and columns are compounds. Panels c and d summarize the same total-effect matrices by ranking compounds according to $|\widehat{\overline{\Delta y}}_{j}^{\mathrm{tot}}|$ from Eq.\eqref{eq:implemented-global-specific-estimates} and plotting the variance of $\widehat{\Delta y}_{aj}^{\mathrm{tot}}$ across promoters. The green curve is a non-parametric trend.](../../analysis/outputs/binsfeld_effect_matrix_views/binsfeld_dstressr_effect_matrix_and_variance_diagnostic.png){#fig-binsfeld-effect-matrix-diagnostic width="100%" fig-align="center" fig-pos="htbp"}
 
@@ -1552,10 +1508,11 @@ by extremely low biomass creates an expression spike, following the Zaslaver
 pipeline [@French2018PFIbox; @Zaslaver2006ReporterLibrary]. We keep
 $\mathcal T$ explicit in the response construction.
 
-Supplementary Note G.2 considers a related fluorescence design in which GFP
-and OD traces remain separately available. Their paired AUC summaries enter
-the DStressR response model after reporter-specific growth-response exponents
-have been estimated from a separate no-stress panel.
+We also consider the *E. coli* global-regulator fluorescence experiment of
+Dash et al. (Suppl. Note G.2) [@Dash2024GlobalRegulators]. In these data,
+paired GFP and OD traces remain available, so their windowed AUC summaries
+enter the DStressR response model after reporter-specific growth-response
+exponents have been estimated from a separate no-stress panel.
 
 ### DStressR Effect Estimation from Supplied Promoter-Activity Responses
 
@@ -1612,10 +1569,12 @@ $|\Omega|=54{,}351$ promoter-treatment effects rather than the full
 $np=59{,}301$ grid. Thus, this application has an $n\gg p$ design, with a
 large reporter library measured against a smaller set of treatment levels.
 
-In Supplementary Note G.1, processed promoter-activity summaries and their
-standard deviations are the only available inputs. That analysis uses
-approximate summary-level uncertainty and adds a rank-1 decomposition of the
-total-effect matrix to recover a growth-associated condition axis.
+We also analyze the promoter-activity compendium released by Kochanowski et
+al. (Suppl. Note G.1) [@Kochanowski2017PromoterScaling]. The public data
+provide processed promoter-activity summaries and their reported standard
+deviations, supporting approximate summary-level uncertainty and a rank-1
+decomposition of the total-effect matrix to recover a growth-associated
+condition axis.
 
 ### Results
 
@@ -1674,14 +1633,16 @@ screen, an established dynamic promoter-activity estimator supplies the
 response, and the linear model adjusts for repeated colony position before
 estimating antibiotic-dose effects [@French2018PFIbox].
 
-The supplementary analyses extend these settings. In the Kochanowski
-promoter-activity compendium, supplied activity summaries define the response
-matrix, and reported standard deviations support approximate summary-level
-inference. Total effects and rank-1 decomposition recover the published global
-growth-associated promoter-activity axis and expose residual
-condition-specific structure [@Kochanowski2017PromoterScaling]. In the Dash fluorescence/OD experiment,
-response-scale estimation uses the larger no-stress reporter panel, followed
-by inference in the targeted weak-stress design [@Dash2024GlobalRegulators].
+We also analyze the processed promoter-activity compendium released by
+Kochanowski et al. (Suppl. Note G.1), where supplied activity summaries define
+the response matrix and reported standard deviations support approximate
+summary-level inference. Total effects and rank-1 decomposition recover the
+published global growth-associated promoter-activity axis and expose residual
+condition-specific structure [@Kochanowski2017PromoterScaling]. The Dash et
+al. fluorescence/OD global-regulator experiment (Suppl. Note G.2) retains
+paired time series, allowing response-scale estimation from the larger
+no-stress reporter panel before inference in the targeted weak-stress design
+[@Dash2024GlobalRegulators].
 
 Global perturbation effects remain explicit in the fitted effect matrix. Many
 chemical or stress conditions affect growth,
@@ -1738,10 +1699,12 @@ estimation [@Morris1983EmpiricalBayes], trend-aware and robust variance
 moderation [@Law2014Voom; @Phipson2016RobustEB], permutation-based calibration
 for small designs [@Ernst2004Permutation; @PhipsonSmyth2010Permutation], and
 joint propagation of growth-model uncertainty into differential-response
-inference [@MurphyTopel1985TwoStep]. These extensions define directions for
-future methodological development. In its current form, `DStressR` already
-provides a valuable, principled, scalable, and reproducible framework for
-response modeling and hit calling in large-scale chemical genomics screens.
+inference [@MurphyTopel1985TwoStep].
+
+In summary, `DStressR` establishes a principled,
+scalable, and reproducible statistical foundation for response modeling,
+effect decomposition, and calibrated hit discovery in large-scale chemical
+genomics screens.
 
 ## Availability and Reproducibility
 
