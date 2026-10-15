@@ -694,7 +694,7 @@ if (file.exists(comparison_file)) {
       color = "white",
       linewidth = 0.2
     ) +
-    ggplot2$facet_wrap(ggplot2$vars(method), nrow = 1, scales = "free_y") +
+    ggplot2$facet_wrap(ggplot2$vars(method), nrow = 1) +
     ggplot2$scale_x_continuous(breaks = seq(0, 1, by = 0.5)) +
     ggplot2$coord_cartesian(xlim = c(0, 1)) +
     ggplot2$theme_light(base_size = 11) +
