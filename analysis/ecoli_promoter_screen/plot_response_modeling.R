@@ -1,5 +1,7 @@
 source(file.path("analysis", "_helpers.R"))
+source(file.path("analysis", "_paper_artifacts.R"))
 load_destress_package()
+set.seed(1) # Reproducible label placement only.
 
 if (!requireNamespace("ggplot2", quietly = TRUE)) {
   stop("Package `ggplot2` is required for Binsfeld modeling-step plots.", call. = FALSE)
@@ -22,60 +24,10 @@ panel_label <- function(label, size = 18) {
     gp = grid::gpar(fontsize = size, fontface = "bold", col = "#111827")
   )
 }
-
-load_binsfeld_paper_data()
 out_dir <- analysis_output_dir("binsfeld_modeling_steps")
-evc_method_dir <- analysis_output_dir("binsfeld_evc_calibrated")
-
-wt_auc <- binsfeld_reporter_auc[
-  binsfeld_reporter_auc$strain == "WT" &
-    binsfeld_reporter_auc$removed == "No",
-]
-
-prepare_binsfeld <- function(growth_exponent) {
-  prepare_assay(
-    wt_auc,
-    reporter = "promoter",
-    perturbation = "compound",
-    control = "Water",
-    lux = "lux_auc",
-    growth = "od_auc",
-    growth_exponent = growth_exponent,
-    batch = "dose_level",
-    replicate = "replicate",
-    growth_covariates = "replicate",
-    numeric_covariates = "dose_level"
-  )
-}
-
-modeled <- prepare_binsfeld("estimate")
-alpha1 <- prepare_binsfeld(1)
-evc_huber <- prepare_assay(
-  wt_auc,
-  reporter = "promoter",
-  perturbation = "compound",
-  control = "Water",
-  lux = "lux_auc",
-  growth = "od_auc",
-  growth_exponent = "estimate",
-  batch = "dose_level",
-  replicate = "replicate",
-  growth_covariates = "replicate",
-  numeric_covariates = "dose_level",
-  background_reporter = "EVC",
-  background_method = "huber",
-  background_by = c("compound", "dose_level", "replicate")
-)
-
-growth_parameters <- attr(modeled, "destress")$growth_exponent_fit
-utils::write.table(
-  growth_parameters,
-  file.path(out_dir, "binsfeld_growth_parameter_estimates.tsv"),
-  sep = "\t",
-  row.names = FALSE,
-  quote = FALSE
-)
-
+artifact <- read_paper_artifact(file.path(out_dir, "binsfeld_response_paper.rds"))
+invisible(list2env(artifact$parameters, environment()))
+invisible(list2env(artifact$diagnostics, environment()))
 reporter_order <- c("acrABp", "marRABp", "micFp", "ompFp", "robp", "soxSp", "tolCp")
 parameter_reporter_order <- c("EVC", reporter_order)
 plot_growth_parameters <- growth_parameters[
@@ -119,22 +71,11 @@ growth_plot <- ggplot2$ggplot(
     legend.position = "bottom"
   ) +
   ggplot2$labs(
-    x = expression(alpha[g]),
+    x = expression(alpha[a]),
     y = "Reporter promoter",
     color = NULL,
     shape = NULL
   )
-
-background_calibration <- attr(evc_huber, "destress")$background_fit
-if (!is.null(background_calibration)) {
-  utils::write.table(
-    background_calibration,
-    file.path(out_dir, "binsfeld_evc_background_calibration.tsv"),
-    sep = "\t",
-    row.names = FALSE,
-    quote = FALSE
-  )
-}
 
 evc_slope_plot <- ggplot2$ggplot(
   background_calibration,
@@ -305,102 +246,7 @@ parameter_plot <- ggplot2$ggplot(
     shape = NULL
   )
 
-response_matrix <- function(assay) {
-  tab <- assay[, c("promoter", "compound", ".response")]
-  means <- stats::aggregate(.response ~ promoter + compound, tab, mean, na.rm = TRUE)
-  control <- means[means$compound == "Water", c("promoter", ".response")]
-  names(control)[2] <- "control_response"
-  means <- merge(means, control, by = "promoter", all.x = TRUE, sort = FALSE)
-  means$delta_response <- means$.response - means$control_response
-  means <- means[means$compound != "Water" & means$promoter != "EVC", ]
-  means
-}
-
-modeled_matrix <- response_matrix(modeled)
-alpha1_matrix <- response_matrix(alpha1)
-evc_huber_matrix <- response_matrix(evc_huber)
-names(modeled_matrix)[names(modeled_matrix) == "delta_response"] <- "modeled_response"
-names(alpha1_matrix)[names(alpha1_matrix) == "delta_response"] <- "alpha1_response"
-names(evc_huber_matrix)[names(evc_huber_matrix) == "delta_response"] <- "evc_huber_response"
-
-score_keys <- unique(wt_auc[, c("well", "drug", "promoter", "replicate", "compound")])
-binsfeld_scores <- binsfeld_reporter_scores[
-  binsfeld_reporter_scores$strain == "WT" &
-    binsfeld_reporter_scores$statistic == "Scores",
-  ,
-  drop = FALSE
-]
-binsfeld_scores <- merge(
-  binsfeld_scores[, c("well", "drug", "promoter", "replicate", "value")],
-  score_keys,
-  by = c("well", "drug", "promoter", "replicate"),
-  all = FALSE,
-  sort = FALSE
-)
-binsfeld_adjusted_response_matrix <- stats::aggregate(
-  value ~ promoter + compound,
-  binsfeld_scores[
-    binsfeld_scores$compound != "Water" &
-      binsfeld_scores$promoter != "EVC" &
-      is.finite(binsfeld_scores$value),
-    ,
-    drop = FALSE
-  ],
-  mean
-)
-names(binsfeld_adjusted_response_matrix)[3] <- "binsfeld_adjusted_response"
-
-matched <- merge(
-  modeled_matrix[, c("promoter", "compound", "modeled_response")],
-  alpha1_matrix[, c("promoter", "compound", "alpha1_response")],
-  by = c("promoter", "compound"),
-  all = FALSE,
-  sort = FALSE
-)
-matched$difference <- matched$modeled_response - matched$alpha1_response
-
-response_construction <- Reduce(
-  function(x, y) merge(x, y, by = c("promoter", "compound"), all = FALSE, sort = FALSE),
-  list(
-    alpha1_matrix[, c("promoter", "compound", "alpha1_response")],
-    modeled_matrix[, c("promoter", "compound", "modeled_response")],
-    evc_huber_matrix[, c("promoter", "compound", "evc_huber_response")],
-    binsfeld_adjusted_response_matrix[, c("promoter", "compound", "binsfeld_adjusted_response")]
-  )
-)
-response_construction$modeled_minus_alpha1 <- response_construction$modeled_response -
-  response_construction$alpha1_response
-response_construction$evc_huber_minus_alpha1 <- response_construction$evc_huber_response -
-  response_construction$alpha1_response
-response_scatter_data <- response_construction
-
-union_file <- file.path(evc_method_dir, "evc_huber_comparison_to_binsfeld_and_default.tsv")
-if (file.exists(union_file)) {
-  union_pairs <- read.delim(union_file, check.names = FALSE, stringsAsFactors = FALSE)
-  union_pairs <- union_pairs[
-    union_pairs$binsfeld_hit | union_pairs$modeled_hit | union_pairs$evc_huber_hit,
-    ,
-    drop = FALSE
-  ]
-  keep_compounds <- sort(unique(union_pairs$compound))
-  matched <- matched[matched$compound %in% keep_compounds, ]
-  response_construction <- response_construction[response_construction$compound %in% keep_compounds, ]
-}
-
-matrix_wide <- stats::reshape(
-  matched[, c("promoter", "compound", "modeled_response")],
-  idvar = "promoter",
-  timevar = "compound",
-  direction = "wide"
-)
-compound_cols <- setdiff(names(matrix_wide), "promoter")
-compound_order <- sub("^modeled_response[.]", "", compound_cols)
-if (length(compound_cols) > 2) {
-  mat <- as.matrix(matrix_wide[, compound_cols, drop = FALSE])
-  rownames(mat) <- matrix_wide$promoter
-  mat[is.na(mat)] <- 0
-  compound_order <- sub("^modeled_response[.]", "", colnames(mat)[stats::hclust(stats::dist(t(mat)))$order])
-}
+compound_order <- artifact$diagnostics$compound_order
 matched$promoter <- factor(matched$promoter, levels = reporter_order)
 matched$compound <- factor(matched$compound, levels = compound_order)
 response_construction$promoter <- factor(response_construction$promoter, levels = reporter_order)
@@ -412,7 +258,7 @@ scatter_long <- rbind(
 	  promoter = response_scatter_data$promoter,
 	  compound = response_scatter_data$compound,
 	  x = response_scatter_data$binsfeld_adjusted_response,
-	  y = response_scatter_data$modeled_response,
+	  y = response_scatter_data$estimated_exponent_response,
 	  comparison = "DStressR without EVC",
 	  stringsAsFactors = FALSE
 	),
@@ -493,7 +339,7 @@ heat_long <- rbind(
   data.frame(
     promoter = matched$promoter,
     compound = matched$compound,
-    response = matched$modeled_response,
+    response = matched$estimated_exponent_response,
     response_type = "Modeled response",
     stringsAsFactors = FALSE
   ),
@@ -518,7 +364,7 @@ response_construction_long <- rbind(
   data.frame(
     promoter = response_construction$promoter,
     compound = response_construction$compound,
-    response = response_construction$modeled_response,
+    response = response_construction$estimated_exponent_response,
     response_type = "DStressR without EVC",
     stringsAsFactors = FALSE
   ),
@@ -542,7 +388,7 @@ response_distribution_data <- rbind(
     stringsAsFactors = FALSE
   ),
   data.frame(
-    response = response_scatter_data$modeled_response,
+    response = response_scatter_data$estimated_exponent_response,
     response_type = "DStressR without EVC",
     stringsAsFactors = FALSE
   ),
@@ -651,7 +497,7 @@ original_distribution_plot <- make_response_distribution_plot(
   expression("Original response " * bar(s)[aj] * " (pseudo-log scale)"),
   x_scale = original_display_scale
 )
-modeled_distribution_plot <- make_response_distribution_plot(
+estimated_exponent_distribution_plot <- make_response_distribution_plot(
   response_distribution_data,
   response_distribution_summary,
   "DStressR without EVC",
@@ -667,7 +513,7 @@ evc_distribution_plot <- make_response_distribution_plot(
 )
 response_distribution_figure <- gridExtra$arrangeGrob(
   gridExtra$arrangeGrob(panel_label("a", size = 15), panel_label("b", size = 15), panel_label("c", size = 15), ncol = 3),
-  gridExtra$arrangeGrob(original_distribution_plot, modeled_distribution_plot, evc_distribution_plot, ncol = 3),
+  gridExtra$arrangeGrob(original_distribution_plot, estimated_exponent_distribution_plot, evc_distribution_plot, ncol = 3),
   ncol = 1,
   heights = c(0.06, 1)
 )
@@ -676,7 +522,7 @@ response_difference_long <- rbind(
   data.frame(
     promoter = response_construction$promoter,
     compound = response_construction$compound,
-    difference = response_construction$modeled_minus_alpha1,
+    difference = response_construction$estimated_exponent_minus_alpha1,
     comparison = "DStressR without EVC minus alpha=1",
     stringsAsFactors = FALSE
   ),
@@ -789,14 +635,14 @@ difference_heatmap <- ggplot2$ggplot(
 
 utils::write.table(
   matched[order(matched$promoter, matched$compound), ],
-  file.path(out_dir, "binsfeld_modeled_alpha1_response_matrix_long.tsv"),
+  file.path(out_dir, "binsfeld_estimated_exponent_alpha1_response_matrix_long.tsv"),
   sep = "\t",
   row.names = FALSE,
   quote = FALSE
 )
 utils::write.table(
   response_construction[order(response_construction$promoter, response_construction$compound), ],
-  file.path(out_dir, "binsfeld_raw_modeled_evc_response_matrix_long.tsv"),
+  file.path(out_dir, "binsfeld_raw_estimated_exponent_evc_response_matrix_long.tsv"),
   sep = "\t",
   row.names = FALSE,
   quote = FALSE
@@ -828,13 +674,13 @@ ggplot2$ggsave(file.path(out_dir, "binsfeld_response_modeling_combined.png"), re
 ggplot2$ggsave(file.path(out_dir, "binsfeld_response_modeling_combined.pdf"), response_modeling_figure, width = 10.8, height = 10.5)
 ggplot2$ggsave(file.path(out_dir, "binsfeld_response_distribution_histograms.png"), response_distribution_figure, width = 11.0, height = 3.8, dpi = 300, bg = "white")
 ggplot2$ggsave(file.path(out_dir, "binsfeld_response_distribution_histograms.pdf"), response_distribution_figure, width = 11.0, height = 3.8, bg = "white")
-ggplot2$ggsave(file.path(out_dir, "binsfeld_raw_modeled_evc_response_heatmaps.png"), response_construction_heatmap, width = 12.5, height = 9.4, dpi = 220)
-ggplot2$ggsave(file.path(out_dir, "binsfeld_raw_modeled_evc_response_heatmaps.pdf"), response_construction_heatmap, width = 12.5, height = 9.4)
+ggplot2$ggsave(file.path(out_dir, "binsfeld_raw_estimated_exponent_evc_response_heatmaps.png"), response_construction_heatmap, width = 12.5, height = 9.4, dpi = 220)
+ggplot2$ggsave(file.path(out_dir, "binsfeld_raw_estimated_exponent_evc_response_heatmaps.pdf"), response_construction_heatmap, width = 12.5, height = 9.4)
 ggplot2$ggsave(file.path(out_dir, "binsfeld_response_minus_raw_heatmaps.png"), response_difference_heatmap, width = 12.5, height = 6.8, dpi = 220)
 ggplot2$ggsave(file.path(out_dir, "binsfeld_response_minus_raw_heatmaps.pdf"), response_difference_heatmap, width = 12.5, height = 6.8)
 ggplot2$ggsave(file.path(out_dir, "binsfeld_matched_response_heatmaps.png"), matched_heatmap, width = 12.5, height = 6.8, dpi = 220)
 ggplot2$ggsave(file.path(out_dir, "binsfeld_matched_response_heatmaps.pdf"), matched_heatmap, width = 12.5, height = 6.8)
-ggplot2$ggsave(file.path(out_dir, "binsfeld_modeled_minus_alpha1_response_heatmap.png"), difference_heatmap, width = 12.5, height = 4.2, dpi = 220)
-ggplot2$ggsave(file.path(out_dir, "binsfeld_modeled_minus_alpha1_response_heatmap.pdf"), difference_heatmap, width = 12.5, height = 4.2)
+ggplot2$ggsave(file.path(out_dir, "binsfeld_estimated_exponent_minus_alpha1_response_heatmap.png"), difference_heatmap, width = 12.5, height = 4.2, dpi = 220)
+ggplot2$ggsave(file.path(out_dir, "binsfeld_estimated_exponent_minus_alpha1_response_heatmap.pdf"), difference_heatmap, width = 12.5, height = 4.2)
 
 message("Wrote E. coli modeling-step figures to: ", out_dir)

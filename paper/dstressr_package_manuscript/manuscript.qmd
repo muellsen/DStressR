@@ -68,9 +68,9 @@ knitr::opts_chunk$set(
 \textsuperscript{2}Institute of Computational Biology, Helmholtz Munich, Munich, Germany;
 \textsuperscript{3}Center for Computational Mathematics, Flatiron Institute, New York, USA.
 \textsuperscript{4}Department of Microbiology, Biocenter, Julius-Maximilians-Universität Würzburg, Würzburg, Germany;
-\textsuperscript{5}Interfaculty Institute of Microbiology and Infection Medicine Tübingen, University of Tübingen, Tübingen, Germany;
-\textsuperscript{6}Cluster of Excellence Controlling Microbes to Fight Infections, University of Tübingen, Tübingen, Germany;
-\textsuperscript{7}Department of Molecular Infection Biology II, Institute of Molecular Infection Biology, Julius-Maximilians-Universität Würzburg, Würzburg, Germany;
+\textsuperscript{5}Department of Molecular Infection Biology II, Institute of Molecular Infection Biology, Julius-Maximilians-Universität Würzburg, Würzburg, Germany;
+\textsuperscript{6}Interfaculty Institute of Microbiology and Infection Medicine Tübingen, University of Tübingen, Tübingen, Germany;
+\textsuperscript{7}Cluster of Excellence Controlling Microbes to Fight Infections, University of Tübingen, Tübingen, Germany;
 
 \textsuperscript{\dagger}Current address: Microbial Automation and Culturomics Core Facility, European Molecular Biology Laboratory, Heidelberg, Germany.
 \textsuperscript{*}Correspondence: ch.mueller@lmu.de.
@@ -162,7 +162,7 @@ global regulation, and condition-specific promoter-activity deviations
 
 ![Overview of a large-scale reporter-screen design. Promoter-reporter strains and a compound/stressor 
 collection are combined in an arrayed screen, producing hit-determination inputs for DStressR and growth-response curves 
-for DGrowthR [@DGrowthR].](../figures/stressregnet-overview-final-v10.png){#fig-overview width="80%" fig-pos="t"}
+for DGrowthR [@DGrowthR].](../figures/reporter_screen_overview.png){#fig-overview width="80%" fig-pos="t"}
 
 The physical scale and geometry of these assays introduce structured technical
 variation, including plate borders, row and column effects, robotic dispensing
@@ -516,11 +516,15 @@ coefficients solve
   \arg\min_{\gamma_0,\gamma_1}
   \sum_{i \in \mathcal I_a^{\mathrm{bg}}}
   \rho_H\!\left(
-    \widehat y_i - \gamma_0 - \gamma_1 b_i
+    \frac{\widehat y_i - \gamma_0 - \gamma_1 b_i}{\widehat\sigma_a^{\mathrm{bg}}}
   \right),
 \end{equation}
 
-where $\rho_H(\cdot)$ is the Huber loss. The calibrated response is the residual
+where $\rho_H(\cdot)$ is the Huber loss with tuning constant 1.345 and
+$\widehat\sigma_a^{\mathrm{bg}}>0$ is the fitted residual scale. The
+implementation uses the iteratively updated, rescaled median absolute
+deviation of residuals in `MASS::rlm`; the objective is evaluated at the
+converged scale. The calibrated response is the residual
 
 \begin{equation}
 \label{eq:background-reporter-residual}
@@ -696,7 +700,7 @@ singular-value decomposition; inference is reported only for fitted
 reporter-perturbation pairs. The rank can be specified by the analyst or
 selected by this diagnostic.
 
-### Model-Based Inference
+### Model-Based Inference {#sec-model-based-inference}
 
 #### Linear Model
 
@@ -979,9 +983,27 @@ rank-zero case of Eq.\eqref{eq:rank-adjusted-specific-effect}. With
 response-level background calibration, the null is evaluated after replacing
 $\widehat y_i$ by $\widehat y_i^{\mathrm{bg}}$.
 
-Let $\nu_{aj}$ denote the residual degrees of freedom inherited by the fitted
-contrast from the reporter-wise fit, or from the full interaction model when
-that option is used. The standard model-based statistic uses the
+Let $\nu_a$ denote the residual degrees of freedom of the fitted reporter
+model. Under the working independence assumption across reporter fits, we
+approximate the degrees of freedom of the variance in
+Eq.\eqref{eq:specific-effect-variance} by Welch--Satterthwaite moment matching
+[@Satterthwaite1946; @Welch1947]:
+
+\begin{equation}
+\label{eq:specific-effect-df}
+\nu_{aj}^{\mathrm{spec}}
+ = \frac{(v_{aj}^{\mathrm{spec}})^2}
+ {\left(\frac{n_j-1}{n_j}\right)^4
+     (v_{aj}^{\mathrm{tot}})^2/\nu_a
+  + n_j^{-4}\sum_{a'\in\mathcal A_j,\ a'\ne a}
+     (v_{a'j}^{\mathrm{tot}})^2/\nu_{a'}}.
+\end{equation}
+
+Effective-degree-of-freedom approximations also support differential-expression
+analysis with mixed models, including `dream` [@Hoffman2021dream]. Here we
+apply moment matching to the sum of reporter-wise variance components.
+For the full interaction model, we use its common residual degrees of freedom
+and joint coefficient covariance. The standard model-based statistic uses the
 centered-effect standard error from Eq.\eqref{eq:specific-effect-variance}:
 
 \begin{equation}
@@ -994,7 +1016,7 @@ t_{aj}
   \qquad
   t_{aj}
   \overset{\mathrm{approx}}{\sim}
-  \operatorname{t}_{\nu_{aj}}
+  \operatorname{t}_{\nu_{aj}^{\mathrm{spec}}}
   \quad\text{under }H_{0,aj}.
 \end{aligned}
 \end{equation}
@@ -1013,7 +1035,7 @@ t_{aj}^{\mathrm{tot},k}
   \qquad
   t_{aj}^{\mathrm{tot},k}
   \overset{\mathrm{approx}}{\sim}
-  \operatorname{t}_{\nu_{aj}}
+  \operatorname{t}_{\nu_a}
   \quad\text{under }H_{0,aj}^{\mathrm{tot},k}.
 \end{aligned}
 \end{equation}
@@ -1061,17 +1083,21 @@ $\widehat\Delta_\omega=
 $v_\omega=(s_{aj}^{\mathrm{tot}})^2$. When $k>0$, inference is conditional on
 the estimated low-rank background.
 
-For a reporter-wise fit, $\omega=(a,j)$ inherits the residual degrees of
-freedom $\nu_\omega=\nu_a$ of reporter $a$; contrasts from the optional full
-interaction model inherit that model's residual degrees of freedom. Thus,
-unbalanced or sparse reporter-wise fits retain their own reference
-distributions.
+For reporter-wise fits, specific-effect tests use
+$\nu_\omega=\nu_{aj}^{\mathrm{spec}}$ from
+Eq.\eqref{eq:specific-effect-df}, and total-effect tests use
+$\nu_\omega=\nu_a$. Contrasts from the full interaction model use its common
+residual degrees of freedom. We construct the specific-effect variance from
+the raw total-effect variances and moderate it once; total-effect moderation
+is performed separately.
 
 A common prior variance $s_0^2$ and prior degrees of freedom $\nu_0$ are
 estimated from the empirical distribution of finite positive contrast
 variances, following the empirical-Bayes variance-moderation logic of
 differential-expression workflows [@Smyth2004limmaEB; @Ritchie2015limma].
-The moment equations used for this estimation are given in Supplementary Note C.
+The moment equations account for individual contrast degrees of freedom
+(Supplementary Note C). This is a working approximation for centered contrasts,
+whose variance estimates share reporter-level residual variances.
 For each reporter-perturbation contrast, the moderated variance can be written
 as a posterior-style average of the contrast-specific variance and the
 empirical prior scale:
@@ -1171,12 +1197,12 @@ reporter-column Z-scores. Let $i\in\{1,\ldots,M\}$ index a
 retained well summary, with promoter label $a_i$, compound label $j_i$, and
 reporter column or replicate label $q_i$. Each WT
 trajectory is summarized by its Area-Under-the-Curve (AUC) over the first 8 hours. 
-We write the resulting growth AUC as $g_i$ and the luminescence AUC as $\ell_i$. 
+We write the resulting growth AUC as $g_i$ and the luminescence AUC as $l_i$.
 Wells with very low growth are removed by setting both summaries to missing 
 when $g_i$ is less than 10% of the plate median. In the retained WT data, 
 both AUC summaries are strictly positive.
 
-The original Lux-growth response is the fixed ratio $R_i^{\mathrm{orig}}=\ell_i/g_i$. The original workflow uses this ratio on its observed scale and uses the empty-vector reporter as a background reference. The published code represents
+The original Lux-growth response is the fixed ratio $R_i^{\mathrm{orig}}=l_i/g_i$. The original workflow uses this ratio on its observed scale and uses the empty-vector reporter as a background reference. The published code represents
 the screen as a wide table with one column per
 reporter-replicate and one row per well position. Let $h_i$ denote the well
 position of observation $i$, let $q_i$ denote its reporter-replicate column,
@@ -1280,7 +1306,7 @@ The DStressR reanalysis uses water as reference condition (16
 observations per reporter). Since all retained Lux and OD AUC values are positive, 
 the log response scale in Eq.\eqref{eq:response-scale} requires no
 pseudo-count (i.e., $\epsilon=0$). In this application,
-$y_i=\log_2(\ell_i)-\widehat\alpha_{a_i}\log_2(g_i)$, where $\ell_i$ and
+$y_i=\log_2(l_i)-\widehat\alpha_{a_i}\log_2(g_i)$, where $l_i$ and
 $g_i$ are Lux and OD AUC summaries. The promoter-specific growth-response
 exponents are estimated from water controls with replicate adjustment and
 shrunken toward a global water-control slope. The response-scaling step is
@@ -1309,7 +1335,7 @@ and smallest for `acrABp` and `tolCp` (@fig-binsfeld-response-construction a), r
 With 16 water-control observations per reporter, shrinkage pulls
 these estimates toward the global water-control slope,
 $\widehat\alpha_0\approx0.379$, yielding exponents that are close to one
-another but far from the fixed-ratio value $\alpha_g=1$. The matched EVC
+another but far from the fixed-ratio value $\alpha_a=1$. The matched EVC
 calibration remains reporter-specific: Huber slopes range from 0.25 for
 `marRABp` to 0.99 for `robp` (@fig-binsfeld-response-construction b), 
 so EVC calibration is not equivalent to subtracting a single compound-level background profile.
@@ -1322,7 +1348,7 @@ that DStressR changes the response geometry through promoter-specific growth
 scaling and EVC calibration. The corresponding response distributions are shown
 in Suppl. Figure 3.
 
-![Response construction in the *E. coli* WT screen. Panel a shows raw reporter-specific water-control slopes and the shrunken growth-response exponents $\widehat\alpha_a$ defined in Eq.\eqref{eq:shrunk-growth-exponent}; these are estimated for all reporters, including the EVC reporter, because response scaling precedes EVC calibration. The dashed vertical line marks $\alpha_g=1$ and the dotted vertical line marks the global water-control slope $\widehat\alpha_0$. Panel b shows reporter-specific EVC calibration slopes $\widehat\gamma_{1a}$ from the Huber calibration model in Eq.\eqref{eq:background-reporter-calibration}--Eq.\eqref{eq:background-reporter-huber-objective}; the EVC row is empty because the EVC reporter serves as the calibration reference. Panels c and d compare promoter-compound responses after DStressR response construction with the original response $\bar{s}_{aj}$ from Eq.\eqref{eq:binsfeld-mean-score}, shown on a pseudo log-scale, without and with EVC, respectively.](../../analysis/outputs/binsfeld_modeling_steps/binsfeld_response_modeling_combined.png){#fig-binsfeld-response-construction width="70%" fig-align="center" fig-pos="htbp"}
+![Response construction in the *E. coli* WT screen. Panel a shows raw reporter-specific water-control slopes and the shrunken growth-response exponents $\widehat\alpha_a$ defined in Eq.\eqref{eq:shrunk-growth-exponent}; these are estimated for all reporters, including the EVC reporter, because response scaling precedes EVC calibration. The dashed vertical line marks $\alpha_a=1$ and the dotted vertical line marks the global water-control slope $\widehat\alpha_0$. Panel b shows reporter-specific EVC calibration slopes $\widehat\gamma_{1a}$ from the Huber calibration model in Eq.\eqref{eq:background-reporter-calibration}--Eq.\eqref{eq:background-reporter-huber-objective}; the EVC row is empty because the EVC reporter serves as the calibration reference. Panels c and d compare promoter-compound responses after DStressR response construction with the original response $\bar{s}_{aj}$ from Eq.\eqref{eq:binsfeld-mean-score}, shown on a pseudo log-scale, without and with EVC, respectively.](../../analysis/outputs/binsfeld_modeling_steps/binsfeld_response_modeling_combined.png){#fig-binsfeld-response-construction width="70%" fig-align="center" fig-pos="htbp"}
 
 **Effect-matrix estimation and diagnostics.** We next estimated total
 promoter-compound effects under both model-based variants
@@ -1355,8 +1381,8 @@ total effects to be compared across post-ramp-up time windows (Suppl. Note G.2)
 **Hit-calling comparison.** We next compare hit calls from the Binsfeld
 reference rule, DStressR without EVC calibration, and DStressR with EVC
 calibration (@fig-binsfeld-discovery-summary). In the original workflow,
-inference is performed on the median-normalized promoter-compound response
-$\bar{s}_{aj}$. DStressR performs inference on the centered specific effects $\widehat{\Delta y}_{aj}^{\mathrm{spec}}$ from Eq.\eqref{eq:implemented-global-specific-estimates}; the corresponding specific-effect matrices are shown in Suppl. Figure 1. Across all promoter-compound pairs,
+the Wilcoxon test compares the standardized well scores $Z_i$ between compound
+and water observations, as defined in Eq.\eqref{eq:binsfeld-wilcox}. DStressR performs inference on the centered specific effects $\widehat{\Delta y}_{aj}^{\mathrm{spec}}$ from Eq.\eqref{eq:implemented-global-specific-estimates}; the corresponding specific-effect matrices are shown in Suppl. Figure 1. Across all promoter-compound pairs,
 the pooled raw p-value histograms summarize the raw p-values from Eq.\eqref{eq:moderated-pvalue} (@fig-binsfeld-discovery-summary a-c), with the two model-based analyses producing more uniformly distributed p-values in the larger bins.
 After multiple testing correction, the Binsfeld workflow calls 53 promoter-compound pairs, 
 compared with 80 for DStressR without EVC and 92 for DStressR with EVC. 
@@ -1370,9 +1396,12 @@ DStressR-with-EVC-only calls, 36 pairs called by both DStressR variants but not
 by the reference rule, and two pairs shared only by the Binsfeld workflow
 and DStressR with EVC.
 
-In the moderation step, the estimated prior degrees of freedom were $\widehat{\nu}_0=11.5$ without EVC
-and $\widehat{\nu}_0=16.5$ with EVC, with residual degrees of freedom
-626 and 625, respectively. In this screen, moderation stabilizes standard errors without
+In the moderation step, the estimated prior degrees of freedom were
+$\widehat{\nu}_0=11.45$ without EVC and $\widehat{\nu}_0=16.38$ with EVC.
+The reporter-model residual degrees of freedom ranged from 626 to 652 and
+625 to 646, respectively; the centered contrasts had median effective degrees
+of freedom 899.8 and 906.3 from Eq.\eqref{eq:specific-effect-df}.
+In this screen, moderation stabilizes standard errors without
 changing the called hit sets. The volcano plots and p-value scatter plots in @fig-binsfeld-discovery-summary
 show that the methods agree on the strongest promoter-compound responses
 but differ near the decision boundary. In particular, the scatter plots (@fig-binsfeld-discovery-summary h--i) 
@@ -1590,9 +1619,9 @@ time-course clusters is shown in @fig-pfibox-clustering-discovery b.
 Eq.\eqref{eq:pfibox-specific-effect}. The pooled raw p-value histogram retains
 a substantial null component but is enriched near zero
 (@fig-pfibox-clustering-discovery c). At reporter-wise FDR $<0.05$, the
-moderated test from Eq.\eqref{eq:moderated-pvalue} identifies 5,103 specific
+moderated test from Eq.\eqref{eq:moderated-pvalue} identifies 5,184 specific
 promoter-treatment effects; using a single Benjamini--Hochberg correction over
-all promoter-treatment pairs gives 3,988 effects. A matched run with ordinary,
+all promoter-treatment pairs gives 4,123 effects. A matched run with ordinary,
 unmoderated standard errors produced a slightly heavier small-p-value tail and
 5,285 reporter-wise FDR calls. Supplementary Note F reports this matched
 moderation diagnostic (@fig-appendix-pfibox-moderation-diagnostic).
@@ -1618,7 +1647,7 @@ its treatment responses are partly aligned with perturbation-wide shifts.
 specific-effect calls from Eq.\eqref{eq:pfibox-specific-effect}, for example
 under trimethoprim-sulfamethoxazole or chloramphenicol treatment.
 
-![DStressR clustering and inference for the PFIbox promoter-activity screen. Panel a shows the colony-position-adjusted total-effect matrix $\widehat{\Delta y}_{aj}^{\mathrm{tot}}(\mathcal T)=\theta_{aj}$ from Eq.\eqref{eq:pfibox-linear-model}, with rows and columns ordered by Ward clustering. Panel b maps the DStressR reporter clusters from panel a to the 12 French et al. time-course clusters for the matched promoters. Panel c shows raw p-values for the centered effects in Eq.\eqref{eq:pfibox-specific-effect}; blue bars mark reporter-wise FDR calls. Panel d shows the corresponding volcano plot, with colors denoting antibiotic identities parsed from treatment labels and shared across dose levels. The y-axis is capped at $-\log_{10}(p)=50$; labels at the cap report the true uncapped value.](../../analysis/outputs/french_pfibox/promoter_activity_subset/pfibox_figure6_composite.png){#fig-pfibox-clustering-discovery width="100%" fig-align="center" fig-pos="htbp"}
+![DStressR clustering and inference for the PFIbox promoter-activity screen. Panel a shows the colony-position-adjusted total-effect matrix $\widehat{\Delta y}_{aj}^{\mathrm{tot}}(\mathcal T)=\theta_{aj}$ from Eq.\eqref{eq:pfibox-linear-model}, with rows and columns ordered by Ward clustering. Panel b maps the DStressR reporter clusters from panel a to the 12 French et al. time-course clusters for the matched promoters. Panel c shows raw p-values for the centered effects in Eq.\eqref{eq:pfibox-specific-effect}; blue bars mark reporter-wise FDR calls. Panel d shows the corresponding volcano plot, with colors denoting antibiotic identities parsed from treatment labels and shared across dose levels. The y-axis is capped at $-\log_{10}(p)=50$; labels at the cap report the true uncapped value.](../../analysis/outputs/french_pfibox/promoter_activity_analysis/pfibox_clustering_and_inference.png){#fig-pfibox-clustering-discovery width="100%" fig-align="center" fig-pos="htbp"}
 
 ## Discussion
 
@@ -2102,13 +2131,9 @@ evc_fit <- fit_destress(
 
 ### Supplementary Note C: Empirical-Bayes Variance Moderation {.unnumbered}
 
-This supplementary note gives the moment calculation used for the prior degrees of
-freedom in the moderated test. The model is the scaled inverse-$\chi^2$
-empirical-Bayes variance model underlying moderated $t$ tests in `limma`
-[@Smyth2004limmaEB; @Ritchie2015limma]. Let $v_\omega$ denote the raw
-model-based variance for tested contrast $\omega$, and let $\nu_\omega$ denote
-the residual degrees of freedom used for the ordinary $t$ statistic. DStressR
-uses
+We estimate the empirical prior using the scaled inverse-$\chi^2$ model of
+@Smyth2004limmaEB. For raw contrast variance $v_\omega$ and ordinary-test
+degrees of freedom $\nu_\omega$, the working model is
 
 \begin{equation}
 \label{eq:appendix-eb-sampling-model}
@@ -2121,25 +2146,22 @@ v_\omega \mid \sigma_\omega^2
   s_0^2 \frac{\nu_0}{\chi^2_{\nu_0}}.
 \end{equation}
 
-For estimating the empirical prior by moments, DStressR uses a representative
-degree of freedom $\nu_\star$ from the tested contrasts, currently
-$\nu_\star=\operatorname{median}_{\omega}\{\nu_\omega:
-\nu_\omega \text{ finite and } \nu_\omega>0\}$.
+For specific effects, $\nu_\omega$ is the effective degree of freedom in
+Eq.\eqref{eq:specific-effect-df}. We account for unequal degrees of freedom
+using the corrected log-variance
 
-This approximation is exact for balanced designs and avoids letting a small
-number of sparse reporter-wise fits determine the empirical-Bayes prior. With
-this representative degree of freedom, the marginal variance estimate follows
-approximately $v_\omega\sim s_0^2 F_{\nu_\star,\nu_0}$.
+\begin{equation}
+\label{eq:appendix-eb-corrected-log-variance}
+z_\omega=\log v_\omega-\psi(\nu_\omega/2)+\log(\nu_\omega/2),
+\end{equation}
 
-On the logarithmic scale, the first two moments are
+where $\psi$ is the digamma function. Under the working model, its moments are
 
 \begin{equation}
 \label{eq:appendix-eb-log-mean}
-\mathbb E\{\log v_\omega\}
+\mathbb E\{z_\omega\}
   =
 \log s_0^2
-  +
-  \psi(\nu_\star/2)-\log(\nu_\star/2)
   -
   \psi(\nu_0/2)+\log(\nu_0/2),
 \end{equation}
@@ -2148,15 +2170,14 @@ and
 
 \begin{equation}
 \label{eq:appendix-eb-log-variance}
-\operatorname{Var}\{\log v_\omega\}
+\operatorname{Var}\{z_\omega\}
   =
-  \psi_1(\nu_\star/2)+\psi_1(\nu_0/2),
+  \psi_1(\nu_\omega/2)+\psi_1(\nu_0/2),
 \end{equation}
 
-where $\psi$ is the digamma function and $\psi_1$ is the trigamma function.
-Writing $\widehat{\operatorname{Var}}\{\log v_\omega\}$ for the empirical
-variance of finite positive log-variance estimates, the prior degrees of
-freedom are estimated by
+where $\psi_1$ is the trigamma function. Let $K$ be the number of contrasts
+with finite positive variances and degrees of freedom. Using their sample
+variance $\widehat{\operatorname{Var}}_\omega(z_\omega)$, we estimate
 
 \begin{equation}
 \label{eq:appendix-eb-prior-df}
@@ -2165,22 +2186,21 @@ freedom are estimated by
   2\,
   \psi_1^{-1}
   \left[
-    \widehat{\operatorname{Var}}\{\log v_\omega\}
+    \widehat{\operatorname{Var}}_\omega(z_\omega)
     -
-    \psi_1(\nu_\star/2)
+    \frac{1}{K}\sum_\omega\psi_1(\nu_\omega/2)
   \right],
 \end{equation}
 
-with a large prior-degree cap when the empirical excess variance is
-non-positive. Given $\widehat{\nu}_0$, the prior variance is estimated as
+with $\widehat\nu_0$ capped at $10^6$ when the empirical excess variance is
+non-positive or the moment estimate exceeds this cap. Given
+$\widehat{\nu}_0$, the prior variance is estimated as
 
 \begin{equation}
 \label{eq:appendix-eb-prior-variance}
 \log \widehat{s}_0^2
   =
-  \overline{\log v_\omega}
-  -
-  \psi(\nu_\star/2)+\log(\nu_\star/2)
+  \overline z
   +
   \psi(\widehat{\nu}_0/2)-\log(\widehat{\nu}_0/2).
 \end{equation}
@@ -2199,8 +2219,12 @@ The moderated variance and moderated statistic are then
   \frac{\widehat{\Delta}_\omega}{\sqrt{\widetilde v_\omega}},
 \end{equation}
 
-and the moderated p-value is evaluated against a
-$t_{\nu_\omega+\widehat{\nu}_0}$ reference distribution.
+and the moderated p-value is evaluated against a working
+$t_{\nu_\omega+\widehat{\nu}_0}$ reference distribution. Centered contrasts
+reuse reporter-level residual variance estimates, and response calibration is
+treated as fixed. The moment calculation and reference distribution therefore
+provide an approximation whose adequacy depends on the design and variance
+structure.
 
 \clearpage
 
@@ -2248,13 +2272,13 @@ union_tbl <- read.delim(
   check.names = FALSE
 )
 union_tbl <- union_tbl[
-  union_tbl$binsfeld_hit | union_tbl$modeled_hit | union_tbl$evc_huber_hit,
+  union_tbl$binsfeld_hit | union_tbl$estimated_exponent_hit | union_tbl$evc_huber_hit,
   ,
   drop = FALSE
 ]
 union_tbl <- union_tbl[, c(
   "promoter", "compound", "evc_huber_class", "mean_z",
-  "binsfeld_padj", "modeled_effect", "modeled_padj_by_reporter",
+  "binsfeld_padj", "estimated_exponent_effect", "estimated_exponent_padj_by_reporter",
   "evc_huber_effect", "evc_huber_padj_by_reporter"
 )]
 union_tbl$evc_huber_class <- shorten_hit_set(union_tbl$evc_huber_class)
@@ -2291,8 +2315,8 @@ support_tbl <- read.delim(
   check.names = FALSE
 )
 support_tbl <- support_tbl[, c(
-  "promoter", "compound", "evc_huber_class", "modeled_effect",
-  "modeled_padj_by_reporter", "evc_huber_effect",
+  "promoter", "compound", "evc_huber_class", "estimated_exponent_effect",
+  "estimated_exponent_padj_by_reporter", "evc_huber_effect",
   "evc_huber_padj_by_reporter", "literature_support", "source"
 )]
 support_tbl$evc_huber_class <- shorten_hit_set(support_tbl$evc_huber_class)
@@ -2390,7 +2414,7 @@ if (knitr::is_latex_output()) {
 ```
 
 The WT *E. coli* screen was small enough to fit the optional full
-promoter-by-compound interaction model described in Section 2.4.
+promoter-by-compound interaction model described in @sec-model-based-inference.
 This is a downstream testing model for the already constructed DStressR
 response. The tested grid
 contains 7 non-empty-vector promoters and 94 non-water compounds, yielding 658
@@ -2443,11 +2467,11 @@ key_pairs <- read.delim(
   check.names = FALSE
 )
 key_pairs <- key_pairs[, c(
-  "promoter", "compound", "binsfeld_hit", "modeled_hit",
+  "promoter", "compound", "binsfeld_hit", "estimated_exponent_hit",
   "evc_huber_hit", "interaction_without_ev_hit", "interaction_with_ev_hit",
-  "modeled_effect", "evc_huber_effect",
+  "estimated_exponent_effect", "evc_huber_effect",
   "interaction_without_ev_effect", "interaction_with_ev_effect",
-  "modeled_padj_by_reporter", "evc_huber_padj_by_reporter",
+  "estimated_exponent_padj_by_reporter", "evc_huber_padj_by_reporter",
   "interaction_without_ev_padj_by_reporter",
   "interaction_with_ev_padj_by_reporter"
 )]
@@ -2464,7 +2488,7 @@ hit_code <- function(ref, no_evc, evc, int_no_evc, int_evc) {
 key_pairs$hit_sets <- mapply(
   hit_code,
   key_pairs$binsfeld_hit,
-  key_pairs$modeled_hit,
+  key_pairs$estimated_exponent_hit,
   key_pairs$evc_huber_hit,
   key_pairs$interaction_without_ev_hit,
   key_pairs$interaction_with_ev_hit,
@@ -2472,9 +2496,9 @@ key_pairs$hit_sets <- mapply(
 )
 key_pairs <- key_pairs[, c(
   "promoter", "compound", "hit_sets",
-  "modeled_effect", "evc_huber_effect",
+  "estimated_exponent_effect", "evc_huber_effect",
   "interaction_without_ev_effect", "interaction_with_ev_effect",
-  "modeled_padj_by_reporter", "evc_huber_padj_by_reporter",
+  "estimated_exponent_padj_by_reporter", "evc_huber_padj_by_reporter",
   "interaction_without_ev_padj_by_reporter",
   "interaction_with_ev_padj_by_reporter"
 )]
@@ -2508,9 +2532,9 @@ of this layer, we refitted the same treatment-level model from
 Eq.\eqref{eq:pfibox-linear-model} and evaluated the same centered contrasts
 with ordinary, unmoderated standard errors. The ordinary test produced a
 slightly heavier small-p-value tail and 5,285 reporter-wise FDR calls,
-compared with 5,103 calls under variance moderation.
+compared with 5,184 calls under variance moderation.
 
-![Moderation diagnostic for the PFIbox promoter-activity screen. The panels compare ordinary t-test and empirical-Bayes moderated raw p-value distributions for the same treatment-level DStressR model in Eq.\eqref{eq:pfibox-linear-model}. Blue bars mark reporter-wise FDR calls from the centered effects in Eq.\eqref{eq:pfibox-specific-effect}.](../../analysis/outputs/french_pfibox/promoter_activity_subset/pfibox_pa_moderation_diagnostic_pvalue_histograms.pdf){#fig-appendix-pfibox-moderation-diagnostic width="85%" fig-align="center" fig-pos="htbp"}
+![Moderation diagnostic for the PFIbox promoter-activity screen. The panels compare ordinary t-test and empirical-Bayes moderated raw p-value distributions for the same treatment-level DStressR model in Eq.\eqref{eq:pfibox-linear-model}. Blue bars mark reporter-wise FDR calls from the centered effects in Eq.\eqref{eq:pfibox-specific-effect}.](../../analysis/outputs/french_pfibox/promoter_activity_analysis/pfibox_pa_moderation_diagnostic_pvalue_histograms.pdf){#fig-appendix-pfibox-moderation-diagnostic width="85%" fig-align="center" fig-pos="htbp"}
 
 \clearpage
 
@@ -2529,28 +2553,38 @@ matrix and use DStressR to recover and extend a published
 matrix-decomposition result from summarized reporter data.
 
 Let $n=64$ denote the number of promoters and let $p=25$ denote the number of
-conditions. For promoter $a\in\{1,\ldots,n\}$ and condition
-$j\in\{0,\ldots,p-1\}$, the available data are the processed promoter activity
+non-reference conditions. For promoter $a\in\{1,\ldots,n\}$ and condition
+$j\in\{0,\ldots,p\}$, the available data are the processed promoter activity
 $A_{aj}>0$, its reported standard deviation $S_{aj}>0$, and the
 condition-specific growth rate $\mu_j$. Thus, the supplied data are
-$A\in\mathbb R_+^{64\times25}$, $S\in\mathbb R_+^{64\times25}$, and
-$\mu\in\mathbb R^{25}$. The glucose condition is the reference condition
-$j=0$. We use the supplied promoter activity on the log scale, $x_{aj}=\log_2(A_{aj})$, with approximate response variance $v_{aj}\approx S_{aj}^2/\{A_{aj}^2(\log 2)^2\}$ from the delta method. The DStressR total effect for condition $j$ is the glucose-relative promoter activity change,
+$A\in\mathbb R_+^{64\times26}$, $S\in\mathbb R_+^{64\times26}$, and
+$\mu\in\mathbb R^{26}$. The glucose condition is the reference condition
+$j=0$. We use the supplied promoter activity on the log scale,
+$x_{aj}=\log_2(A_{aj})$, with the delta-method uncertainty scale
+$v_{aj}=S_{aj}^2/\{A_{aj}^2(\log 2)^2\}$. The supplied $S_{aj}$ are standard
+deviations; without the corresponding replicate counts, they do not determine
+the standard errors of the reported means. We use $v_{aj}$ as a working
+response variance for exploratory summary-level analysis. The DStressR total
+effect for condition $j$ is the glucose-relative promoter activity change,
 
 \begin{equation}
 \label{eq:kochanowski-total-effect}
 \widehat{\Delta y}_{aj}^{\mathrm{tot}}
   =
   x_{aj}-x_{a0},
-  \qquad j=1,\ldots,p-1.
+  \qquad j=1,\ldots,p.
 \end{equation}
 
-The resulting total-effect matrix $T=\{\widehat{\Delta y}_{aj}^{\mathrm{tot}}\}\in\mathbb R^{64\times24}$ from Eq.\eqref{eq:kochanowski-total-effect} contains one row per promoter and one non-reference condition per column. This matrix is the primary object of analysis in this section.
+The resulting total-effect matrix $T=\{\widehat{\Delta y}_{aj}^{\mathrm{tot}}\}\in\mathbb R^{64\times25}$ from Eq.\eqref{eq:kochanowski-total-effect} contains one row per promoter and one non-reference condition per column, giving $np=1{,}600$ contrasts.
 
 ##### Total, Specific, and Rank-1 Adjusted Effect Estimation {.unnumbered}
 
-As in the preceding sections, DStressR also defines a centered specific effect
-by subtracting the condition-wide average total effect across promoters:
+In this summary-level analysis, we compute centered specific effects using an
+inverse-variance-weighted condition-wide mean. Let
+$V_{aj}^{\mathrm{tot}}=v_{aj}+v_{a0}$ be the working total-effect variance,
+assuming independent condition summaries, and define normalized weights
+$w_{aj}=(V_{aj}^{\mathrm{tot}})^{-1}/\sum_{a'=1}^{64}(V_{a'j}^{\mathrm{tot}})^{-1}$.
+The centered effect is
 
 \begin{equation}
 \label{eq:kochanowski-specific-effect}
@@ -2562,9 +2596,8 @@ by subtracting the condition-wide average total effect across promoters:
   \qquad
   \widehat{\overline{\Delta y}}_{j}^{\mathrm{tot}}
   =
-  \frac{1}{64}
   \sum_{a=1}^{64}
-  \widehat{\Delta y}_{aj}^{\mathrm{tot}}.
+  w_{aj}\widehat{\Delta y}_{aj}^{\mathrm{tot}}.
 \end{equation}
 
 This contrast asks which promoters deviate from the average response to a
@@ -2577,7 +2610,7 @@ global condition axis related to growth-rate-dependent regulation, with
 condition-specific deviations for selected promoters. We fit the summary-level
 workflow with glucose as reference and decomposed the total-effect matrix from
 Eq.\eqref{eq:kochanowski-total-effect} into a rank-1 background component and
-a residual total-effect matrix. Specifically, for the non-reference total-effect matrix $T$, we compute the rank-1 approximation $\widehat B^{(1)}=\widehat d_1\,\widehat u_1\widehat v_1^\top$, where $\widehat d_1$ is the leading singular value and $\widehat u_1\in\mathbb R^{64}$ and $\widehat v_1\in\mathbb R^{24}$ are the corresponding left and right singular vectors. The rank-adjusted total effect is $\widehat{\Delta y}_{aj}^{\mathrm{tot},1}=\widehat{\Delta y}_{aj}^{\mathrm{tot}}-\widehat B^{(1)}_{aj}$. The rank-1 DStressR perturbation score closely reproduces the first singular
+a residual total-effect matrix. Specifically, for the non-reference total-effect matrix $T$, we compute the rank-1 approximation $\widehat B^{(1)}=\widehat d_1\,\widehat u_1\widehat v_1^\top$, where $\widehat d_1$ is the leading singular value and $\widehat u_1\in\mathbb R^{64}$ and $\widehat v_1\in\mathbb R^{25}$ are the corresponding left and right singular vectors. The rank-adjusted total effect is $\widehat{\Delta y}_{aj}^{\mathrm{tot},1}=\widehat{\Delta y}_{aj}^{\mathrm{tot}}-\widehat B^{(1)}_{aj}$. The rank-1 DStressR perturbation score closely reproduces the first singular
 vector reported by Kochanowski et al. After sign alignment, the Pearson
 correlation is 0.998 and the Spearman correlation is 0.97. The same score is
 also associated with growth rate (Pearson correlation 0.75, Spearman
@@ -2589,8 +2622,8 @@ condition-specific deviations (@fig-kochanowski-effect-decomposition).
 
 ##### Approximate Summary-Level Inference Results {.unnumbered}
 
-The supplied standard deviations allow an approximate summary-level uncertainty
-calculation for the processed promoter activities. For any effect target
+The working variances yield approximate uncertainty scores for the processed
+promoter activities. For any effect target
 $\widehat\theta_{aj}$ with approximate variance $\widehat V_{aj}$, we form the
 normal statistic
 
@@ -2606,7 +2639,9 @@ Z_{aj}^{\star}
   \quad Z\sim\mathcal N(0,1).
 \end{equation}
 
-We use the approximate p-values from Eq.\eqref{eq:kochanowski-approx-test} as an exploratory ranking of reporter-condition pairs under three targets: total effects from Eq.\eqref{eq:kochanowski-total-effect}, centered specific effects from Eq.\eqref{eq:kochanowski-specific-effect}, and rank-adjusted total effects $\widehat{\Delta y}_{aj}^{\mathrm{tot},1}$ (@fig-kochanowski-approx-volcano). The volcano
+These normal-reference tail probabilities are conditional on the working
+variance interpretation; their calibration as tests of mean effects cannot be
+established from the supplied standard deviations alone. We use the approximate p-values from Eq.\eqref{eq:kochanowski-approx-test} as an exploratory ranking of reporter-condition pairs under three targets: total effects from Eq.\eqref{eq:kochanowski-total-effect}, centered specific effects from Eq.\eqref{eq:kochanowski-specific-effect}, and rank-adjusted total effects $\widehat{\Delta y}_{aj}^{\mathrm{tot},1}$ (@fig-kochanowski-approx-volcano). The volcano
 plots summarize the processed compendium with variance-aware scores. Total and
 specific effects produce many small approximate p-values because the matrix is
 strongly structured; rank adjustment yields a more focused set of residual
@@ -2652,7 +2687,11 @@ Here the exponent is indexed by the biological reporter $a_i$, not by the
 reporter-window pair. The time windows therefore act as repeated post-ramp-up
 summaries for estimating a reporter-level growth-response relationship. We
 estimate this response scale from the larger no-stress growth-transition panel,
-which contains 18 reporters summarized over the same three windows. The
+which contains 18 reporters summarized over the same three windows. Summaries
+from different windows of the same trajectory are dependent. The calibration
+uses them to estimate a common reporter-level slope; its working regression
+standard errors and the resulting shrinkage weights do not explicitly model
+this within-trajectory dependence. The
 weak-stress inference then receives the four calibrated exponents for Fur,
 MarA, SoxS, and LexA as supplied response-scale parameters.
 In this run, the shrunken estimates were
@@ -2729,8 +2768,8 @@ Benjamini-Hochberg adjustment. The default specific-effect analysis calls 42 of
 structured effect matrix with broad shared signal across the tested
 reporter-window units.
 
-After rank-1 adjustment, the significant rank-adjusted total effects become
-fewer and more selective. This inference result is consistent with the effect
+After rank-1 adjustment, 30 rank-adjusted total effects remain significant.
+This inference result is consistent with the effect
 decomposition in @fig-dryad-effect-decomposition: removing the dominant
 structured Fur mode reduces broad stress-associated signal while retaining
 several expected reporter-stress responses, especially later-window
@@ -2772,16 +2811,16 @@ scale_tbl <- data.frame(
   ),
   Geometry = c("$p>n$", "$n\\gg p$", "$p\\gg n$", "$n>p$", "$n>p$"),
   n = c("7", "1,797", "27", "64", "12"),
-  p = c("94", "33", "2,249", "24", "4"),
-  M = c("5,894", "228,977", "121,198", "1,600 summaries", "180"),
-  Omega = c("658", "54,351", "57,349", "1,536", "48"),
+  p = c("94", "33", "2,249", "25", "4"),
+  M = c("5,894", "228,977", "121,198", "1,664 summaries", "180"),
+  Omega = c("658", "54,351", "57,349", "1,600", "48"),
   check.names = FALSE
 )
 names(scale_tbl)[7] <- "$|\\Omega|$"
 if (knitr::is_latex_output()) {
   cat("\\begingroup\n")
   cat("\\refstepcounter{table}\\label{tbl-application-scale}\n")
-  cat("\\noindent\\textbf{\\tablename~\\thetable.} Scale of the main and supplementary DStressR examples. For the PFIbox row, $p=33$ denotes antibiotic-dose treatment levels corresponding to 15 antibiotic identities. For the Kochanowski row, $p=24$ excludes the glucose reference condition. The Campylobacter row reports the reproduced pair-level median-polish workflow after filtering and replicate aggregation. The Salmonella empty-vector-control workflow in Supplementary Note B follows the same wide-screen geometry, with a small reporter panel measured across more than 2,000 perturbation/library-well levels.\\par\\smallskip\n")
+  cat("\\noindent\\textbf{\\tablename~\\thetable.} Scale of the main and supplementary DStressR examples. For the PFIbox row, $p=33$ denotes antibiotic-dose treatment levels corresponding to 15 antibiotic identities. For the Kochanowski row, $p=25$ excludes the glucose reference condition. The Campylobacter row reports the reproduced pair-level median-polish workflow after filtering and replicate aggregation. The Salmonella empty-vector-control workflow in Supplementary Note B follows the same wide-screen geometry, with a small reporter panel measured across more than 2,000 perturbation/library-well levels.\\par\\smallskip\n")
   cat("\\centering\\scriptsize\\setlength{\\tabcolsep}{3pt}\n")
 }
 cat(knitr::kable(

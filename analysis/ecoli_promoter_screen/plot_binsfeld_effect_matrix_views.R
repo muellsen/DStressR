@@ -8,156 +8,17 @@ ggplot2 <- asNamespace("ggplot2")
 scales <- asNamespace("scales")
 
 out_dir <- analysis_output_dir("binsfeld_effect_matrix_views")
-result_file <- file.path(
-  analysis_project_root(),
-  "analysis", "outputs", "binsfeld_evc_calibrated", "evc_huber_pair_results.tsv"
-)
-if (!file.exists(result_file)) {
-  stop("Missing Binsfeld EVC result table: ", result_file, call. = FALSE)
-}
-
-res <- read_tsv_base(result_file)
-required <- c("promoter", "compound", "specific_effect", "specific_padj_by_reporter")
-missing_cols <- setdiff(required, names(res))
-if (length(missing_cols) > 0) {
-  stop("Missing required columns: ", paste(missing_cols, collapse = ", "), call. = FALSE)
-}
-
-shared_color_limit <- max(abs(as.numeric(res$specific_effect)), na.rm = TRUE)
-style_matrix_plot <- function(plot) {
-  plot +
-    ggplot2$theme(
-      legend.position = "right",
-      legend.justification = "center",
-      legend.background = ggplot2$element_blank(),
-      legend.key.height = grid::unit(14, "mm"),
-      legend.key.width = grid::unit(3, "mm"),
-      legend.title = ggplot2$element_text(size = 7),
-      legend.text = ggplot2$element_text(size = 6),
-      legend.margin = ggplot2$margin(0, 0, 0, 4),
-      legend.spacing = grid::unit(1, "mm"),
-      axis.text.x = ggplot2$element_text(size = 6, margin = ggplot2$margin(t = 1)),
-      axis.text.y = ggplot2$element_text(size = 8),
-      axis.title.x = ggplot2$element_text(size = 9, margin = ggplot2$margin(t = 4))
-    ) +
-    ggplot2$guides(
-      fill = ggplot2$guide_colorbar(
-        title.position = "top",
-        title.hjust = 0.5,
-        label.position = "right",
-        barwidth = grid::unit(3, "mm"),
-        barheight = grid::unit(14, "mm")
-      )
-    )
-}
-
-plots <- list(
-  raw_effect_matrix = plot_response_heatmap(
-    res,
-    value = "specific_effect",
-    reporter = "promoter",
-    perturbation = "compound",
-    show_perturbation_ids = FALSE,
-    top_n_perturbations = Inf,
-    cluster_rows = FALSE,
-    cluster_cols = FALSE,
-    clip_quantile = 1,
-    color_limit = shared_color_limit,
-    title = NULL,
-    subtitle = "",
-    xlab = "Compounds",
-    ylab = NULL,
-    legend_title = "Specific effect"
-  ),
-  clustered_effect_matrix = plot_response_heatmap(
-    res,
-    value = "specific_effect",
-    reporter = "promoter",
-    perturbation = "compound",
-    show_perturbation_ids = FALSE,
-    top_n_perturbations = Inf,
-    cluster_rows = TRUE,
-    cluster_cols = TRUE,
-    clip_quantile = 1,
-    color_limit = shared_color_limit,
-    title = NULL,
-    subtitle = "",
-    xlab = "Compounds",
-    ylab = NULL,
-    legend_title = "Specific effect"
-  ),
-  significant_hit_matrix = plot_hit_heatmap(
-    res,
-    effect = "specific_effect",
-    padj = "specific_padj_by_reporter",
-    reporter = "promoter",
-    perturbation = "compound",
-    show_perturbation_ids = FALSE,
-    top_n_perturbations = Inf,
-    order_rows = "global",
-    order_cols = "input",
-    clip_quantile = 1,
-    color_limit = shared_color_limit,
-    title = NULL,
-    subtitle = "",
-    xlab = "Compounds",
-    ylab = NULL,
-    legend_title = "Specific effect"
-  ),
-  clustered_significant_hit_matrix = plot_hit_heatmap(
-    res,
-    effect = "specific_effect",
-    padj = "specific_padj_by_reporter",
-    reporter = "promoter",
-    perturbation = "compound",
-    show_perturbation_ids = FALSE,
-    top_n_perturbations = Inf,
-    order_rows = "cluster",
-    order_cols = "cluster",
-    clip_quantile = 1,
-    color_limit = shared_color_limit,
-    title = NULL,
-    subtitle = "",
-    xlab = "Compounds",
-    ylab = NULL,
-    legend_title = "Specific effect"
-  )
-)
-plots <- lapply(plots, style_matrix_plot)
-
-for (name in names(plots)) {
-  ggplot2$ggsave(
-    file.path(out_dir, paste0("binsfeld_evc_specific_", name, ".png")),
-    plots[[name]],
-    width = 10.4,
-    height = 4.4,
-    dpi = 320,
-    bg = "white"
-  )
-  ggplot2$ggsave(
-    file.path(out_dir, paste0("binsfeld_evc_specific_", name, ".pdf")),
-    plots[[name]],
-    width = 10.4,
-    height = 4.4
-  )
-}
-
-comparison_file <- file.path(
-  analysis_project_root(),
-  "analysis", "outputs", "binsfeld_evc_calibrated",
-  "evc_huber_comparison_to_binsfeld_and_default.tsv"
-)
-diagnostics_file <- file.path(
-  analysis_project_root(),
-  "analysis", "outputs", "binsfeld_variance_diagnostics",
-  "ecoli_raw_vs_moderated_variance.tsv"
-)
-if (file.exists(comparison_file) && file.exists(diagnostics_file)) {
-  comparison <- read_tsv_base(comparison_file)
-  diagnostics <- read_tsv_base(diagnostics_file)
+source(file.path("analysis", "_paper_artifacts.R"))
+artifact <- read_paper_artifact(file.path(out_dir, "binsfeld_effect_paper.rds"))
+res <- artifact$results$with_EVC
+res$promoter <- res$reporter
+res$compound <- res$perturbation
+comparison <- artifact$annotations$comparison
+diagnostics <- artifact$diagnostics$display
+if (nrow(comparison)) {
   required_comparison <- c(
     "promoter", "compound", "mean_z", "binsfeld_hit",
-    "modeled_hit", "evc_huber_hit"
+    "estimated_exponent_hit", "evc_huber_hit"
   )
   required_diagnostics <- c("workflow", "promoter", "compound", "mean_response")
   missing_comparison <- setdiff(required_comparison, names(comparison))
@@ -177,7 +38,7 @@ if (file.exists(comparison_file) && file.exists(diagnostics_file)) {
     c("promoter", "compound", "mean_response"),
     drop = FALSE
   ]
-  names(total_no_evc)[3] <- "modeled_total_effect"
+  names(total_no_evc)[3] <- "estimated_exponent_total_effect"
   total_evc <- diagnostics[
     diagnostics$workflow == "DStressR with EVC",
     c("promoter", "compound", "mean_response"),
@@ -187,9 +48,9 @@ if (file.exists(comparison_file) && file.exists(diagnostics_file)) {
   comparison <- merge(comparison, total_no_evc, by = c("promoter", "compound"), all.x = TRUE, sort = FALSE)
   comparison <- merge(comparison, total_evc, by = c("promoter", "compound"), all.x = TRUE, sort = FALSE)
 
-  comparison$hit_count <- as.integer(comparison$modeled_hit) +
+  comparison$hit_count <- as.integer(comparison$estimated_exponent_hit) +
     as.integer(comparison$evc_huber_hit)
-  comparison$abs_sum <- abs(comparison$modeled_total_effect) +
+  comparison$abs_sum <- abs(comparison$estimated_exponent_total_effect) +
     abs(comparison$evc_huber_total_effect)
   compound_score <- stats::aggregate(
     cbind(hit_count, abs_sum) ~ compound,
@@ -208,8 +69,8 @@ if (file.exists(comparison_file) && file.exists(diagnostics_file)) {
       method = "DStressR without EVC",
       promoter = comparison$promoter,
       compound = comparison$compound,
-      effect = comparison$modeled_total_effect,
-      hit = comparison$modeled_hit,
+      effect = comparison$estimated_exponent_total_effect,
+      hit = comparison$estimated_exponent_hit,
       stringsAsFactors = FALSE
     ),
     data.frame(
@@ -306,7 +167,7 @@ if (file.exists(comparison_file) && file.exists(diagnostics_file)) {
       method = "DStressR without EVC",
       promoter = comparison$promoter,
       compound = comparison$compound,
-      effect = comparison$modeled_effect,
+      effect = comparison$estimated_exponent_effect,
       stringsAsFactors = FALSE
     ),
     data.frame(

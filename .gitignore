@@ -28,7 +28,7 @@ paper/*
 !paper/figures/
 paper/figures/*
 !paper/figures/Figure2-cropped.pdf
-!paper/figures/stressregnet-overview-final-v10.png
+!paper/figures/reporter_screen_overview.png
 !paper/dstressr_package_manuscript/
 paper/dstressr_package_manuscript/*
 !paper/dstressr_package_manuscript/README.md

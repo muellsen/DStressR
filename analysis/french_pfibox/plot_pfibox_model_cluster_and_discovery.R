@@ -7,6 +7,7 @@
 
 source(file.path("analysis", "_helpers.R"))
 load_destress_package()
+set.seed(1) # Reproducible label placement only.
 
 if (!requireNamespace("ggplot2", quietly = TRUE)) {
   stop("Package `ggplot2` is required for PFIbox figures.", call. = FALSE)
@@ -22,36 +23,14 @@ ggplot2 <- asNamespace("ggplot2")
 gridExtra <- asNamespace("gridExtra")
 scales <- asNamespace("scales")
 
-out_dir <- analysis_output_dir("french_pfibox", "promoter_activity_subset")
-run_tag <- Sys.getenv("PFIBOX_RUN_TAG", unset = "")
-if (!nzchar(run_tag)) {
-  pattern <- "^pfibox_pa_destress_pair_results_.*treatment_replicate_scalable[.]tsv$"
-  candidates <- list.files(out_dir, pattern = pattern, full.names = TRUE)
-  if (!length(candidates)) {
-    candidates <- list.files(out_dir, pattern = "^pfibox_pa_destress_pair_results_.*[.]tsv$", full.names = TRUE)
-  }
-  if (!length(candidates)) {
-    stop("No PFIbox DStressR result table found in ", out_dir, call. = FALSE)
-  }
-  candidates <- candidates[order(file.info(candidates)$mtime, decreasing = TRUE)]
-  result_file <- candidates[1]
-  run_tag <- sub("^pfibox_pa_destress_pair_results_", "", basename(result_file))
-  run_tag <- sub("[.]tsv$", "", run_tag)
-} else {
-  result_file <- file.path(out_dir, paste0("pfibox_pa_destress_pair_results_", run_tag, ".tsv"))
-}
-
-metadata_file <- file.path(out_dir, paste0("pfibox_pa_run_metadata_", run_tag, ".tsv"))
-if (!file.exists(result_file)) {
-  stop("Missing PFIbox DStressR result table: ", result_file, call. = FALSE)
-}
-if (!file.exists(metadata_file)) {
-  stop("Missing PFIbox run metadata: ", metadata_file, call. = FALSE)
-}
-
-res <- read_tsv_base(result_file)
-metadata <- read_tsv_base(metadata_file)
-
+out_dir <- analysis_output_dir("french_pfibox", "promoter_activity_analysis")
+run_tag <- Sys.getenv("PFIBOX_RUN_TAG", "reporters2000_perturbations100_T2-18h_treatment_replicate_scalable")
+source(file.path("analysis", "_paper_artifacts.R"))
+suffix <- Sys.getenv("PFIBOX_CLUSTER_OUTPUT_SUFFIX", "total_effect_ward")
+suffix <- if (nzchar(suffix)) paste0("_", suffix) else ""
+artifact <- read_paper_artifact(file.path(out_dir, paste0("pfibox_paper_diagnostics_", run_tag, suffix, ".rds")))
+res <- artifact$results$default
+metadata <- artifact$annotations$metadata
 required <- c(
   "reporter", "perturbation", "total_effect", "specific_effect",
   "specific_pvalue", "specific_padj_by_reporter"
@@ -110,84 +89,10 @@ panel_label <- function(label, plot) {
   )
 }
 
-make_effect_matrix <- function(tab, value) {
-  d <- tab[, c("reporter", "perturbation", value), drop = FALSE]
-  names(d) <- c("reporter", "perturbation", "effect")
-  d$effect <- as.numeric(d$effect)
-  d <- d[is.finite(d$effect), , drop = FALSE]
-  d <- stats::aggregate(effect ~ reporter + perturbation, d, mean, na.rm = TRUE)
-  reporters <- sort(unique(d$reporter))
-  perturbations <- sort(unique(d$perturbation))
-  mat <- matrix(
-    NA_real_,
-    nrow = length(reporters),
-    ncol = length(perturbations),
-    dimnames = list(reporters, perturbations)
-  )
-  idx <- cbind(match(d$reporter, reporters), match(d$perturbation, perturbations))
-  mat[idx] <- d$effect
-  mat
-}
-
-impute_by_column_mean <- function(mat) {
-  out <- mat
-  col_means <- colMeans(out, na.rm = TRUE)
-  global_mean <- mean(out, na.rm = TRUE)
-  col_means[!is.finite(col_means)] <- global_mean
-  if (!is.finite(global_mean)) {
-    global_mean <- 0
-  }
-  for (j in seq_len(ncol(out))) {
-    miss <- !is.finite(out[, j])
-    if (any(miss)) {
-      out[miss, j] <- col_means[j]
-    }
-  }
-  out[!is.finite(out)] <- global_mean
-  out
-}
-
-matrix_distance <- function(x, method = c("euclidean", "correlation", "cosine")) {
-  method <- match.arg(method)
-  if (method == "euclidean") {
-    return(stats::dist(x))
-  }
-  if (method == "correlation") {
-    cmat <- stats::cor(t(x), use = "pairwise.complete.obs")
-    cmat[!is.finite(cmat)] <- 0
-    diag(cmat) <- 1
-    d <- 1 - cmat
-    d[d < 0] <- 0
-    return(stats::as.dist(d))
-  }
-  norm <- sqrt(rowSums(x^2))
-  sim <- x %*% t(x)
-  denom <- tcrossprod(norm)
-  sim <- sim / denom
-  sim[!is.finite(sim)] <- 0
-  diag(sim) <- 1
-  d <- 1 - sim
-  d[d < 0] <- 0
-  stats::as.dist(d)
-}
-
-mat_all <- make_effect_matrix(res, "total_effect")
-available <- rowSums(is.finite(mat_all))
-mat_all <- mat_all[available >= 5, , drop = FALSE]
-row_score <- apply(abs(mat_all), 1, max, na.rm = TRUE)
-top_n_reporters <- min(top_n_reporters, nrow(mat_all))
-selected_reporters <- names(sort(row_score, decreasing = TRUE))[seq_len(top_n_reporters)]
-mat <- mat_all[selected_reporters, , drop = FALSE]
-
-cluster_mat <- impute_by_column_mean(mat)
-row_hc <- stats::hclust(matrix_distance(cluster_mat, cluster_distance), method = cluster_linkage)
-col_hc <- stats::hclust(matrix_distance(t(cluster_mat), cluster_distance), method = cluster_linkage)
-row_order <- rownames(mat)[row_hc$order]
-col_order <- colnames(mat)[col_hc$order]
-row_cluster <- stats::cutree(row_hc, k = min(n_reporter_clusters, nrow(mat)))[rownames(mat)]
-col_cluster <- stats::cutree(col_hc, k = min(n_perturbation_clusters, ncol(mat)))[colnames(mat)]
-
-ordered_mat <- mat[row_order, col_order, drop = FALSE]
+invisible(list2env(artifact$diagnostics$clustering, environment()))
+cluster_output_suffix <- artifact$provenance$cluster_output_suffix
+cluster_linkage <- artifact$provenance$linkage
+cluster_distance <- artifact$provenance$distance
 plot_long <- as.data.frame(as.table(ordered_mat), stringsAsFactors = FALSE)
 names(plot_long) <- c("reporter", "perturbation", "effect")
 plot_long$reporter <- factor(plot_long$reporter, levels = rev(row_order))
@@ -241,35 +146,6 @@ p_cluster <- ggplot2$ggplot(plot_long, ggplot2$aes(perturbation, reporter, fill 
     )
   )
 
-block_rows <- data.frame(
-  reporter = rownames(mat),
-  reporter_cluster = paste0("R", row_cluster[rownames(mat)]),
-  stringsAsFactors = FALSE
-)
-block_cols <- data.frame(
-  perturbation = colnames(mat),
-  perturbation_cluster = paste0("C", col_cluster[colnames(mat)]),
-  stringsAsFactors = FALSE
-)
-block_long <- as.data.frame(as.table(mat), stringsAsFactors = FALSE)
-names(block_long) <- c("reporter", "perturbation", "effect")
-block_long <- merge(block_long, block_rows, by = "reporter", sort = FALSE)
-block_long <- merge(block_long, block_cols, by = "perturbation", sort = FALSE)
-block_summary <- stats::aggregate(
-  effect ~ reporter_cluster + perturbation_cluster,
-  block_long,
-  mean,
-  na.rm = TRUE
-)
-block_summary$reporter_cluster <- factor(
-  block_summary$reporter_cluster,
-  levels = paste0("R", sort(unique(row_cluster)))
-)
-block_summary$perturbation_cluster <- factor(
-  block_summary$perturbation_cluster,
-  levels = paste0("C", sort(unique(col_cluster)))
-)
-
 p_blocks <- ggplot2$ggplot(block_summary, ggplot2$aes(perturbation_cluster, reporter_cluster, fill = effect)) +
   ggplot2$geom_tile(color = "white", linewidth = 0.45) +
   ggplot2$scale_fill_gradient2(
@@ -303,36 +179,8 @@ cluster_base <- file.path(out_dir, paste0("pfibox_pa_model_clustered_total_effec
 ggplot2$ggsave(paste0(cluster_base, ".png"), cluster_figure, width = 10.4, height = 9.2, dpi = 300, bg = "white")
 ggplot2$ggsave(paste0(cluster_base, ".pdf"), cluster_figure, width = 10.4, height = 9.2, bg = "white")
 
-reporter_clusters <- data.frame(
-  reporter = names(row_cluster),
-  reporter_cluster = paste0("R", row_cluster),
-  row_order = match(names(row_cluster), row_order),
-  max_abs_total_effect = row_score[names(row_cluster)],
-  stringsAsFactors = FALSE
-)
-perturbation_clusters <- data.frame(
-  perturbation = names(col_cluster),
-  perturbation_cluster = paste0("C", col_cluster),
-  column_order = match(names(col_cluster), col_order),
-  mean_abs_total_effect = colMeans(abs(mat), na.rm = TRUE)[names(col_cluster)],
-  stringsAsFactors = FALSE
-)
-utils::write.table(
-  reporter_clusters[order(reporter_clusters$reporter_cluster, reporter_clusters$row_order), ],
-  file.path(out_dir, paste0("pfibox_pa_model_clustered_reporter_clusters_", run_tag, cluster_output_suffix, ".tsv")),
-  sep = "\t", quote = FALSE, row.names = FALSE
-)
-utils::write.table(
-  perturbation_clusters[order(perturbation_clusters$perturbation_cluster, perturbation_clusters$column_order), ],
-  file.path(out_dir, paste0("pfibox_pa_model_clustered_perturbation_clusters_", run_tag, cluster_output_suffix, ".tsv")),
-  sep = "\t", quote = FALSE, row.names = FALSE
-)
-utils::write.table(
-  block_summary[order(block_summary$reporter_cluster, block_summary$perturbation_cluster), ],
-  file.path(out_dir, paste0("pfibox_pa_model_clustered_block_summary_", run_tag, cluster_output_suffix, ".tsv")),
-  sep = "\t", quote = FALSE, row.names = FALSE
-)
-
+reporter_clusters <- artifact$annotations$reporter_clusters
+perturbation_clusters <- artifact$annotations$perturbation_clusters
 discovery <- res
 discovery$specific_pvalue <- as.numeric(discovery$specific_pvalue)
 discovery$specific_padj_by_reporter <- as.numeric(discovery$specific_padj_by_reporter)

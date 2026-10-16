@@ -1,6 +1,6 @@
 # French PFIbox Promoter-Reporter Analysis
 
-This folder contains a DStressR-oriented audit and analysis scaffold for the
+This folder contains the reproducible DStressR analysis of the
 PFIbox dataset of French, Coutts, and Brown (2018), *Cell Systems*,
 doi:10.1016/j.cels.2018.07.004.
 
@@ -71,7 +71,7 @@ PFIBOX_REPORTER_LIMIT=250 \
 PFIBOX_PERTURBATION_LIMIT=8 \
 PFIBOX_T_START_H=2 \
 PFIBOX_T_END_H=18 \
-Rscript analysis/french_pfibox/run_pfibox_promoter_activity_subset.R
+Rscript analysis/french_pfibox/run_promoter_activity_analysis.R
 ```
 
 This script uses
@@ -84,7 +84,7 @@ DStressR results, perturbation diagnostics, and a compact summary figure.
 Generate paper-style plots for the same promoter-activity subset:
 
 ```sh
-PFIBOX_RUN_TAG=reporters250_perturbations8_T2-18h \
+PFIBOX_RUN_TAG=reporters250_perturbations8_T2-18h_treatment_dose_replicate_scalable \
 Rscript analysis/french_pfibox/plot_pfibox_promoter_activity_figures.R
 ```
 
@@ -93,6 +93,22 @@ construction: total and specific effect matrices, a rank-variance diagnostic,
 specific-effect p-value histogram, volcano plot, and a table-style display of
 the strongest specific effects. The response-modeling parameter panels are not
 generated for this workflow because promoter activity is supplied directly.
+
+The manuscript uses `PFIBOX_REPORTER_LIMIT=2000`,
+`PFIBOX_PERTURBATION_LIMIT=100`, and `PFIBOX_DESIGN=replicate`. To repeat only
+model fitting and inference, set `PFIBOX_RESPONSE_TABLE` to the previously
+generated response TSV for the same subset and time window. The script checks
+the cached window and subset bounds. Omit this option to reconstruct responses
+from the deposited time series. Both paths save a fitted RDS object separately
+from the result table; `results(readRDS(fit_path))` repeats inference without
+refitting. Set `PFIBOX_EMPIRICAL_BAYES=false` for the ordinary-test comparison.
+
+For the manuscript Figure 6, run `compute_paper_diagnostics.R` followed by
+`map_french_timecourse_clusters_to_destress.R`, then
+`plot_clustering_and_inference.R`. The diagnostic and mapping artifacts use an
+explicit run tag and cluster suffix; plotting does not select the most recent
+file or recompute clusters. The exact manuscript settings and staged rebuild
+commands are in `analysis/PAPER_FIGURES.md`.
 
 Generated compact tables are written under
 `data-raw/french_pfibox/processed/`; figures and analysis outputs are written

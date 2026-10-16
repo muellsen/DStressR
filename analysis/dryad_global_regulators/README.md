@@ -286,6 +286,8 @@ rank-adjusted total effects:
 
 ```sh
 Rscript analysis/dryad_global_regulators/run_weak_stress_window_rank1_adjustment.R
+Rscript analysis/dryad_global_regulators/plot_rank_adjustment_figures.R
+Rscript analysis/dryad_global_regulators/plot_weak_stress_three_target_inference.R
 ```
 
 This script uses the calibrated-alpha weak-stress input and supplied
@@ -294,6 +296,13 @@ moderated DStressR model twice, first with `background_rank = 0` and then with
 `background_rank = 1`. The rank-1 term is estimated from the reporter-window
 by stress total-effect matrix. The unadjusted total effects remain reported,
 and the rank-adjusted total effect is tested as an additional effect target.
+
+Fitting and figure generation are separate. The analysis saves
+`dash_rank_paper.rds`; the plotting commands read saved results and rank
+diagnostics. Calibration figures are generated independently by
+`plot_calibration_figures.R` after the calibrated pipeline has saved
+`dash_calibration_paper.rds`. See `analysis/PAPER_FIGURES.md` for the full
+paper rebuild sequence.
 
 Current output dimensions:
 

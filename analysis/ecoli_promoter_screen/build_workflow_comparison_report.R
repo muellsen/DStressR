@@ -11,7 +11,7 @@ if (!requireNamespace("base64enc", quietly = TRUE)) {
 ggplot2 <- asNamespace("ggplot2")
 
 load_binsfeld_paper_data()
-out_dir <- analysis_output_dir("binsfeld_three_method")
+out_dir <- analysis_output_dir("binsfeld_workflow_comparison")
 
 hit_key <- function(x) paste(x$promoter, x$compound, sep = "::")
 safe_neglog10 <- function(x) -log10(pmax(as.numeric(x), .Machine$double.xmin))
@@ -71,7 +71,10 @@ run_destress <- function(growth_exponent, label) {
     interaction = FALSE
   )
 
+  saveRDS(fit, file.path(out_dir, paste0("destress_", label, "_fit.rds")))
   out <- results(fit)
+  utils::write.table(out, file.path(out_dir, paste0("destress_", label, "_full_results.tsv")),
+                     sep = "\t", quote = FALSE, row.names = FALSE)
   out$promoter <- out$reporter
   out$compound <- out$perturbation
   out <- out[out$compound != "Water", ]
@@ -97,14 +100,14 @@ run_destress <- function(growth_exponent, label) {
   list(results = out, parameters = model_parameters(fit))
 }
 
-modeled_fit <- run_destress("estimate", "modeled")
-standard_fit <- run_destress(1, "standard")
+estimated_exponent_fit <- run_destress("estimate", "estimated_exponent")
+fixed_exponent_fit <- run_destress(1, "fixed_exponent")
 
-growth_exponents <- modeled_fit$parameters$growth_exponents
+growth_exponents <- estimated_exponent_fit$parameters$growth_exponents
 if (!is.null(growth_exponents) && nrow(growth_exponents) > 0) {
   utils::write.table(
     growth_exponents,
-    file.path(out_dir, "destress_modeled_growth_exponents.tsv"),
+    file.path(out_dir, "destress_estimated_exponent_growth_exponents.tsv"),
     sep = "\t",
     row.names = FALSE,
     quote = FALSE
@@ -154,24 +157,24 @@ comparison <- merge(
     "promoter", "compound", "pair_id", "mean_z", "binsfeld_pvalue",
     "binsfeld_padj", "binsfeld_hit", "binsfeld_direction"
   )],
-  modeled_fit$results,
+  estimated_exponent_fit$results,
   by = c("promoter", "compound", "pair_id"),
   all = TRUE,
   sort = FALSE
 )
 comparison <- merge(
   comparison,
-  standard_fit$results,
+  fixed_exponent_fit$results,
   by = c("promoter", "compound", "pair_id"),
   all = TRUE,
   sort = FALSE
 )
 
 comparison$three_method_class <- apply(
-  comparison[, c("binsfeld_hit", "modeled_hit", "standard_hit")],
+  comparison[, c("binsfeld_hit", "estimated_exponent_hit", "fixed_exponent_hit")],
   1,
   function(x) {
-    names <- c("Binsfeld", "DStressR without EV control", "DStressR alpha=1 sensitivity")[as.logical(x)]
+    names <- c("Binsfeld", "DStressR without EV control", "DStressR fixed alpha=1")[as.logical(x)]
     if (length(names) == 0) {
       "None"
     } else {
@@ -183,7 +186,7 @@ comparison$three_method_class <- apply(
 comparison <- comparison[order(comparison$promoter, comparison$compound), ]
 utils::write.table(
   comparison,
-  file.path(out_dir, "binsfeld_three_method_all_pair_comparison.tsv"),
+  file.path(out_dir, "binsfeld_workflow_comparison_all_pair_comparison.tsv"),
   sep = "\t",
   row.names = FALSE,
   quote = FALSE
@@ -192,17 +195,17 @@ utils::write.table(
 significant_union <- comparison[comparison$three_method_class != "None", c(
   "promoter", "compound", "three_method_class",
   "mean_z", "binsfeld_pvalue", "binsfeld_padj", "binsfeld_direction",
-  "modeled_effect", "modeled_pvalue", "modeled_padj_by_reporter", "modeled_hit_class",
-  "standard_effect", "standard_pvalue", "standard_padj_by_reporter", "standard_hit_class"
+  "estimated_exponent_effect", "estimated_exponent_pvalue", "estimated_exponent_padj_by_reporter", "estimated_exponent_hit_class",
+  "fixed_exponent_effect", "fixed_exponent_pvalue", "fixed_exponent_padj_by_reporter", "fixed_exponent_hit_class"
 )]
 class_levels <- c(
-  "Binsfeld + DStressR without EV control + DStressR alpha=1 sensitivity",
+  "Binsfeld + DStressR without EV control + DStressR fixed alpha=1",
   "Binsfeld + DStressR without EV control",
-  "Binsfeld + DStressR alpha=1 sensitivity",
-  "DStressR without EV control + DStressR alpha=1 sensitivity",
+  "Binsfeld + DStressR fixed alpha=1",
+  "DStressR without EV control + DStressR fixed alpha=1",
   "Binsfeld",
   "DStressR without EV control",
-  "DStressR alpha=1 sensitivity"
+  "DStressR fixed alpha=1"
 )
 significant_union <- significant_union[order(
   factor(significant_union$three_method_class, levels = class_levels),
@@ -211,7 +214,7 @@ significant_union <- significant_union[order(
 ), ]
 utils::write.table(
   significant_union,
-  file.path(out_dir, "binsfeld_three_method_significant_union.tsv"),
+  file.path(out_dir, "binsfeld_workflow_comparison_significant_union.tsv"),
   sep = "\t",
   row.names = FALSE,
   quote = FALSE
@@ -231,17 +234,17 @@ for (class_name in class_levels) {
 
 set_counts <- c(
   binsfeld = sum(comparison$binsfeld_hit),
-  modeled = sum(comparison$modeled_hit),
-  standard = sum(comparison$standard_hit)
+  estimated_exponent = sum(comparison$estimated_exponent_hit),
+  fixed_exponent = sum(comparison$fixed_exponent_hit)
 )
 region_counts <- c(
-  binsfeld_only = sum(comparison$binsfeld_hit & !comparison$modeled_hit & !comparison$standard_hit),
-  modeled_only = sum(!comparison$binsfeld_hit & comparison$modeled_hit & !comparison$standard_hit),
-  standard_only = sum(!comparison$binsfeld_hit & !comparison$modeled_hit & comparison$standard_hit),
-  binsfeld_modeled = sum(comparison$binsfeld_hit & comparison$modeled_hit & !comparison$standard_hit),
-  binsfeld_standard = sum(comparison$binsfeld_hit & !comparison$modeled_hit & comparison$standard_hit),
-  modeled_standard = sum(!comparison$binsfeld_hit & comparison$modeled_hit & comparison$standard_hit),
-  all_three = sum(comparison$binsfeld_hit & comparison$modeled_hit & comparison$standard_hit)
+  binsfeld_only = sum(comparison$binsfeld_hit & !comparison$estimated_exponent_hit & !comparison$fixed_exponent_hit),
+  estimated_exponent_only = sum(!comparison$binsfeld_hit & comparison$estimated_exponent_hit & !comparison$fixed_exponent_hit),
+  fixed_exponent_only = sum(!comparison$binsfeld_hit & !comparison$estimated_exponent_hit & comparison$fixed_exponent_hit),
+  binsfeld_estimated_exponent = sum(comparison$binsfeld_hit & comparison$estimated_exponent_hit & !comparison$fixed_exponent_hit),
+  binsfeld_fixed_exponent = sum(comparison$binsfeld_hit & !comparison$estimated_exponent_hit & comparison$fixed_exponent_hit),
+  estimated_exponent_fixed_exponent = sum(!comparison$binsfeld_hit & comparison$estimated_exponent_hit & comparison$fixed_exponent_hit),
+  all_three = sum(comparison$binsfeld_hit & comparison$estimated_exponent_hit & comparison$fixed_exponent_hit)
 )
 
 count_summary <- data.frame(
@@ -249,29 +252,29 @@ count_summary <- data.frame(
     "Promoter-compound pairs tested",
     "Binsfeld-style significant pairs",
     "DStressR without EV control significant pairs",
-    "DStressR alpha=1 sensitivity significant pairs",
+    "DStressR fixed alpha=1 significant pairs",
     "All three",
     "Binsfeld + DStressR without EV control only",
-    "Binsfeld + alpha=1 sensitivity only",
-    "DStressR without EV control + alpha=1 sensitivity only",
+    "Binsfeld + fixed alpha=1 only",
+    "DStressR without EV control + fixed alpha=1 only",
     "Binsfeld only",
     "DStressR without EV control only",
-    "Alpha=1 sensitivity only",
+    "Fixed alpha=1 only",
     "Union significant by at least one method",
     "None"
   ),
   Count = c(
     nrow(comparison),
     set_counts[["binsfeld"]],
-    set_counts[["modeled"]],
-    set_counts[["standard"]],
+    set_counts[["estimated_exponent"]],
+    set_counts[["fixed_exponent"]],
     region_counts[["all_three"]],
-    region_counts[["binsfeld_modeled"]],
-    region_counts[["binsfeld_standard"]],
-    region_counts[["modeled_standard"]],
+    region_counts[["binsfeld_estimated_exponent"]],
+    region_counts[["binsfeld_fixed_exponent"]],
+    region_counts[["estimated_exponent_fixed_exponent"]],
     region_counts[["binsfeld_only"]],
-    region_counts[["modeled_only"]],
-    region_counts[["standard_only"]],
+    region_counts[["estimated_exponent_only"]],
+    region_counts[["fixed_exponent_only"]],
     nrow(significant_union),
     sum(comparison$three_method_class == "None")
   ),
@@ -279,7 +282,7 @@ count_summary <- data.frame(
 )
 utils::write.table(
   count_summary,
-  file.path(out_dir, "binsfeld_three_method_hit_summary.tsv"),
+  file.path(out_dir, "binsfeld_workflow_comparison_hit_summary.tsv"),
   sep = "\t",
   row.names = FALSE,
   quote = FALSE
@@ -289,7 +292,7 @@ circle_points <- do.call(rbind, lapply(seq_len(3), function(i) {
   centers <- data.frame(
     x = c(0, 1.25, 0.62),
     y = c(0.3, 0.3, -0.78),
-    method = c("Binsfeld", "DStressR without EV control", "DStressR alpha=1 sensitivity")
+    method = c("Binsfeld", "DStressR without EV control", "DStressR fixed alpha=1")
   )
   theta <- seq(0, 2 * pi, length.out = 361)
   data.frame(
@@ -303,31 +306,31 @@ circle_points <- do.call(rbind, lapply(seq_len(3), function(i) {
 venn <- ggplot2$ggplot(circle_points, ggplot2$aes(x, y, fill = method, color = method)) +
   ggplot2$geom_polygon(alpha = 0.22, linewidth = 0.75) +
   ggplot2$annotate("text", x = -0.45, y = 0.45, label = region_counts[["binsfeld_only"]], size = 6.2, fontface = "bold") +
-  ggplot2$annotate("text", x = 1.72, y = 0.45, label = region_counts[["modeled_only"]], size = 6.2, fontface = "bold") +
-  ggplot2$annotate("text", x = 0.62, y = -1.22, label = region_counts[["standard_only"]], size = 6.2, fontface = "bold") +
-  ggplot2$annotate("text", x = 0.62, y = 0.5, label = region_counts[["binsfeld_modeled"]], size = 6.2, fontface = "bold") +
-  ggplot2$annotate("text", x = 0.18, y = -0.35, label = region_counts[["binsfeld_standard"]], size = 6.2, fontface = "bold") +
-  ggplot2$annotate("text", x = 1.07, y = -0.35, label = region_counts[["modeled_standard"]], size = 6.2, fontface = "bold") +
+  ggplot2$annotate("text", x = 1.72, y = 0.45, label = region_counts[["estimated_exponent_only"]], size = 6.2, fontface = "bold") +
+  ggplot2$annotate("text", x = 0.62, y = -1.22, label = region_counts[["fixed_exponent_only"]], size = 6.2, fontface = "bold") +
+  ggplot2$annotate("text", x = 0.62, y = 0.5, label = region_counts[["binsfeld_estimated_exponent"]], size = 6.2, fontface = "bold") +
+  ggplot2$annotate("text", x = 0.18, y = -0.35, label = region_counts[["binsfeld_fixed_exponent"]], size = 6.2, fontface = "bold") +
+  ggplot2$annotate("text", x = 1.07, y = -0.35, label = region_counts[["estimated_exponent_fixed_exponent"]], size = 6.2, fontface = "bold") +
   ggplot2$annotate("text", x = 0.62, y = -0.02, label = region_counts[["all_three"]], size = 6.8, fontface = "bold") +
   ggplot2$annotate("text", x = -0.42, y = 1.45, label = paste0("Binsfeld\n", set_counts[["binsfeld"]], " hits"), size = 3.8, fontface = "bold") +
-  ggplot2$annotate("text", x = 1.67, y = 1.45, label = paste0("Modeled\n", set_counts[["modeled"]], " hits"), size = 3.8, fontface = "bold") +
-  ggplot2$annotate("text", x = 0.62, y = -2.03, label = paste0("Alpha=1\n", set_counts[["standard"]], " hits"), size = 3.8, fontface = "bold") +
+  ggplot2$annotate("text", x = 1.67, y = 1.45, label = paste0("Modeled\n", set_counts[["estimated_exponent"]], " hits"), size = 3.8, fontface = "bold") +
+  ggplot2$annotate("text", x = 0.62, y = -2.03, label = paste0("Alpha=1\n", set_counts[["fixed_exponent"]], " hits"), size = 3.8, fontface = "bold") +
   ggplot2$scale_fill_manual(values = c(
     "Binsfeld" = "#2563eb",
     "DStressR without EV control" = "#dc2626",
-    "DStressR alpha=1 sensitivity" = "#059669"
+    "DStressR fixed alpha=1" = "#059669"
   )) +
   ggplot2$scale_color_manual(values = c(
     "Binsfeld" = "#1d4ed8",
     "DStressR without EV control" = "#b91c1c",
-    "DStressR alpha=1 sensitivity" = "#047857"
+    "DStressR fixed alpha=1" = "#047857"
   )) +
   ggplot2$coord_equal(xlim = c(-1.2, 2.45), ylim = c(-2.25, 1.7), expand = FALSE) +
   ggplot2$theme_void(base_size = 11) +
   ggplot2$theme(legend.position = "none", plot.title = ggplot2$element_text(face = "bold")) +
   ggplot2$labs(
     title = "Three-method WT reporter-screen hit overlap",
-    subtitle = "Promoter-compound pairs called by Binsfeld-style, DStressR without EV control, or fixed alpha=1 sensitivity analyses"
+    subtitle = "Promoter-compound pairs called by Binsfeld-style, DStressR without EV control, or fixed-exponent analyses (alpha=1)"
   )
 
 pvalue_long <- rbind(
@@ -348,36 +351,36 @@ pvalue_long <- rbind(
   data.frame(
     method = "DStressR without EV control",
     pvalue_type = "Raw p-value",
-    pvalue = comparison$modeled_pvalue,
-    hit = comparison$modeled_hit,
+    pvalue = comparison$estimated_exponent_pvalue,
+    hit = comparison$estimated_exponent_hit,
     stringsAsFactors = FALSE
   ),
   data.frame(
     method = "DStressR without EV control",
     pvalue_type = "Promoter-wise BH adjusted",
-    pvalue = comparison$modeled_padj_by_reporter,
-    hit = comparison$modeled_hit,
+    pvalue = comparison$estimated_exponent_padj_by_reporter,
+    hit = comparison$estimated_exponent_hit,
     stringsAsFactors = FALSE
   ),
   data.frame(
-    method = "DStressR alpha=1 sensitivity",
+    method = "DStressR fixed alpha=1",
     pvalue_type = "Raw p-value",
-    pvalue = comparison$standard_pvalue,
-    hit = comparison$standard_hit,
+    pvalue = comparison$fixed_exponent_pvalue,
+    hit = comparison$fixed_exponent_hit,
     stringsAsFactors = FALSE
   ),
   data.frame(
-    method = "DStressR alpha=1 sensitivity",
+    method = "DStressR fixed alpha=1",
     pvalue_type = "Promoter-wise BH adjusted",
-    pvalue = comparison$standard_padj_by_reporter,
-    hit = comparison$standard_hit,
+    pvalue = comparison$fixed_exponent_padj_by_reporter,
+    hit = comparison$fixed_exponent_hit,
     stringsAsFactors = FALSE
   )
 )
 pvalue_long$method <- factor(pvalue_long$method, levels = c(
   "Binsfeld Wilcoxon/Z-score",
   "DStressR without EV control",
-  "DStressR alpha=1 sensitivity"
+  "DStressR fixed alpha=1"
 ))
 pvalue_long$pvalue_type <- factor(pvalue_long$pvalue_type, levels = c(
   "Raw p-value",
@@ -405,7 +408,7 @@ pvalue_hist <- ggplot2$ggplot(pvalue_long, ggplot2$aes(pvalue)) +
   ggplot2$scale_fill_manual(values = c(
     "Binsfeld Wilcoxon/Z-score" = "#2563eb",
     "DStressR without EV control" = "#dc2626",
-    "DStressR alpha=1 sensitivity" = "#059669"
+    "DStressR fixed alpha=1" = "#059669"
   )) +
   ggplot2$theme_light(base_size = 10) +
   ggplot2$theme(
@@ -429,21 +432,21 @@ effect_long <- rbind(
   ),
   data.frame(
     method = "DStressR without EV control specific effect",
-    value = comparison$modeled_effect,
-    hit = comparison$modeled_hit,
+    value = comparison$estimated_exponent_effect,
+    hit = comparison$estimated_exponent_hit,
     stringsAsFactors = FALSE
   ),
   data.frame(
-    method = "DStressR alpha=1 sensitivity specific effect",
-    value = comparison$standard_effect,
-    hit = comparison$standard_hit,
+    method = "DStressR fixed alpha=1 specific effect",
+    value = comparison$fixed_exponent_effect,
+    hit = comparison$fixed_exponent_hit,
     stringsAsFactors = FALSE
   )
 )
 effect_long$method <- factor(effect_long$method, levels = c(
   "Binsfeld mean Z-score",
   "DStressR without EV control specific effect",
-  "DStressR alpha=1 sensitivity specific effect"
+  "DStressR fixed alpha=1 specific effect"
 ))
 effect_hist <- ggplot2$ggplot(effect_long, ggplot2$aes(value)) +
   ggplot2$geom_histogram(
@@ -465,7 +468,7 @@ effect_hist <- ggplot2$ggplot(effect_long, ggplot2$aes(value)) +
   ggplot2$scale_fill_manual(values = c(
     "Binsfeld mean Z-score" = "#2563eb",
     "DStressR without EV control specific effect" = "#dc2626",
-    "DStressR alpha=1 sensitivity specific effect" = "#059669"
+    "DStressR fixed alpha=1 specific effect" = "#059669"
   )) +
   ggplot2$theme_light(base_size = 10) +
   ggplot2$theme(
@@ -481,49 +484,49 @@ effect_hist <- ggplot2$ggplot(effect_long, ggplot2$aes(value)) +
   )
 
 comparison$neglog10_binsfeld <- safe_neglog10(comparison$binsfeld_pvalue)
-comparison$neglog10_modeled <- safe_neglog10(comparison$modeled_pvalue)
-comparison$neglog10_standard <- safe_neglog10(comparison$standard_pvalue)
+comparison$neglog10_estimated_exponent <- safe_neglog10(comparison$estimated_exponent_pvalue)
+comparison$neglog10_fixed_exponent <- safe_neglog10(comparison$fixed_exponent_pvalue)
 
 effect_reference <- rbind(
   data.frame(
     comparison = "DStressR without EV control",
     binsfeld_mean_z = comparison$mean_z,
-    destress_effect = comparison$modeled_effect,
+    destress_effect = comparison$estimated_exponent_effect,
     hit_class = comparison$three_method_class,
     stringsAsFactors = FALSE
   ),
   data.frame(
-    comparison = "DStressR alpha=1 sensitivity",
+    comparison = "DStressR fixed alpha=1",
     binsfeld_mean_z = comparison$mean_z,
-    destress_effect = comparison$standard_effect,
+    destress_effect = comparison$fixed_exponent_effect,
     hit_class = comparison$three_method_class,
     stringsAsFactors = FALSE
   )
 )
 effect_reference$comparison <- factor(effect_reference$comparison, levels = c(
   "DStressR without EV control",
-  "DStressR alpha=1 sensitivity"
+  "DStressR fixed alpha=1"
 ))
 
 pvalue_reference <- rbind(
   data.frame(
     comparison = "DStressR without EV control",
     binsfeld_neglog10_pvalue = comparison$neglog10_binsfeld,
-    destress_neglog10_pvalue = comparison$neglog10_modeled,
+    destress_neglog10_pvalue = comparison$neglog10_estimated_exponent,
     hit_class = comparison$three_method_class,
     stringsAsFactors = FALSE
   ),
   data.frame(
-    comparison = "DStressR alpha=1 sensitivity",
+    comparison = "DStressR fixed alpha=1",
     binsfeld_neglog10_pvalue = comparison$neglog10_binsfeld,
-    destress_neglog10_pvalue = comparison$neglog10_standard,
+    destress_neglog10_pvalue = comparison$neglog10_fixed_exponent,
     hit_class = comparison$three_method_class,
     stringsAsFactors = FALSE
   )
 )
 pvalue_reference$comparison <- factor(pvalue_reference$comparison, levels = c(
   "DStressR without EV control",
-  "DStressR alpha=1 sensitivity"
+  "DStressR fixed alpha=1"
 ))
 
 volcano_data <- rbind(
@@ -536,9 +539,9 @@ volcano_data <- rbind(
   ),
   data.frame(
     method = "DStressR without EV control",
-    effect = comparison$modeled_effect,
-    neglog10_pvalue = comparison$neglog10_modeled,
-    hit = comparison$modeled_hit,
+    effect = comparison$estimated_exponent_effect,
+    neglog10_pvalue = comparison$neglog10_estimated_exponent,
+    hit = comparison$estimated_exponent_hit,
     stringsAsFactors = FALSE
   )
 )
@@ -574,11 +577,11 @@ reference_colors <- c(
   "None" = "#d1d5db",
   "Binsfeld" = "#2563eb",
   "DStressR without EV control" = "#dc2626",
-  "DStressR alpha=1 sensitivity" = "#059669",
+  "DStressR fixed alpha=1" = "#059669",
   "Binsfeld + DStressR without EV control" = "#7c3aed",
-  "Binsfeld + DStressR alpha=1 sensitivity" = "#0891b2",
-  "DStressR without EV control + DStressR alpha=1 sensitivity" = "#ea580c",
-  "Binsfeld + DStressR without EV control + DStressR alpha=1 sensitivity" = "#111827"
+  "Binsfeld + DStressR fixed alpha=1" = "#0891b2",
+  "DStressR without EV control + DStressR fixed alpha=1" = "#ea580c",
+  "Binsfeld + DStressR without EV control + DStressR fixed alpha=1" = "#111827"
 )
 
 response_scatter <- ggplot2$ggplot(
@@ -628,16 +631,16 @@ pvalue_scatter <- ggplot2$ggplot(
 ggplot2$ggsave(file.path(out_dir, "three_method_hit_overlap_venn.png"), venn, width = 7.2, height = 6.8, dpi = 220)
 ggplot2$ggsave(file.path(out_dir, "three_method_pvalue_histograms.png"), pvalue_hist, width = 11, height = 6.2, dpi = 180)
 ggplot2$ggsave(file.path(out_dir, "three_method_effect_histograms.png"), effect_hist, width = 9, height = 7, dpi = 180)
-ggplot2$ggsave(file.path(out_dir, "binsfeld_modeled_volcano_plots.png"), volcano_plot, width = 10, height = 5.2, dpi = 220)
-ggplot2$ggsave(file.path(out_dir, "binsfeld_modeled_volcano_plots.pdf"), volcano_plot, width = 10, height = 5.2)
+ggplot2$ggsave(file.path(out_dir, "binsfeld_estimated_exponent_volcano_plots.png"), volcano_plot, width = 10, height = 5.2, dpi = 220)
+ggplot2$ggsave(file.path(out_dir, "binsfeld_estimated_exponent_volcano_plots.pdf"), volcano_plot, width = 10, height = 5.2)
 ggplot2$ggsave(file.path(out_dir, "binsfeld_reference_effect_scatter.png"), response_scatter, width = 10, height = 5.8, dpi = 180)
 ggplot2$ggsave(file.path(out_dir, "binsfeld_reference_pvalue_scatter.png"), pvalue_scatter, width = 10, height = 5.8, dpi = 180)
 
 appendix <- significant_union
 for (col in c(
-  "mean_z", "binsfeld_pvalue", "binsfeld_padj", "modeled_effect",
-  "modeled_pvalue", "modeled_padj_by_reporter", "standard_effect",
-  "standard_pvalue", "standard_padj_by_reporter"
+  "mean_z", "binsfeld_pvalue", "binsfeld_padj", "estimated_exponent_effect",
+  "estimated_exponent_pvalue", "estimated_exponent_padj_by_reporter", "fixed_exponent_effect",
+  "fixed_exponent_pvalue", "fixed_exponent_padj_by_reporter"
 )) {
   appendix[[col]] <- fmt_num(appendix[[col]])
 }
@@ -650,33 +653,33 @@ for (col in intersect(c("a_raw", "a_raw_se", "alpha_raw", "alpha_raw_se", "alpha
 pairwise_summary <- data.frame(
   Comparison = c(
     "Binsfeld vs DStressR without EV control",
-    "Binsfeld vs DStressR alpha=1 sensitivity",
-    "DStressR without EV control vs DStressR alpha=1 sensitivity"
+    "Binsfeld vs DStressR fixed alpha=1",
+    "DStressR without EV control vs DStressR fixed alpha=1"
   ),
   First = c(
-    sum(comparison$binsfeld_hit & !comparison$modeled_hit),
-    sum(comparison$binsfeld_hit & !comparison$standard_hit),
-    sum(comparison$modeled_hit & !comparison$standard_hit)
+    sum(comparison$binsfeld_hit & !comparison$estimated_exponent_hit),
+    sum(comparison$binsfeld_hit & !comparison$fixed_exponent_hit),
+    sum(comparison$estimated_exponent_hit & !comparison$fixed_exponent_hit)
   ),
   Overlap = c(
-    sum(comparison$binsfeld_hit & comparison$modeled_hit),
-    sum(comparison$binsfeld_hit & comparison$standard_hit),
-    sum(comparison$modeled_hit & comparison$standard_hit)
+    sum(comparison$binsfeld_hit & comparison$estimated_exponent_hit),
+    sum(comparison$binsfeld_hit & comparison$fixed_exponent_hit),
+    sum(comparison$estimated_exponent_hit & comparison$fixed_exponent_hit)
   ),
   Second = c(
-    sum(!comparison$binsfeld_hit & comparison$modeled_hit),
-    sum(!comparison$binsfeld_hit & comparison$standard_hit),
-    sum(!comparison$modeled_hit & comparison$standard_hit)
+    sum(!comparison$binsfeld_hit & comparison$estimated_exponent_hit),
+    sum(!comparison$binsfeld_hit & comparison$fixed_exponent_hit),
+    sum(!comparison$estimated_exponent_hit & comparison$fixed_exponent_hit)
   ),
   stringsAsFactors = FALSE
 )
 
 dstressr_only_lit <- comparison[
-  !comparison$binsfeld_hit & (comparison$modeled_hit | comparison$standard_hit),
+  !comparison$binsfeld_hit & (comparison$estimated_exponent_hit | comparison$fixed_exponent_hit),
   c(
     "promoter", "compound", "three_method_class",
-    "modeled_effect", "modeled_padj_by_reporter",
-    "standard_effect", "standard_padj_by_reporter"
+    "estimated_exponent_effect", "estimated_exponent_padj_by_reporter",
+    "fixed_exponent_effect", "fixed_exponent_padj_by_reporter"
   )
 ]
 dstressr_only_lit$literature_support <- "Hypothesis-generating; no direct prior support identified in this quick review"
@@ -804,15 +807,15 @@ sections <- lapply(class_levels, function(class_name) {
       rows,
       columns = c(
         "promoter", "compound", "mean_z", "binsfeld_padj",
-        "modeled_effect", "modeled_padj_by_reporter",
-        "standard_effect", "standard_padj_by_reporter",
-        "modeled_hit_class", "standard_hit_class"
+        "estimated_exponent_effect", "estimated_exponent_padj_by_reporter",
+        "fixed_exponent_effect", "fixed_exponent_padj_by_reporter",
+        "estimated_exponent_hit_class", "fixed_exponent_hit_class"
       )
     )
   )
 })
 
-report_file <- file.path(out_dir, "binsfeld_three_method_shareable_report.html")
+report_file <- file.path(out_dir, "binsfeld_workflow_comparison_shareable_report.html")
 created <- format(Sys.time(), "%Y-%m-%d %H:%M %Z")
 
 html <- paste0(
@@ -847,7 +850,7 @@ code { background: #f3f4f6; padding: 1px 4px; border-radius: 3px; }
 <div class="meta">Self-contained local report generated ', html_escape(created), ' from the DStressR repository.</div>
 
 <div class="callout">
-<strong>Headline result.</strong> The reproduced Binsfeld-style WT analysis calls ', set_counts[["binsfeld"]], ' hits, DStressR without EV control calls ', set_counts[["modeled"]], ' hits, and the fixed alpha=1 sensitivity analysis calls ', set_counts[["standard"]], ' hits. The three-way intersection contains ', region_counts[["all_three"]], ' promoter-compound pairs.
+<strong>Headline result.</strong> The reproduced Binsfeld-style WT analysis calls ', set_counts[["binsfeld"]], ' hits, DStressR without EV control calls ', set_counts[["estimated_exponent"]], ' hits, and the fixed fixed alpha=1 analysis calls ', set_counts[["fixed_exponent"]], ' hits. The three-way intersection contains ', region_counts[["all_three"]], ' promoter-compound pairs.
 </div>
 
 <h2>Data and Analysis Scope</h2>
@@ -857,7 +860,7 @@ code { background: #f3f4f6; padding: 1px 4px; border-radius: 3px; }
 <ul>
 <li><strong>Binsfeld-style rule:</strong> Wilcoxon tests comparing WT Z-score replicates/concentrations against water controls, promoter-wise BH adjustment, and hits at adjusted p-value &lt; 0.05 with absolute mean Z-score &gt; 1.</li>
 <li><strong>DStressR without EV control:</strong> <code>log2(lux_auc) - alpha_g * log2(od_auc)</code>, with promoter-specific <code>alpha_g</code> estimated from water controls.</li>
-<li><strong>DStressR alpha=1 sensitivity:</strong> fixed <code>log2(lux_auc) - log2(od_auc)</code>, otherwise using the same DStressR model settings as the workflow without EV control.</li>
+<li><strong>DStressR fixed alpha=1:</strong> fixed <code>log2(lux_auc) - log2(od_auc)</code>, otherwise using the same DStressR model settings as the workflow without EV control.</li>
 </ul>
 
 <h3>Estimated Growth-Response Exponents</h3>',
@@ -881,20 +884,20 @@ html_table(
   ),
   max_rows = 40
 ),
-'<p class="small">The complete table is written as <code>analysis/outputs/binsfeld_three_method/dstressr_only_literature_support.tsv</code>.</p>',
+'<p class="small">The complete table is written as <code>analysis/outputs/binsfeld_workflow_comparison/dstressr_only_literature_support.tsv</code>.</p>',
 
 '<h2>Figures</h2>
 <div class="figure"><img alt="Three-method hit overlap Venn diagram" src="', img_uri(file.path(out_dir, "three_method_hit_overlap_venn.png")), '"><div class="caption">Figure 1. Exact promoter-compound hit overlap across the three hit sets.</div></div>
 <div class="figure"><img alt="Three-method p-value histograms" src="', img_uri(file.path(out_dir, "three_method_pvalue_histograms.png")), '"><div class="caption">Figure 2. Raw and promoter-wise BH-adjusted p-value distributions. Colored bars are method-specific hits.</div></div>
 <div class="figure"><img alt="Three-method effect histograms" src="', img_uri(file.path(out_dir, "three_method_effect_histograms.png")), '"><div class="caption">Figure 3. Effect-score distributions for the Binsfeld-style mean Z-score and the two DStressR specific-effect estimates.</div></div>
-<div class="figure"><img alt="Binsfeld and DStressR without EV control volcano plots" src="', img_uri(file.path(out_dir, "binsfeld_modeled_volcano_plots.png")), '"><div class="caption">Figure 4. Volcano plots for the Binsfeld-style analysis and DStressR without EV control.</div></div>
+<div class="figure"><img alt="Binsfeld and DStressR without EV control volcano plots" src="', img_uri(file.path(out_dir, "binsfeld_estimated_exponent_volcano_plots.png")), '"><div class="caption">Figure 4. Volcano plots for the Binsfeld-style analysis and DStressR without EV control.</div></div>
 <div class="grid">
-<div class="figure"><img alt="Binsfeld-referenced DStressR effect scatter" src="', img_uri(file.path(out_dir, "binsfeld_reference_effect_scatter.png")), '"><div class="caption">Figure 5. Binsfeld-style mean Z-score as reference, with DStressR without EV control and alpha=1 sensitivity specific effects shown in separate panels.</div></div>
-<div class="figure"><img alt="Binsfeld-referenced DStressR p-value scatter" src="', img_uri(file.path(out_dir, "binsfeld_reference_pvalue_scatter.png")), '"><div class="caption">Figure 6. Binsfeld-style raw Wilcoxon p-value as reference, with DStressR without EV control and alpha=1 sensitivity raw p-values shown in separate panels.</div></div>
+<div class="figure"><img alt="Binsfeld-referenced DStressR effect scatter" src="', img_uri(file.path(out_dir, "binsfeld_reference_effect_scatter.png")), '"><div class="caption">Figure 5. Binsfeld-style mean Z-score as reference, with DStressR without EV control and fixed alpha=1 specific effects shown in separate panels.</div></div>
+<div class="figure"><img alt="Binsfeld-referenced DStressR p-value scatter" src="', img_uri(file.path(out_dir, "binsfeld_reference_pvalue_scatter.png")), '"><div class="caption">Figure 6. Binsfeld-style raw Wilcoxon p-value as reference, with DStressR without EV control and fixed alpha=1 raw p-values shown in separate panels.</div></div>
 </div>
 
 <h2>Appendix: Union of Significant Pairings</h2>
-<p>The full union table is written as <code>analysis/outputs/binsfeld_three_method/binsfeld_three_method_significant_union.tsv</code>. The pairwise report files under <code>analysis/outputs/binsfeld/</code> are not regenerated or modified by this three-method report script.</p>',
+<p>The full union table is written as <code>analysis/outputs/binsfeld_workflow_comparison/binsfeld_workflow_comparison_significant_union.tsv</code>. The pairwise report files under <code>analysis/outputs/binsfeld/</code> are not regenerated or modified by this three-method report script.</p>',
 paste(sections, collapse = "\n"),
 
 '<h3>Full Three-method Union</h3>',
@@ -903,15 +906,15 @@ html_table(
   columns = c(
     "promoter", "compound", "three_method_class",
     "mean_z", "binsfeld_padj", "binsfeld_direction",
-    "modeled_effect", "modeled_padj_by_reporter",
-    "standard_effect", "standard_padj_by_reporter",
-    "modeled_hit_class", "standard_hit_class"
+    "estimated_exponent_effect", "estimated_exponent_padj_by_reporter",
+    "fixed_exponent_effect", "fixed_exponent_padj_by_reporter",
+    "estimated_exponent_hit_class", "fixed_exponent_hit_class"
   )
 ),
 
 '<h2>Reproducibility</h2>
 <p>Regenerate this report from the repository root with:</p>
-<pre><code>Rscript analysis/ecoli_promoter_screen/build_three_method_report.R</code></pre>
+<pre><code>Rscript analysis/ecoli_promoter_screen/build_workflow_comparison_report.R</code></pre>
 <p class="small">Primary public sources: PLOS Biology article DOI 10.1371/journal.pbio.3003260 and Zenodo DOI 10.5281/zenodo.15600688.</p>
 </main></body></html>'
 )

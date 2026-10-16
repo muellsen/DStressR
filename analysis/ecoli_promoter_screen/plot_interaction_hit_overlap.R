@@ -6,7 +6,7 @@ suppressPackageStartupMessages({
   library(ggplot2)
 })
 
-in_dir <- analysis_path("analysis", "outputs", "ecoli_interaction_sensitivity")
+in_dir <- analysis_path("analysis", "outputs", "ecoli_interaction_model")
 out_png <- file.path(in_dir, "interaction_hit_overlap_venn.png")
 out_pdf <- file.path(in_dir, "interaction_hit_overlap_venn.pdf")
 comparison_file <- file.path(in_dir, "interaction_comparison_to_primary_methods.tsv")
@@ -50,7 +50,7 @@ panels <- rbind(
     "DStressR without EV vs interaction",
     "DStressR without EV",
     "Interaction without EV",
-    "modeled_hit",
+    "estimated_exponent_hit",
     "interaction_without_ev_hit"
   ),
   make_panel(

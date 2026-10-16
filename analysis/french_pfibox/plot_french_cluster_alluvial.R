@@ -1,5 +1,8 @@
 #!/usr/bin/env Rscript
 
+source(file.path("analysis", "_helpers.R"))
+source(file.path("analysis", "_paper_artifacts.R"))
+
 suppressPackageStartupMessages({
   library(dplyr)
   library(ggplot2)
@@ -7,40 +10,16 @@ suppressPackageStartupMessages({
 })
 
 out_dir <- file.path(
-  "analysis", "outputs", "french_pfibox", "promoter_activity_subset"
+  "analysis", "outputs", "french_pfibox", "promoter_activity_analysis"
 )
 
-mapping_path <- file.path(
-  out_dir,
-  "pfibox_destress_ward_clusters_mapped_to_french_mfuzz.tsv"
-)
-
-mapping <- read_tsv(mapping_path, show_col_types = FALSE)
-
-cluster_files <- list.files(
-  out_dir,
-  pattern = "^pfibox_pa_model_clustered_reporter_clusters_.*_figure6_ward[.]tsv$",
-  full.names = TRUE
-)
-if (!length(cluster_files)) {
-  cluster_files <- list.files(
-    out_dir,
-    pattern = "^pfibox_pa_model_clustered_reporter_clusters_.*_all_reporters_ward[.]tsv$",
-    full.names = TRUE
-  )
-}
-if (!length(cluster_files)) {
-  cluster_files <- list.files(
-    out_dir,
-    pattern = "^pfibox_pa_model_clustered_reporter_clusters_.*[.]tsv$",
-    full.names = TRUE
-  )
-}
-if (!length(cluster_files)) {
-  stop("No DStressR reporter-cluster table found in ", out_dir, call. = FALSE)
-}
-cluster_files <- cluster_files[order(file.info(cluster_files)$mtime, decreasing = TRUE)]
-dstressr_clusters <- read_tsv(cluster_files[[1]], show_col_types = FALSE)
+run_tag <- Sys.getenv("PFIBOX_RUN_TAG", "reporters2000_perturbations100_T2-18h_treatment_replicate_scalable")
+suffix <- Sys.getenv("PFIBOX_CLUSTER_OUTPUT_SUFFIX", "total_effect_ward")
+suffix <- if (nzchar(suffix)) paste0("_", suffix) else ""
+artifact <- read_paper_artifact(file.path(out_dir,
+  paste0("pfibox_paper_mapping_", run_tag, suffix, ".rds")))
+mapping <- artifact$annotations$mapping
+dstressr_clusters <- artifact$annotations$reporter_clusters
 
 flow_counts <- mapping %>%
   filter(!is.na(french_major_cluster), !is.na(reporter_cluster)) %>%

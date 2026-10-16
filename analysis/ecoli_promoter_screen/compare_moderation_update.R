@@ -66,7 +66,7 @@ old_comparison <- read.delim(
   check.names = FALSE
 )
 old_comparison$pair_id <- paste(old_comparison$promoter, old_comparison$compound, sep = "__")
-old_no_ev_ids <- old_comparison$pair_id[old_comparison$modeled_hit]
+old_no_ev_ids <- old_comparison$pair_id[old_comparison$estimated_exponent_hit]
 old_ev_ids <- old_comparison$pair_id[old_comparison$evc_huber_hit]
 binsfeld_ids <- old_comparison$pair_id[old_comparison$binsfeld_hit]
 
@@ -156,9 +156,9 @@ pvalue_summary <- function(current, old_effect_col, old_p_col, old_q_col, label)
 pvalue_summary_table <- rbind(
   pvalue_summary(
     current_no_ev,
-    "modeled_effect",
-    "modeled_pvalue",
-    "modeled_padj_by_reporter",
+    "estimated_exponent_effect",
+    "estimated_exponent_pvalue",
+    "estimated_exponent_padj_by_reporter",
     "DStressR without EV control"
   ),
   pvalue_summary(

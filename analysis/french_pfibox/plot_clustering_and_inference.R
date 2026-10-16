@@ -13,14 +13,14 @@ if (!requireNamespace("ggplot2", quietly = TRUE)) {
 }
 
 out_dir <- file.path(
-  "analysis", "outputs", "french_pfibox", "promoter_activity_subset"
+  "analysis", "outputs", "french_pfibox", "promoter_activity_analysis"
 )
 
 Sys.setenv(
   PFIBOX_CLUSTER_TOP_REPORTERS = "2000",
   PFIBOX_CLUSTER_LINKAGE = "ward.D2",
   PFIBOX_CLUSTER_DISTANCE = "euclidean",
-  PFIBOX_CLUSTER_OUTPUT_SUFFIX = "figure6_ward",
+  PFIBOX_CLUSTER_OUTPUT_SUFFIX = "total_effect_ward",
   PFIBOX_VOLCANO_LABELS = "18"
 )
 
@@ -227,18 +227,18 @@ bottom_row <- gridExtra::arrangeGrob(
   widths = c(0.82, 1.18)
 )
 
-figure6 <- gridExtra::arrangeGrob(
+clustering_inference_figure <- gridExtra::arrangeGrob(
   top_row,
   bottom_row,
   ncol = 1,
   heights = c(1.48, 1)
 )
 
-png_path <- file.path(out_dir, "pfibox_figure6_composite.png")
-pdf_path <- file.path(out_dir, "pfibox_figure6_composite.pdf")
+png_path <- file.path(out_dir, "pfibox_clustering_and_inference.png")
+pdf_path <- file.path(out_dir, "pfibox_clustering_and_inference.pdf")
 
-ggplot2::ggsave(png_path, figure6, width = 13.6, height = 11.2, dpi = 320, bg = "white")
-ggplot2::ggsave(pdf_path, figure6, width = 13.6, height = 11.2, device = grDevices::pdf, bg = "white")
+ggplot2::ggsave(png_path, clustering_inference_figure, width = 13.6, height = 11.2, dpi = 320, bg = "white")
+ggplot2::ggsave(pdf_path, clustering_inference_figure, width = 13.6, height = 11.2, device = grDevices::pdf, bg = "white")
 
 message("Wrote composite Figure 6:")
 message("  ", png_path)

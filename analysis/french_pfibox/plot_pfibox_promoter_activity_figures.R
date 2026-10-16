@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 
 # Paper-style figures for the PFIbox promoter-activity subset workflow.
-# This script assumes that run_pfibox_promoter_activity_subset.R has already
+# This script assumes that run_promoter_activity_analysis.R has already
 # created pair-level DStressR results for y_i^{PA}(T).
 
 source(file.path("analysis", "_helpers.R"))
@@ -21,7 +21,7 @@ ggplot2 <- asNamespace("ggplot2")
 gridExtra <- asNamespace("gridExtra")
 scales <- asNamespace("scales")
 
-in_dir <- analysis_output_dir("french_pfibox", "promoter_activity_subset")
+in_dir <- analysis_output_dir("french_pfibox", "promoter_activity_analysis")
 run_tag <- Sys.getenv("PFIBOX_RUN_TAG", unset = "")
 if (!nzchar(run_tag)) {
   candidates <- list.files(
@@ -32,7 +32,7 @@ if (!nzchar(run_tag)) {
   if (!length(candidates)) {
     stop(
       "No PFIbox PA result files found in ", in_dir,
-      ". Run analysis/french_pfibox/run_pfibox_promoter_activity_subset.R first.",
+      ". Run analysis/french_pfibox/run_promoter_activity_analysis.R first.",
       call. = FALSE
     )
   }

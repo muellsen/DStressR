@@ -13,7 +13,7 @@ if (!requireNamespace("gridExtra", quietly = TRUE)) {
   stop("Package `gridExtra` is required for the PFIbox moderation diagnostic.", call. = FALSE)
 }
 
-out_dir <- analysis_output_dir("french_pfibox", "promoter_activity_subset")
+out_dir <- analysis_output_dir("french_pfibox", "promoter_activity_analysis")
 tag_moderated <- "reporters2000_perturbations100_T2-18h_treatment_replicate_scalable"
 tag_rawse <- paste0(tag_moderated, "_rawse")
 

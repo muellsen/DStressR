@@ -12,6 +12,7 @@ out of Git.
 
 ```sh
 Rscript analysis/kochanowski_promoter_scaling/run_kochanowski_destress_analysis.R
+Rscript analysis/kochanowski_promoter_scaling/plot_paper_figures.R
 ```
 
 Generated tables and figures are written to
@@ -19,3 +20,8 @@ Generated tables and figures are written to
 The analysis reports a rank-1 low-rank component for comparison with the first
 singular-vector analysis in Kochanowski et al.; the automatic rank diagnostic is
 saved separately.
+
+The first command saves the fit objects, standardized results, parameters,
+diagnostics, and published annotations in `kochanowski_paper.rds`. The second
+only renders figures from that artifact. The shared paper rebuild interface
+is documented in `analysis/PAPER_FIGURES.md`.

@@ -1,6 +1,6 @@
 # DStressR Package Manuscript
 
-This manuscript is the methodological and software paper for DStressR.
+This is the statistical-methods manuscript for DStressR.
 
 It supports the package narrative while remaining separate from the CRAN
 package source. The package build ignores `paper/`; the manuscript is rendered
@@ -11,8 +11,12 @@ The current application section uses two public examples:
 
 - the Binsfeld et al. *E. coli* promoter-compound screen, reproduced by
   `analysis/ecoli_promoter_screen/`;
-- the Dash et al. fluorescence/OD regulator-stress experiment, reproduced by
-  `analysis/dryad_global_regulators/`.
+- the French et al. PFIbox fluorescence screen, reproduced by
+  `analysis/french_pfibox/`.
+
+Supplementary Note G contains the Kochanowski promoter-activity compendium
+(`analysis/kochanowski_promoter_scaling/`) and the Dash et al. fluorescence/OD
+regulator-stress experiment (`analysis/dryad_global_regulators/`).
 
 Campylobacter and other exploratory workflows are not part of this manuscript
 track unless they are explicitly promoted in a later revision.
@@ -38,22 +42,32 @@ quarto render paper/dstressr_package_manuscript/manuscript.qmd
 - Hand-assembled manuscript figures in `paper/figures/`.
 - Generated figure and table outputs under `analysis/outputs/`.
 
-## Rebuild Workflow
+## Build Workflow
 
-Run commands from the repository root. The most important paper-generation
-scripts are:
+Run these stages from the repository root:
 
 ```sh
-Rscript analysis/ecoli_promoter_screen/plot_modeling_step_figures.R
-Rscript analysis/ecoli_promoter_screen/run_evc_calibrated_analysis.R
-Rscript analysis/ecoli_promoter_screen/plot_binsfeld_effect_matrix_and_variance_diagnostic.R
-Rscript analysis/ecoli_promoter_screen/run_interaction_sensitivity.R
-Rscript analysis/dryad_global_regulators/run_weak_stress_window_pipeline.R
-Rscript analysis/dryad_global_regulators/run_weak_stress_window_calibrated_pipeline.R
-Rscript analysis/dryad_global_regulators/run_weak_stress_window_rank1_adjustment.R
-Rscript analysis/dryad_global_regulators/plot_weak_stress_three_target_inference.R
+Rscript analysis/build_paper_figures.R --analysis
+Rscript analysis/build_paper_figures.R --diagnostics
+Rscript analysis/build_paper_figures.R --figures
 quarto render paper/dstressr_package_manuscript/manuscript.qmd
 ```
 
+The first stage prepares responses, fits models, and saves standardized results
+and model parameters. The second computes diagnostics and attaches published
+annotations. The third only renders figures from explicit saved artifacts.
+Use `--all` for all stages. The complete figure map and artifact schema are
+documented in `analysis/PAPER_FIGURES.md`.
+
 Generated outputs under `analysis/outputs/` are intentionally ignored by Git.
 They can be regenerated from the scripts above when the package code changes.
+
+The data provenance and download instructions live in each analysis directory.
+PFIbox model-only reruns can use `PFIBOX_RESPONSE_TABLE` with a response TSV
+already produced for the same subset and window. The model drivers save fit
+objects separately from inference tables so `results()` can be rerun directly.
+
+The October 2026 inference revision and protected pre-change submission are
+documented in `analysis/ecoli_promoter_screen/INFERENCE_REVISION_STAGES.md`
+and `README_inference_audit.md`. The historical comparison requires the local
+archives; a clean checkout can reproduce the current analysis without them.

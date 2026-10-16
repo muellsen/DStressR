@@ -27,44 +27,17 @@ panel_label <- function(label, size = 14) {
 }
 
 effect_dir <- analysis_output_dir("binsfeld_effect_matrix_views")
-variance_dir <- analysis_output_dir("binsfeld_variance_diagnostics")
-comparison_file <- file.path(
-  analysis_project_root(),
-  "analysis", "outputs", "binsfeld_evc_calibrated",
-  "evc_huber_comparison_to_binsfeld_and_default.tsv"
-)
-diagnostics_file <- file.path(variance_dir, "ecoli_raw_vs_moderated_variance.tsv")
-
-if (!file.exists(comparison_file)) {
-  stop("Missing comparison table: ", comparison_file, call. = FALSE)
-}
-if (!file.exists(diagnostics_file)) {
-  stop("Missing variance diagnostics table: ", diagnostics_file, call. = FALSE)
-}
-
-comparison <- read_tsv_base(comparison_file)
-diagnostics <- read_tsv_base(diagnostics_file)
-diagnostics$workflow <- sub("without EV control", "without EVC", diagnostics$workflow, fixed = TRUE)
-diagnostics$workflow <- sub("with EV control", "with EVC", diagnostics$workflow, fixed = TRUE)
-
-required_comparison <- c("promoter", "compound", "modeled_hit", "evc_huber_hit")
-required_diagnostics <- c("workflow", "promoter", "compound", "mean_response")
-missing_comparison <- setdiff(required_comparison, names(comparison))
-missing_diagnostics <- setdiff(required_diagnostics, names(diagnostics))
-if (length(missing_comparison) > 0) {
-  stop("Missing required comparison columns: ", paste(missing_comparison, collapse = ", "), call. = FALSE)
-}
-if (length(missing_diagnostics) > 0) {
-  stop("Missing required diagnostics columns: ", paste(missing_diagnostics, collapse = ", "), call. = FALSE)
-}
-
+source(file.path("analysis", "_paper_artifacts.R"))
+artifact <- read_paper_artifact(file.path(effect_dir, "binsfeld_effect_paper.rds"))
+comparison <- artifact$annotations$comparison
+diagnostics <- artifact$diagnostics$display
 reporter_order <- c("acrABp", "marRABp", "micFp", "ompFp", "robp", "soxSp", "tolCp")
 total_no_evc <- diagnostics[
   diagnostics$workflow == "DStressR without EVC",
   c("promoter", "compound", "mean_response"),
   drop = FALSE
 ]
-names(total_no_evc)[3] <- "modeled_total_effect"
+names(total_no_evc)[3] <- "estimated_exponent_total_effect"
 total_evc <- diagnostics[
   diagnostics$workflow == "DStressR with EVC",
   c("promoter", "compound", "mean_response"),
@@ -74,8 +47,8 @@ names(total_evc)[3] <- "evc_huber_total_effect"
 
 comparison <- merge(comparison, total_no_evc, by = c("promoter", "compound"), all.x = TRUE, sort = FALSE)
 comparison <- merge(comparison, total_evc, by = c("promoter", "compound"), all.x = TRUE, sort = FALSE)
-comparison$hit_count <- as.integer(comparison$modeled_hit) + as.integer(comparison$evc_huber_hit)
-comparison$abs_sum <- abs(comparison$modeled_total_effect) + abs(comparison$evc_huber_total_effect)
+comparison$hit_count <- as.integer(comparison$estimated_exponent_hit) + as.integer(comparison$evc_huber_hit)
+comparison$abs_sum <- abs(comparison$estimated_exponent_total_effect) + abs(comparison$evc_huber_total_effect)
 
 compound_score <- stats::aggregate(
   cbind(hit_count, abs_sum) ~ compound,
@@ -95,7 +68,7 @@ total_long <- rbind(
     workflow = "DStressR without EVC",
     promoter = comparison$promoter,
     compound = comparison$compound,
-    effect = comparison$modeled_total_effect,
+    effect = comparison$estimated_exponent_total_effect,
     stringsAsFactors = FALSE
   ),
   data.frame(
@@ -115,24 +88,7 @@ total_long$workflow <- factor(
 )
 total_limit <- stats::quantile(abs(total_long$effect), 0.98, na.rm = TRUE)
 
-make_workflow_diag <- function(d) {
-  out <- do.call(rbind, lapply(split(d, d$workflow), function(wd) {
-    tab <- perturbation_diagnostics(
-      wd,
-      mean_effect = "mean_response",
-      variance_effect = "mean_response",
-      reporter = "promoter",
-      perturbation = "compound",
-      trend_span = 0.45
-    )
-    tab$workflow <- unique(wd$workflow)
-    tab
-  }))
-  rownames(out) <- NULL
-  out
-}
-
-total_diag <- make_workflow_diag(diagnostics)
+total_diag <- artifact$diagnostics$total_diag
 finite_color <- abs(total_diag$mean_effect[is.finite(total_diag$mean_effect)])
 color_max <- stats::quantile(finite_color, probs = 0.92, names = FALSE, na.rm = TRUE)
 if (!is.finite(color_max) || color_max <= 0) {

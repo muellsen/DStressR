@@ -7,8 +7,8 @@
 #   y_i^{PA}(T) = |T|^{-1} int_T PA_i(t) dt,
 #
 # approximated by the mean of the deposited promoter.activity time series over a
-# user-defined time window T. The script intentionally runs on a subset first:
-# by default 250 reporters and 8 non-control perturbations, i.e. about 2,000
+# user-defined time window T. Reporter and perturbation limits are configurable:
+# the defaults are 250 reporters and 8 non-control perturbations, i.e. about 2,000
 # reporter-perturbation pairs before missing-value filtering.
 
 source(file.path("analysis", "_helpers.R"))
@@ -22,7 +22,7 @@ if (!requireNamespace("gridExtra", quietly = TRUE)) {
 }
 
 source_file <- analysis_path("data-raw", "french_pfibox", "source", "gfpData.Rdata")
-out_dir <- analysis_output_dir("french_pfibox", "promoter_activity_subset")
+out_dir <- analysis_output_dir("french_pfibox", "promoter_activity_analysis")
 processed_dir <- analysis_path("data-raw", "french_pfibox", "processed")
 dir.create(processed_dir, recursive = TRUE, showWarnings = FALSE)
 
@@ -51,7 +51,8 @@ if (!is.finite(perturbation_limit) || perturbation_limit < 1) {
 if (!is.finite(t_start_h) || !is.finite(t_end_h) || t_start_h >= t_end_h) {
   stop("PFIBOX_T_START_H and PFIBOX_T_END_H must define an increasing time window.", call. = FALSE)
 }
-if (!file.exists(source_file)) {
+response_cache <- Sys.getenv("PFIBOX_RESPONSE_TABLE", "")
+if (!nzchar(response_cache) && !file.exists(source_file)) {
   stop("Missing PFIbox object: ", source_file, call. = FALSE)
 }
 
@@ -89,6 +90,22 @@ parse_treatment <- function(x) {
   }
 }
 
+if (nzchar(response_cache)) {
+  message("Reading previously summarized PA responses: ", response_cache)
+  response_tab <- utils::read.delim(response_cache, check.names = FALSE)
+  required <- c("reporter", "perturbation", "drug_perturbation", "y_pa",
+                "dose_code_centered", "drug_factor", "replicate",
+                "pa_window_start_h", "pa_window_end_h", "pa_n_timepoints")
+  stopifnot(all(required %in% names(response_tab)))
+  if (length(unique(response_tab$reporter)) > reporter_limit ||
+      length(setdiff(unique(response_tab$perturbation), "Control")) > perturbation_limit ||
+      any(abs(response_tab$pa_window_start_h - t_start_h) > 1e-8) ||
+      any(abs(response_tab$pa_window_end_h - t_end_h) > 1e-8)) {
+    stop("Cached response design/window does not match the requested run.", call. = FALSE)
+  }
+  response_tab$drug_factor <- factor(response_tab$drug_factor)
+  response_tab$replicate <- factor(response_tab$replicate)
+} else {
 message("Loading PFIbox object: ", source_file)
 load(source_file)
 if (!exists("gfpData") || !is.list(gfpData) || is.null(gfpData$legend)) {
@@ -169,6 +186,7 @@ response_tab$dose_code_centered <- response_tab$dose_code - mean(response_tab$do
 response_tab$drug_factor <- factor(response_tab$drug)
 response_tab$drug_perturbation <- ifelse(response_tab$is_control, "Control", response_tab$drug)
 response_tab$replicate <- factor(response_tab$replicate)
+}
 perturbation_column <- if (identical(perturbation_target, "drug")) "drug_perturbation" else "perturbation"
 
 response_file <- file.path(out_dir, paste0("pfibox_pa_response_table_", run_tag, ".tsv"))
@@ -211,6 +229,7 @@ fit <- fit_destress(
   interaction = identical(model_path, "interaction"),
   verbose = TRUE
 )
+saveRDS(fit, file.path(out_dir, paste0("pfibox_pa_fit_", run_tag, ".rds")))
 res <- results(fit, verbose = TRUE)
 res$response <- "pa_mean_window"
 res$t_start_h <- t_start_h
@@ -249,6 +268,7 @@ metadata <- data.frame(
   model_path = model_path,
   empirical_bayes = empirical_bayes,
   technical = if (length(technical)) paste(technical, collapse = " + ") else "none",
+  response_source = if (nzchar(response_cache)) normalizePath(response_cache) else source_file,
   stringsAsFactors = FALSE
 )
 metadata_file <- file.path(out_dir, paste0("pfibox_pa_run_metadata_", run_tag, ".tsv"))

@@ -1,5 +1,6 @@
 source(file.path("analysis", "_helpers.R"))
 load_destress_package()
+set.seed(1) # Reproducible label placement only.
 
 required_packages <- c("ggplot2", "gridExtra")
 missing_packages <- required_packages[!vapply(required_packages, requireNamespace, logical(1), quietly = TRUE)]
