@@ -4,8 +4,8 @@
 workflows. The `workflow` argument selects a
 [`fit_destress()`](https://muellsen.github.io/DStressR/reference/fit_destress.md)
 preset: `model` fits the model-based DStressR workflow, `median_polish`
-reproduces the legacy median-polish workflow, and `empty_vector_control`
-reproduces the empty-vector-control workflow.
+reproduces the screen-specific median-polish workflow, and
+`empty_vector_control` reproduces the empty-vector-control workflow.
 
 ## Usage
 

@@ -1,8 +1,8 @@
 # Fit DStressR with staged statistical options
 
 `fit_destress()` is the main DStressR entry point. By default it fits
-the model-based analysis, but it can also run named compatibility
-presets for the legacy median-polish and Empty Vector Control analyses.
+the model-based analysis, but it can also run named presets for the
+screen-specific median-polish and empty-vector-control analyses.
 
 ## Usage
 
@@ -47,8 +47,11 @@ fit_destress(
 
   If `TRUE`, moderates standard errors toward an empirical prior
   variance with prior degrees of freedom estimated from the observed
-  variance distribution. This maps to `testing = "moderated_t"` for the
-  model path; `FALSE` maps to `testing = "student_t"`.
+  variance distribution, using each contrast's degrees of freedom.
+  Reporter-wise specific effects combine raw total-effect variances with
+  Welch-Satterthwaite degrees of freedom and are moderated once. This
+  maps to `testing = "moderated_t"` for the model path; `FALSE` maps to
+  `testing = "student_t"`.
 
 - empty_vector_reporter:
 
@@ -114,14 +117,16 @@ fit_destress(
   If `FALSE`, fit one Gaussian linear model per reporter with the
   control perturbation as reference and the supplied technical
   covariates as design terms. The latter is the scalable path for
-  reporter-specific perturbation effects. If `TRUE`, fit the historical
-  full reporter-by-perturbation interaction model.
+  reporter-specific perturbation effects. If `TRUE`, fit the full
+  reporter-by-perturbation interaction model.
 
 - preset:
 
-  Optional named preset: `"model"`, `"median_polish_legacy"`, or
-  `"empty_vector_control"`. Common aliases such as `"median_polish"` and
-  `"evc"` are accepted.
+  Optional named preset: `"model"`, `"median_polish"`, or
+  `"empty_vector_control"`. The model-based workflow remains the default
+  when omitted. `"median_polish_legacy"` is accepted as an alias for
+  `"median_polish"`, and `"evc"` as an alias for
+  `"empty_vector_control"`.
 
 - verbose:
 
@@ -139,7 +144,8 @@ fit_destress(
 ## Value
 
 A fitted DStressR object. The model path returns a `destress_fit`;
-compatibility presets return their corresponding legacy result objects.
+screen-specific presets return their corresponding workflow result
+objects.
 
 ## Details
 

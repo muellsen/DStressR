@@ -177,7 +177,7 @@ reconstructed reference rule calls 53 hits, DStressR without EVC calls
 80 hits, and DStressR with EVC calls 92 hits. The workflow with EVC
 overlaps with 37 of the 53 reference hits. The optional full
 interaction-model analysis is reproduced by
-`analysis/ecoli_promoter_screen/run_interaction_sensitivity.R`.
+`analysis/ecoli_promoter_screen/run_interaction_model.R`.
 
 Equivalently, using staged options directly:
 

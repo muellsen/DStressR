@@ -35,7 +35,7 @@
 - [`fit_empty_vector_control()`](https://muellsen.github.io/DStressR/reference/fit_empty_vector_control.md)
   : Reproduce Empty Vector Control normalization
 - [`fit_median_polish()`](https://muellsen.github.io/DStressR/reference/fit_median_polish.md)
-  : Reproduce the legacy median-polish workflow
+  : Reproduce the screen-specific median-polish workflow
 - [`fit_variance_distribution()`](https://muellsen.github.io/DStressR/reference/fit_variance_distribution.md)
   : Fit diagnostic distributions to perturbation-level variances
 - [`fit_workflow()`](https://muellsen.github.io/DStressR/reference/fit_workflow.md)

@@ -29,4 +29,8 @@ results(fit, perturbations = NULL, reporters = NULL, verbose = FALSE)
 
 ## Value
 
-A data frame with total and reporter-specific effects.
+A data frame with total and reporter-specific effects. Reporter-wise
+results also include `total_var_raw` and `specific_var` (before
+moderation), `residual_df`, `specific_df_raw` (Welch-Satterthwaite
+effective degrees of freedom), and `specific_df_for_test` (including
+prior degrees of freedom when moderation is enabled).

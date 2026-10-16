@@ -177,7 +177,7 @@ reconstructed reference rule calls 53 hits, DStressR without EVC calls
 80 hits, and DStressR with EVC calls 92 hits. The workflow with EVC
 overlaps with 37 of the 53 reference hits. The optional full
 interaction-model analysis is reproduced by
-`analysis/ecoli_promoter_screen/run_interaction_sensitivity.R`.
+`analysis/ecoli_promoter_screen/run_interaction_model.R`.
 
 Equivalently, using staged options directly:
 
@@ -694,7 +694,7 @@ be versioned with the repository.
 - [`fit_empty_vector_control()`](https://muellsen.github.io/DStressR/reference/fit_empty_vector_control.md)
   : Reproduce Empty Vector Control normalization
 - [`fit_median_polish()`](https://muellsen.github.io/DStressR/reference/fit_median_polish.md)
-  : Reproduce the legacy median-polish workflow
+  : Reproduce the screen-specific median-polish workflow
 - [`fit_variance_distribution()`](https://muellsen.github.io/DStressR/reference/fit_variance_distribution.md)
   : Fit diagnostic distributions to perturbation-level variances
 - [`fit_workflow()`](https://muellsen.github.io/DStressR/reference/fit_workflow.md)

@@ -142,11 +142,11 @@ Both DStressR workflows only: 36
 Union significant by at least one primary analysis: 117
 ```
 
-The full interaction-model sensitivity analysis used in the manuscript
-appendix can be reproduced with:
+The full interaction-model analysis used in the manuscript appendix can
+be reproduced with:
 
 ``` sh
-Rscript analysis/ecoli_promoter_screen/run_interaction_sensitivity.R
+Rscript analysis/ecoli_promoter_screen/run_interaction_model.R
 ```
 
 In the current wild-type analysis, the interaction model calls 56 hits
