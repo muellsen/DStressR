@@ -39,10 +39,13 @@ install()
 
 ## Get started
 
-DStressR exposes statistical analyses through a staged `fit_destress()`
-interface. The major choices are explicit: normalization, test statistic and
-p-value calculation, replicate aggregation, and p-value adjustment. Named
-presets reproduce published screen-specific workflows:
+DStressR uses a three-step model-based workflow. `fit_destress()` creates a
+reusable fitted object, `results()` constructs the contrast-level inferential
+table under the selected uncertainty model, and `call_hits()` applies chosen
+effect-size and false-discovery-rate thresholds. The major choices are
+explicit: normalization, test statistic and p-value calculation, replicate
+aggregation, and p-value adjustment. Named presets reproduce published
+screen-specific workflows:
 
 - `preset = "model"` for the model-based DStressR analysis
 - `preset = "median_polish"` for the Campylobacter median-polish workflow from
@@ -89,6 +92,10 @@ fit <- fit_destress(
 tab <- results(fit)
 hits <- call_hits(tab, fdr = 0.05, effect = "specific_effect")
 ```
+
+The fitted object retains the response construction, fitted effect model, and
+selected inferential configuration. This makes it possible to inspect model
+parameters or extract different effect tables without refitting the assay.
 
 ## Public E. coli Promoter-Compound Screen
 

@@ -165,9 +165,11 @@ assay_fixed <- prepare_assay(
 ## Fit the model workflow
 
 `fit_destress()` creates the fitted model object while accounting for technical
-covariates. Inference is extracted in a second step with `results()`. The
-result table reports both the DMSO-relative total effect and the
-reporter-specific effect after subtracting the perturbation-wide effect.
+covariates and retains the selected inferential configuration. `results()`
+then constructs the contrast-level inferential table, and `call_hits()` adds
+directional calls at a chosen false-discovery-rate threshold. The result table
+reports both the DMSO-relative total effect and the reporter-specific effect
+after subtracting the perturbation-wide effect.
 
 ```{r fit}
 fit <- fit_destress(
@@ -177,7 +179,6 @@ fit <- fit_destress(
 )
 
 tab <- results(fit)
-tab <- adjust_pvalues(tab)
 
 head(tab)
 ```

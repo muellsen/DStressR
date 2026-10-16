@@ -1741,12 +1741,13 @@ can be handled as factors.
 
 `fit_destress()` fits the model-based workflow and stores response metadata,
 growth-exponent estimates, background-calibration estimates, model settings,
-reporter-perturbation effects, p-values, and adjusted p-values. Results are
-exported with `results()`, inspected with `model_parameters()`, and converted
-into directional hit calls with `call_hits()`. We use the model-based workflow
-as the default path, while median-polish and Salmonella empty-vector-control
-presets reproduce published screen-specific analyses and enable comparison
-with the model-based estimand.
+and reporter-perturbation effect-model components. `results()` constructs the
+contrast-level inferential table, including test statistics, p-values, and
+their selected multiplicity adjustment; `model_parameters()` exposes fitted
+parameters, and `call_hits()` converts result tables into directional calls.
+We use the model-based workflow as the default path, while median-polish and
+Salmonella empty-vector-control presets reproduce published screen-specific
+analyses and enable comparison with the model-based estimand.
 
 The software flow mirrors the statistical construction in the paper. First, a
 long-format screen is mapped to an assay object with explicit columns for the
