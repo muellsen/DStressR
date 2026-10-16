@@ -228,9 +228,12 @@ assay_fixed <- prepare_assay(
 
 [`fit_destress()`](https://muellsen.github.io/DStressR/reference/fit_destress.md)
 creates the fitted model object while accounting for technical
-covariates. Inference is extracted in a second step with
-[`results()`](https://muellsen.github.io/DStressR/reference/results.md).
-The result table reports both the DMSO-relative total effect and the
+covariates and retains the selected inferential configuration.
+[`results()`](https://muellsen.github.io/DStressR/reference/results.md)
+then constructs the contrast-level inferential table, and
+[`call_hits()`](https://muellsen.github.io/DStressR/reference/call_hits.md)
+adds directional calls at a chosen false-discovery-rate threshold. The
+result table reports both the DMSO-relative total effect and the
 reporter-specific effect after subtracting the perturbation-wide effect.
 
 ``` r
@@ -242,7 +245,6 @@ fit <- fit_destress(
 )
 
 tab <- results(fit)
-tab <- adjust_pvalues(tab)
 
 head(tab)
 #>    reporter perturbation total_effect  total_se total_statistic total_pvalue

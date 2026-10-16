@@ -305,10 +305,12 @@ shrinks them toward a global control-well slope.</p>
 <h2 id="fit-the-model-workflow">Fit the model workflow<a class="anchor" aria-label="anchor" href="#fit-the-model-workflow"></a>
 </h2>
 <p><code><a href="../reference/fit_destress.html">fit_destress()</a></code> creates the fitted model object while
-accounting for technical covariates. Inference is extracted in a second
-step with <code><a href="../reference/results.html">results()</a></code>. The result table reports both the
-DMSO-relative total effect and the reporter-specific effect after
-subtracting the perturbation-wide effect.</p>
+accounting for technical covariates and retains the selected inferential
+configuration. <code><a href="../reference/results.html">results()</a></code> then constructs the contrast-level
+inferential table, and <code><a href="../reference/call_hits.html">call_hits()</a></code> adds directional calls
+at a chosen false-discovery-rate threshold. The result table reports
+both the DMSO-relative total effect and the reporter-specific effect
+after subtracting the perturbation-wide effect.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fit_destress.html">fit_destress</a></span><span class="op">(</span></span>
 <span>  <span class="va">assay</span>,</span>
@@ -317,7 +319,6 @@ subtracting the perturbation-wide effect.</p>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">tab</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/results.html">results</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span>
-<span><span class="va">tab</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/adjust_pvalues.html">adjust_pvalues</a></span><span class="op">(</span><span class="va">tab</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">tab</span><span class="op">)</span></span>
 <span><span class="co">#&gt;    reporter perturbation total_effect  total_se total_statistic total_pvalue</span></span>
