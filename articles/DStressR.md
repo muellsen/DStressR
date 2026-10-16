@@ -14,16 +14,14 @@ settings:
 - PFIbox fluorescence promoter-activity screen
 - *E. coli* fluorescence stress screen
 - Kochanowski promoter-activity compendium with supplied variances
-- Campylobacter median-polish and Salmonella empty-vector-control
-  screen-specific workflows
+- Salmonella empty-vector-control screen-specific workflow
 
-This vignette uses a small simulated screen so that the model-based
-named workflow can be run without private data files. DStressR also
-exposes published screen-specific workflows through the same entry
-point: `workflow = "median_polish"` for the Campylobacter workflow of
-Zannoni et al. (2026, bioRxiv, <doi:10.64898/2026.10.05.755907>) and
-`workflow = "empty_vector_control"` for the Salmonella workflow of
-Amstalden et al. (2026, bioRxiv, <doi:10.64898/2026.09.30.755304>).
+This vignette uses the public *E. coli* reporter-compound screen of
+Binsfeld et al. (2025), distributed with DStressR as a compact AUC-level
+data object. The data originate from the PLOS Biology supplementary data
+and associated Zenodo archive
+(<https://doi.org/10.1371/journal.pbio.3003260>;
+<https://doi.org/10.5281/zenodo.15600688>).
 
 ## Input files and table shape
 
@@ -44,7 +42,7 @@ The required biological and technical information is:
 
 - reporter or reporter construct
 - perturbation or library-well identifier
-- negative-control perturbation, usually `DMSO`
+- reference perturbation, for example `DMSO` or water controls
 - luminescence summary
 - growth summary
 - replicate and optional technical covariates such as batch or plate
@@ -52,82 +50,54 @@ The required biological and technical information is:
 Column names are not fixed. They are mapped explicitly in
 [`prepare_assay()`](https://muellsen.github.io/DStressR/reference/prepare_assay.md).
 
-For the original Campylobacter reporter-library workflow, the
-convenience helper
-[`read_campylobacter_expression()`](https://muellsen.github.io/DStressR/reference/read_campylobacter_expression.md)
-joins two exported files:
-
-- `expression_values.tsv.gz`: one row per
-  reporter-library-well-replicate observation. It must contain either
-  `srn_code` or both `libplate` and `well`, plus the reporter,
-  luminescence, growth, and technical columns used downstream.
-- `LibMap.txt`: one row per perturbation/library well with columns
-  `Library plate`, `Well`, `ProductName`, and `Catalog Number`.
-
-The helper reconstructs the library-well key as
-`paste0("lp", Library plate, "_", Well)` for `LibMap.txt`, joins the
-perturbation annotations onto the expression table, and returns a long
-table with the same number of rows as `expression_values.tsv.gz`.
-
-``` r
-
-expression_df <- read_campylobacter_expression(
-  expression_file = "expression_values.tsv.gz",
-  libmap_file = "LibMap.txt"
-)
-
-assay <- prepare_assay(
-  expression_df,
-  reporter = "reporter",
-  perturbation = "srn_code",
-  control = "DMSO",
-  lux = "LUX.AUC_16",
-  growth = "od_16h.measured",
-  batch = "batch",
-  plate = "libplate",
-  replicate = "replicate"
-)
-```
-
-## Simulate a chemical-genomics screen
+## Load the public *E. coli* reporter-compound screen
 
 ``` r
 
 library(DStressR)
 
-screen <- simulate_screen(
-  n_reporters = 12,
-  n_perturbations = 40,
-  n_replicates = 3,
-  seed = 1
+screen <- subset(
+  binsfeld_reporter_auc,
+  strain == "WT" & removed == "No"
 )
 
 head(screen)
-#>   reporter perturbation replicate batch od_16h.measured LUX.AUC_16
-#> 1       P1         DMSO        r1    b2       0.4116687   293.9048
-#> 2       P2         DMSO        r1    b2       0.3906898   432.5738
-#> 3       P3         DMSO        r1    b2       0.3333026   235.1525
-#> 4       P4         DMSO        r1    b2       0.3000495   850.4902
-#> 5       P5         DMSO        r1    b2       0.3410560   346.1222
-#> 6       P6         DMSO        r1    b2       0.5140298   378.6924
-#>   truth_specific truth_global
-#> 1              0            0
-#> 2              0            0
-#> 3              0            0
-#> 4              0            0
-#> 5              0            0
-#> 6              0            0
+#>   strain reporter replicate well              drug          compound
+#> 1     WT      EVC         1   A1           Water_1             Water
+#> 2     WT      EVC         1   A2           Water_1             Water
+#> 3     WT      EVC         1   A3 1-Methyluric acid 1-Methyluric acid
+#> 4     WT      EVC         1   A4 1-Methyluric acid 1-Methyluric acid
+#> 5     WT      EVC         1   A5          2,3-DHBA          2,3-DHBA
+#> 6     WT      EVC         1   A6          2,3-DHBA          2,3-DHBA
+#>   concentration_index dose_level concentration_ug_ml   od_auc   lux_auc
+#> 1                   1          4                 0.0 2.435875 1209.7240
+#> 2                   2          3                 0.0 2.657758  963.9789
+#> 3                   1          4                91.1 2.431864 1098.3103
+#> 4                   2          3                45.5 2.354903 1212.2085
+#> 5                   1          4               154.1 2.057219  958.0157
+#> 6                   2          3                77.1 2.180038  996.1697
+#>   od_auc_per_lux_auc removed
+#> 1           496.6282      No
+#> 2           362.7038      No
+#> 3           451.6331      No
+#> 4           514.7595      No
+#> 5           465.6849      No
+#> 6           456.9506      No
 ```
 
-The simulated table contains one row per reporter-perturbation-replicate
-well. It includes luminescence, growth, batch, replicate, and hidden
-truth columns used only to check the example.
+The table contains one row per reporter, drug or water-reference well,
+replicate, and serial-dilution observation. The original `drug` labels
+are retained, including `Water_1` and `Water_2`; `dose_level` increases
+with compound concentration.
 
 ``` r
 
 names(screen)
-#> [1] "reporter"        "perturbation"    "replicate"       "batch"          
-#> [5] "od_16h.measured" "LUX.AUC_16"      "truth_specific"  "truth_global"
+#>  [1] "strain"              "reporter"            "replicate"          
+#>  [4] "well"                "drug"                "compound"           
+#>  [7] "concentration_index" "dose_level"          "concentration_ug_ml"
+#> [10] "od_auc"              "lux_auc"             "od_auc_per_lux_auc" 
+#> [13] "removed"
 ```
 
 ## Prepare the assay
@@ -135,94 +105,69 @@ names(screen)
 [`prepare_assay()`](https://muellsen.github.io/DStressR/reference/prepare_assay.md)
 converts luminescence and growth summaries into a growth-adjusted log2
 response. By default, DStressR estimates reporter-specific growth
-exponents from DMSO control wells and shrinks them toward a global
-control-well slope.
+exponents from reference-condition wells and shrinks them toward a
+global reference-well slope.
 
 ``` r
 
 assay <- prepare_assay(
   screen,
   reporter = "reporter",
-  perturbation = "perturbation",
-  control = "DMSO",
-  lux = "LUX.AUC_16",
-  growth = "od_16h.measured",
-  batch = "batch",
-  replicate = "replicate"
+  perturbation = "drug",
+  control = c("Water_1", "Water_2"),
+  lux = "lux_auc",
+  growth = "od_auc",
+  growth_exponent = "estimate",
+  batch = "dose_level",
+  replicate = "replicate",
+  growth_covariates = "replicate",
+  numeric_covariates = "dose_level",
+  background_reporter = "EVC",
+  background_by = c("drug", "dose_level", "replicate")
 )
 
 attr(assay, "destress")$growth_exponent_fit
-#>    reporter control_n log_growth_sd a_raw a_raw_se a_raw_df alpha_raw
-#> 1        P1         3     0.2789856    NA       NA       NA        NA
-#> 2       P10         3     0.3303240    NA       NA       NA        NA
-#> 3       P11         3     0.2469301    NA       NA       NA        NA
-#> 4       P12         3     0.1029985    NA       NA       NA        NA
-#> 5        P2         3     0.1738257    NA       NA       NA        NA
-#> 6        P3         3     0.2105313    NA       NA       NA        NA
-#> 7        P4         3     0.2653313    NA       NA       NA        NA
-#> 8        P5         3     0.2447480    NA       NA       NA        NA
-#> 9        P6         3     0.1725935    NA       NA       NA        NA
-#> 10       P7         3     0.2267275    NA       NA       NA        NA
-#> 11       P8         3     0.2954055    NA       NA       NA        NA
-#> 12       P9         3     0.1714372    NA       NA       NA        NA
-#>    alpha_raw_se alpha_raw_df alpha_covariates alpha_global alpha_global_se
-#> 1            NA           NA                     0.8875006       0.1613071
-#> 2            NA           NA                     0.8875006       0.1613071
-#> 3            NA           NA                     0.8875006       0.1613071
-#> 4            NA           NA                     0.8875006       0.1613071
-#> 5            NA           NA                     0.8875006       0.1613071
-#> 6            NA           NA                     0.8875006       0.1613071
-#> 7            NA           NA                     0.8875006       0.1613071
-#> 8            NA           NA                     0.8875006       0.1613071
-#> 9            NA           NA                     0.8875006       0.1613071
-#> 10           NA           NA                     0.8875006       0.1613071
-#> 11           NA           NA                     0.8875006       0.1613071
-#> 12           NA           NA                     0.8875006       0.1613071
-#>     alpha_global_covariates alpha_prior_var alpha_prior_sd alpha_shrunk
-#> 1  reporter;batch;replicate      0.02601998      0.1613071    0.8875006
-#> 2  reporter;batch;replicate      0.02601998      0.1613071    0.8875006
-#> 3  reporter;batch;replicate      0.02601998      0.1613071    0.8875006
-#> 4  reporter;batch;replicate      0.02601998      0.1613071    0.8875006
-#> 5  reporter;batch;replicate      0.02601998      0.1613071    0.8875006
-#> 6  reporter;batch;replicate      0.02601998      0.1613071    0.8875006
-#> 7  reporter;batch;replicate      0.02601998      0.1613071    0.8875006
-#> 8  reporter;batch;replicate      0.02601998      0.1613071    0.8875006
-#> 9  reporter;batch;replicate      0.02601998      0.1613071    0.8875006
-#> 10 reporter;batch;replicate      0.02601998      0.1613071    0.8875006
-#> 11 reporter;batch;replicate      0.02601998      0.1613071    0.8875006
-#> 12 reporter;batch;replicate      0.02601998      0.1613071    0.8875006
-#>    alpha_shrunk_se alpha_fixed_one alpha_diff_from_one
-#> 1        0.1613071               1          -0.1124994
-#> 2        0.1613071               1          -0.1124994
-#> 3        0.1613071               1          -0.1124994
-#> 4        0.1613071               1          -0.1124994
-#> 5        0.1613071               1          -0.1124994
-#> 6        0.1613071               1          -0.1124994
-#> 7        0.1613071               1          -0.1124994
-#> 8        0.1613071               1          -0.1124994
-#> 9        0.1613071               1          -0.1124994
-#> 10       0.1613071               1          -0.1124994
-#> 11       0.1613071               1          -0.1124994
-#> 12       0.1613071               1          -0.1124994
+#>   reporter control_n log_growth_sd     a_raw  a_raw_se a_raw_df  alpha_raw
+#> 1   acrABp        16     0.2037412 12.082727 0.5257436       13 0.06996704
+#> 2      EVC        16     0.1933252  9.823428 0.5023973       13 0.28970550
+#> 3  marRABp        16     0.1715475 13.146961 0.2564950       13 0.53073940
+#> 4    micFp        16     0.1799482 12.874535 0.2465778       13 0.74801983
+#> 5    ompFp        16     0.1365465 15.489428 0.4125433       13 0.81220933
+#> 6     robp        16     0.1088960 11.196892 0.8472631       13 0.50412672
+#> 7    soxSp        16     0.1880037 13.499497 0.2459610       13 0.37824790
+#> 8    tolCp        16     0.2010756  9.813360 0.6271326       13 0.12269575
+#>   alpha_raw_se alpha_raw_df alpha_covariates alpha_global alpha_global_se
+#> 1    0.3097976           13        replicate     0.379046      0.09937215
+#> 2    0.3391082           13        replicate     0.379046      0.09937215
+#> 3    0.1529305           13        replicate     0.379046      0.09937215
+#> 4    0.1518801           13        replicate     0.379046      0.09937215
+#> 5    0.2545487           13        replicate     0.379046      0.09937215
+#> 6    0.5261529           13        replicate     0.379046      0.09937215
+#> 7    0.1622378           13        replicate     0.379046      0.09937215
+#> 8    0.4110460           13        replicate     0.379046      0.09937215
+#>   alpha_global_covariates alpha_prior_var alpha_prior_sd alpha_shrunk
+#> 1      reporter;replicate           1e-04           0.01    0.3787242
+#> 2      reporter;replicate           1e-04           0.01    0.3789683
+#> 3      reporter;replicate           1e-04           0.01    0.3796918
+#> 4      reporter;replicate           1e-04           0.01    0.3806386
+#> 5      reporter;replicate           1e-04           0.01    0.3797134
+#> 6      reporter;replicate           1e-04           0.01    0.3790911
+#> 7      reporter;replicate           1e-04           0.01    0.3790429
+#> 8      reporter;replicate           1e-04           0.01    0.3788943
+#>   alpha_shrunk_se alpha_fixed_one alpha_diff_from_one
+#> 1     0.009994794               1          -0.6212758
+#> 2     0.009995655               1          -0.6210317
+#> 3     0.009978690               1          -0.6203082
+#> 4     0.009978395               1          -0.6193614
+#> 5     0.009992292               1          -0.6202866
+#> 6     0.009998194               1          -0.6209089
+#> 7     0.009981058               1          -0.6209571
+#> 8     0.009997042               1          -0.6211057
 ```
 
-To reproduce the older fixed-ratio style response, `growth_exponent = 1`
-gives the familiar `log2(luminescence / growth)` scale.
-
-``` r
-
-assay_fixed <- prepare_assay(
-  screen,
-  reporter = "reporter",
-  perturbation = "perturbation",
-  control = "DMSO",
-  lux = "LUX.AUC_16",
-  growth = "od_16h.measured",
-  growth_exponent = 1,
-  batch = "batch",
-  replicate = "replicate"
-)
-```
+To reproduce a fixed-ratio response, set `growth_exponent = 1`, which
+gives the `log2(luminescence / growth)` scale after the same optional
+EVC calibration.
 
 ## Fit the model workflow
 
@@ -233,96 +178,97 @@ covariates and retains the selected inferential configuration.
 then constructs the contrast-level inferential table, and
 [`call_hits()`](https://muellsen.github.io/DStressR/reference/call_hits.md)
 adds directional calls at a chosen false-discovery-rate threshold. The
-result table reports both the DMSO-relative total effect and the
+result table reports both the reference-relative total effect and the
 reporter-specific effect after subtracting the perturbation-wide effect.
 
 ``` r
 
 fit <- fit_destress(
   assay,
-  technical = c("batch", "replicate"),
-  testing = "moderated_t"
+  technical = c("replicate", "dose_level"),
+  testing = "moderated_t",
+  adjustment = "by_reporter"
 )
 
 tab <- results(fit)
 
 head(tab)
-#>    reporter perturbation total_effect  total_se total_statistic total_pvalue
-#> 1        P1           C1  -0.42759639 0.1286067      -3.3248384 0.0008847299
-#> 21       P1          C10   0.11008012 0.1286067       0.8559441 0.3920289226
-#> 34       P1          C11  -0.40523361 0.1286067      -3.1509533 0.0016274332
-#> 47       P1          C12   0.28971870 0.1286067       2.2527502 0.0242751218
-#> 58       P1          C13   0.04093903 0.1286067       0.3183274 0.7502366381
-#> 67       P1          C14  -0.06382475 0.1286067      -0.4962787 0.6196979032
-#>    additive_total_effect additive_total_se empty_vector_effect
-#> 1                     NA                NA                  NA
-#> 21                    NA                NA                  NA
-#> 34                    NA                NA                  NA
-#> 47                    NA                NA                  NA
-#> 58                    NA                NA                  NA
-#> 67                    NA                NA                  NA
-#>    background_adjusted_effect global_effect global_se global_statistic
-#> 1                 -0.42759639   -0.54331614 0.0371256      -14.6345430
-#> 21                 0.11008012    0.03412472 0.0371256        0.9191695
-#> 34                -0.40523361   -0.53613209 0.0371256      -14.4410363
-#> 47                 0.28971870    0.20219166 0.0371256        5.4461525
-#> 58                 0.04093903    0.01268673 0.0371256        0.3417245
-#> 67                -0.06382475   -0.01999624 0.0371256       -0.5386106
+#>    reporter          perturbation total_effect  total_se total_statistic
+#> 1    acrABp     1-Methyluric acid -0.021457035 0.1014051     -0.21159714
+#> 13   acrABp         2-2-Bipyridyl -0.507066908 0.1119016     -4.53136274
+#> 21   acrABp              2,3-DHBA -0.127903232 0.1014051     -1.26130931
+#> 28   acrABp   4-Aminobenzoic acid  0.078135567 0.1014051      0.77052876
+#> 35   acrABp 4-Aminosalicylic acid -0.008980912 0.1014051     -0.08856468
+#> 42   acrABp                   A22 -0.369214389 0.1119016     -3.29945477
+#>    total_pvalue additive_total_effect additive_total_se empty_vector_effect
+#> 1  8.324887e-01                    NA                NA                  NA
+#> 13 6.992916e-06                    NA                NA                  NA
+#> 21 2.076567e-01                    NA                NA                  NA
+#> 28 4.412705e-01                    NA                NA                  NA
+#> 35 9.294556e-01                    NA                NA                  NA
+#> 42 1.022440e-03                    NA                NA                  NA
+#>    background_adjusted_effect global_effect  global_se global_statistic
+#> 1                -0.021457035    0.01047815 0.05076760        0.2063945
+#> 13               -0.507066908   -0.22174188 0.05608266       -3.9538403
+#> 21               -0.127903232   -0.01358238 0.05076760       -0.2675403
+#> 28                0.078135567    0.09810077 0.05076760        1.9323500
+#> 35               -0.008980912    0.03766254 0.05076760        0.7418619
+#> 42               -0.369214389   -0.33576292 0.05608266       -5.9869294
 #>    global_pvalue low_rank_effect rank_adjusted_total_effect
-#> 1   2.486990e-24               0                -0.42759639
-#> 21  3.607701e-01               0                 0.11008012
-#> 34  5.403585e-24               0                -0.40523361
-#> 47  5.511408e-07               0                 0.28971870
-#> 58  7.334543e-01               0                 0.04093903
-#> 67  5.916512e-01               0                -0.06382475
+#> 1   8.365492e-01               0               -0.021457035
+#> 13  8.559773e-05               0               -0.507066908
+#> 21  7.891405e-01               0               -0.127903232
+#> 28  5.376287e-02               0                0.078135567
+#> 35  4.584466e-01               0               -0.008980912
+#> 42  3.586180e-09               0               -0.369214389
 #>    rank_adjusted_total_se rank_adjusted_total_statistic
-#> 1               0.1286067                    -3.3248384
-#> 21              0.1286067                     0.8559441
-#> 34              0.1286067                    -3.1509533
-#> 47              0.1286067                     2.2527502
-#> 58              0.1286067                     0.3183274
-#> 67              0.1286067                    -0.4962787
+#> 1               0.1014051                   -0.21159714
+#> 13              0.1119016                   -4.53136274
+#> 21              0.1014051                   -1.26130931
+#> 28              0.1014051                    0.77052876
+#> 35              0.1014051                   -0.08856468
+#> 42              0.1119016                   -3.29945477
 #>    rank_adjusted_total_pvalue rank_adjusted_global_effect specific_effect
-#> 1                0.0008847299                 -0.54331614      0.11571976
-#> 21               0.3920289226                  0.03412472      0.07595540
-#> 34               0.0016274332                 -0.53613209      0.13089849
-#> 47               0.0242751218                  0.20219166      0.08752703
-#> 58               0.7502366381                  0.01268673      0.02825231
-#> 67               0.6196979032                 -0.01999624     -0.04382851
+#> 1                8.324887e-01                  0.01047815     -0.03193519
+#> 13               6.992916e-06                 -0.22174188     -0.28532503
+#> 21               2.076567e-01                 -0.01358238     -0.11432085
+#> 28               4.412705e-01                  0.09810077     -0.01996520
+#> 35               9.294556e-01                  0.03766254     -0.04664346
+#> 42               1.022440e-03                 -0.33576292     -0.03345147
 #>    specific_se specific_statistic specific_pvalue total_padj_global
-#> 1    0.1239068          0.9339261       0.3503422        0.01114009
-#> 21   0.1239068          0.6130045       0.5398735        0.61294424
-#> 34   0.1239068          1.0564273       0.2907733        0.01698191
-#> 47   0.1239068          0.7063943       0.4799431        0.11490814
-#> 58   0.1239068          0.2280126       0.8196365        0.86983958
-#> 67   0.1239068         -0.3537217       0.7235475        0.79321332
+#> 1    0.1001915         -0.3187416     0.750025501       0.961902365
+#> 13   0.1102197         -2.5886947     0.009850864       0.000102252
+#> 21   0.1001915         -1.1410238     0.254282805       0.529605168
+#> 28   0.1001915         -0.1992705     0.842113889       0.788750229
+#> 35   0.1001915         -0.4655432     0.641699421       0.994044269
+#> 42   0.1102197         -0.3034982     0.761607916       0.008409565
 #>    total_padj_by_reporter rank_adjusted_total_padj_global
-#> 1              0.02671743                      0.01114009
-#> 21             0.54072955                      0.61294424
-#> 34             0.02671743                      0.01698191
-#> 47             0.09710049                      0.11490814
-#> 58             0.78972278                      0.86983958
-#> 67             0.70822618                      0.79321332
+#> 1            9.315945e-01                     0.961902365
+#> 13           5.975764e-05                     0.000102252
+#> 21           4.174038e-01                     0.529605168
+#> 28           6.690230e-01                     0.788750229
+#> 35           9.600970e-01                     0.994044269
+#> 42           5.653489e-03                     0.008409565
 #>    rank_adjusted_total_padj_by_reporter specific_padj_global
-#> 1                            0.02671743            0.9710323
-#> 21                           0.54072955            0.9710323
-#> 34                           0.02671743            0.9710323
-#> 47                           0.09710049            0.9710323
-#> 58                           0.78972278            0.9710323
-#> 67                           0.70822618            0.9710323
-#>    specific_padj_by_reporter total_padj specific_padj
-#> 1                  0.8293604 0.01114009     0.9710323
-#> 21                 0.8293604 0.61294424     0.9710323
-#> 34                 0.8293604 0.01698191     0.9710323
-#> 47                 0.8293604 0.11490814     0.9710323
-#> 58                 0.9367274 0.86983958     0.9710323
-#> 67                 0.8770273 0.79321332     0.9710323
+#> 1                          9.315945e-01           0.95611802
+#> 13                         5.975764e-05           0.06751946
+#> 21                         4.174038e-01           0.65873262
+#> 28                         6.690230e-01           0.97409235
+#> 35                         9.600970e-01           0.91393554
+#> 42                         5.653489e-03           0.95637025
+#>    specific_padj_by_reporter   total_padj specific_padj
+#> 1                 0.98515421 9.315945e-01    0.98515421
+#> 13                0.04629906 5.975764e-05    0.04629906
+#> 21                0.57246404 4.174038e-01    0.57246404
+#> 28                0.98515421 6.690230e-01    0.98515421
+#> 35                0.96497128 9.600970e-01    0.96497128
+#> 42                0.98515421 5.653489e-03    0.98515421
 ```
 
 The key columns are:
 
-- `total_effect`: DMSO-relative response for the reporter-perturbation
-  pair.
+- `total_effect`: reference-relative response for the
+  reporter-perturbation pair.
 - `global_effect`: average perturbation-wide response across reporters.
 - `specific_effect`: reporter-specific deviation from the
   perturbation-wide effect.
@@ -332,33 +278,29 @@ The direct fitting functions remain available for existing scripts, but
 [`fit_destress()`](https://muellsen.github.io/DStressR/reference/fit_destress.md)
 is the recommended entry point for new model-based analyses.
 
-## Optional background reporter calibration
+## Empty-vector calibration
 
-If a screen contains a matched background reporter, such as an Empty
-Vector Control, the background reporter can be used during response
-construction. When `background_reporter` is supplied, DStressR uses
-Huber calibration by default; least-squares calibration and direct
-subtraction remain available through `background_method`.
+The Binsfeld screen contains an Empty Vector Control (EVC), which is
+used above as a matched background reporter during response
+construction. DStressR uses Huber calibration by default; least-squares
+calibration and direct subtraction remain available through
+`background_method`. The following call prepares the same assay without
+EVC calibration for a direct comparison.
 
 ``` r
 
-assay_bg <- prepare_assay(
-  screen_with_evc,
+assay_without_evc <- prepare_assay(
+  screen,
   reporter = "reporter",
-  perturbation = "perturbation",
-  control = "DMSO",
-  lux = "LUX.AUC_16",
-  growth = "od_16h.measured",
-  batch = "batch",
+  perturbation = "drug",
+  control = c("Water_1", "Water_2"),
+  lux = "lux_auc",
+  growth = "od_auc",
+  growth_exponent = "estimate",
+  batch = "dose_level",
   replicate = "replicate",
-  background_reporter = "EVC",
-  background_by = c("perturbation", "batch", "replicate")
-)
-
-fit_bg <- fit_destress(
-  assay_bg,
-  technical = c("batch", "replicate"),
-  testing = "moderated_t"
+  growth_covariates = "replicate",
+  numeric_covariates = "dose_level"
 )
 ```
 
@@ -377,127 +319,128 @@ hits <- call_hits(
 table(hits$hit)
 #> 
 #> Downregulated        Not DE   Upregulated 
-#>             5           472             3
+#>            21           618            19
 
 head(
   hits[order(hits$specific_padj, -abs(hits$specific_effect)), ],
   10
 )
-#>     reporter perturbation total_effect  total_se total_statistic total_pvalue
-#> 218      P12          C26   -1.3710711 0.1286071      -10.660929 1.555518e-26
-#> 197      P11          C24   -1.6735292 0.1286071      -13.012726 1.043345e-38
-#> 244      P10          C28    1.4895866 0.1286077       11.582410 5.083461e-31
-#> 177      P10          C22   -1.6257162 0.1286077      -12.640897 1.264264e-36
-#> 324      P10          C33    0.9705429 0.1286077        7.546540 4.473479e-14
-#> 131       P5          C19    1.0692457 0.1286080        8.313991 9.264966e-17
-#> 387      P11          C39   -1.2130464 0.1286071       -9.432187 4.024404e-21
-#> 410       P8          C40   -0.7506326 0.1286064       -5.836665 5.327233e-09
-#> 98        P8          C17   -0.2232267 0.1286064       -1.735735 8.261100e-02
-#> 248       P4          C28   -0.2227294 0.1286069       -1.731862 8.329848e-02
+#>     reporter   perturbation total_effect  total_se total_statistic total_pvalue
+#> 458    soxSp       Paraquat    2.0421536 0.1220216       16.736004 1.299301e-52
+#> 496    soxSp            PMS    1.5927747 0.1220216       13.053222 8.823836e-35
+#> 497     robp            PMS   -1.4764288 0.1750960       -8.432112 2.231100e-16
+#> 507    ompFp       Procaine   -1.7820135 0.1513196      -11.776486 4.232818e-29
+#> 210     robp Clarithromycin   -1.3681767 0.1832086       -7.467861 2.663884e-13
+#> 208   acrABp Clarithromycin    1.0545853 0.1119016        9.424216 7.767633e-20
+#> 506    micFp       Procaine    0.7024904 0.1261821        5.567275 3.782991e-08
+#> 76      robp   Azithromycin   -1.3785716 0.1832086       -7.524599 1.789461e-13
+#> 121    micFp       Caffeine    1.2532229 0.1261821        9.931860 9.637891e-22
+#> 553    soxSp     Rifampicin   -1.5424675 0.1220216      -12.640941 6.223969e-33
 #>     additive_total_effect additive_total_se empty_vector_effect
-#> 218                    NA                NA                  NA
-#> 197                    NA                NA                  NA
-#> 244                    NA                NA                  NA
-#> 177                    NA                NA                  NA
-#> 324                    NA                NA                  NA
-#> 131                    NA                NA                  NA
-#> 387                    NA                NA                  NA
-#> 410                    NA                NA                  NA
-#> 98                     NA                NA                  NA
-#> 248                    NA                NA                  NA
-#>     background_adjusted_effect global_effect global_se global_statistic
-#> 218                 -1.3710711    0.11664730 0.0371256        3.1419644
-#> 197                 -1.6735292   -0.20714467 0.0371256       -5.5795647
-#> 244                  1.4895866    0.12623694 0.0371256        3.4002668
-#> 177                 -1.6257162   -0.44954782 0.0371256      -12.1088374
-#> 324                  0.9705429   -0.07827537 0.0371256       -2.1083935
-#> 131                  1.0692457    0.05542205 0.0371256        1.4928259
-#> 387                 -1.2130464   -0.23137805 0.0371256       -6.2323053
-#> 410                 -0.7506326    0.01355452 0.0371256        0.3650989
-#> 98                  -0.2232267    0.13065534 0.0371256        3.5192791
-#> 248                 -0.2227294    0.12623694 0.0371256        3.4002668
+#> 458                    NA                NA                  NA
+#> 496                    NA                NA                  NA
+#> 497                    NA                NA                  NA
+#> 507                    NA                NA                  NA
+#> 210                    NA                NA                  NA
+#> 208                    NA                NA                  NA
+#> 506                    NA                NA                  NA
+#> 76                     NA                NA                  NA
+#> 121                    NA                NA                  NA
+#> 553                    NA                NA                  NA
+#>     background_adjusted_effect global_effect  global_se global_statistic
+#> 458                  2.0421536    0.44247430 0.05076760         8.715683
+#> 496                  1.5927747    0.16081460 0.05076760         3.167662
+#> 497                 -1.4764288    0.16081460 0.05076760         3.167662
+#> 507                 -1.7820135   -0.35237122 0.05076760        -6.940869
+#> 210                 -1.3681767    0.07883706 0.05335091         1.477708
+#> 208                  1.0545853    0.07883706 0.05335091         1.477708
+#> 506                  0.7024904   -0.35237122 0.05076760        -6.940869
+#> 76                  -1.3785716   -0.01747403 0.05299562        -0.329726
+#> 121                  1.2532229    0.36926273 0.05076760         7.273591
+#> 553                 -1.5424675   -0.69445748 0.05388049       -12.888848
 #>     global_pvalue low_rank_effect rank_adjusted_total_effect
-#> 218  2.353286e-03               0                 -1.3710711
-#> 197  3.182447e-07               0                 -1.6735292
-#> 244  1.052706e-03               0                  1.4895866
-#> 177  8.955951e-20               0                 -1.6257162
-#> 324  3.812631e-02               0                  0.9705429
-#> 131  1.394162e-01               0                  1.0692457
-#> 387  2.024970e-08               0                 -1.2130464
-#> 410  7.160010e-01               0                 -0.7506326
-#> 98   7.170824e-04               0                 -0.2232267
-#> 248  1.052706e-03               0                 -0.2227294
+#> 458  2.534096e-17               0                  2.0421536
+#> 496  1.610766e-03               0                  1.5927747
+#> 497  1.610766e-03               0                 -1.4764288
+#> 507  9.684477e-12               0                 -1.7820135
+#> 210  1.399842e-01               0                 -1.3681767
+#> 208  1.399842e-01               0                  1.0545853
+#> 506  9.684477e-12               0                  0.7024904
+#> 76   7.417163e-01               0                 -1.3785716
+#> 121  1.039994e-12               0                  1.2532229
+#> 553  6.490759e-34               0                 -1.5424675
 #>     rank_adjusted_total_se rank_adjusted_total_statistic
-#> 218              0.1286071                    -10.660929
-#> 197              0.1286071                    -13.012726
-#> 244              0.1286077                     11.582410
-#> 177              0.1286077                    -12.640897
-#> 324              0.1286077                      7.546540
-#> 131              0.1286080                      8.313991
-#> 387              0.1286071                     -9.432187
-#> 410              0.1286064                     -5.836665
-#> 98               0.1286064                     -1.735735
-#> 248              0.1286069                     -1.731862
+#> 458              0.1220216                     16.736004
+#> 496              0.1220216                     13.053222
+#> 497              0.1750960                     -8.432112
+#> 507              0.1513196                    -11.776486
+#> 210              0.1832086                     -7.467861
+#> 208              0.1119016                      9.424216
+#> 506              0.1261821                      5.567275
+#> 76               0.1832086                     -7.524599
+#> 121              0.1261821                      9.931860
+#> 553              0.1220216                    -12.640941
 #>     rank_adjusted_total_pvalue rank_adjusted_global_effect specific_effect
-#> 218               1.555518e-26                  0.11664730      -1.4877184
-#> 197               1.043345e-38                 -0.20714467      -1.4663846
-#> 244               5.083461e-31                  0.12623694       1.3633497
-#> 177               1.264264e-36                 -0.44954782      -1.1761684
-#> 324               4.473479e-14                 -0.07827537       1.0488183
-#> 131               9.264966e-17                  0.05542205       1.0138237
-#> 387               4.024404e-21                 -0.23137805      -0.9816684
-#> 410               5.327233e-09                  0.01355452      -0.7641871
-#> 98                8.261100e-02                  0.13065534      -0.3538820
-#> 248               8.329848e-02                  0.12623694      -0.3489663
+#> 458               1.299301e-52                  0.44247430       1.5996793
+#> 496               8.823836e-35                  0.16081460       1.4319601
+#> 497               2.231100e-16                  0.16081460      -1.6372434
+#> 507               4.232818e-29                 -0.35237122      -1.4296422
+#> 210               2.663884e-13                  0.07883706      -1.4470137
+#> 208               7.767633e-20                  0.07883706       0.9757482
+#> 506               3.782991e-08                 -0.35237122       1.0548616
+#> 76                1.789461e-13                 -0.01747403      -1.3610976
+#> 121               9.637891e-22                  0.36926273       0.8839602
+#> 553               6.223969e-33                 -0.69445748      -0.8480100
 #>     specific_se specific_statistic specific_pvalue total_padj_global
-#> 218   0.1239068         -12.006758    3.291619e-33      1.866622e-24
-#> 197   0.1239068         -11.834581    2.599217e-32      5.008056e-36
-#> 244   0.1239068          11.003029    3.708851e-28      8.133537e-29
-#> 177   0.1239068          -9.492367    2.263163e-21      3.034233e-34
-#> 324   0.1239068           8.464577    2.574244e-17      3.067528e-12
-#> 131   0.1239068           8.182150    2.791458e-16      7.411973e-15
-#> 387   0.1239068          -7.922638    2.327607e-15      3.863428e-19
-#> 410   0.1239068          -6.167437    6.943232e-10      3.196340e-07
-#> 98    0.1239068          -2.856035    4.289771e-03      2.493917e-01
-#> 248   0.1239068          -2.816362    4.857182e-03      2.498954e-01
+#> 458   0.1150700          13.901794    9.955050e-39      8.549398e-50
+#> 496   0.1150700          12.444253    4.338265e-32      2.903042e-32
+#> 497   0.1555950         -10.522466    5.138565e-24      1.468064e-14
+#> 507   0.1371512         -10.423844    1.305596e-23      6.962986e-27
+#> 210   0.1627683          -8.890021    5.997142e-18      1.252025e-11
+#> 208   0.1088913           8.960756    3.428777e-18      6.388879e-18
+#> 506   0.1181514           8.928051    4.289854e-18      8.297361e-07
+#> 76    0.1626553          -8.367990    3.595041e-16      9.057424e-12
+#> 121   0.1181514           7.481590    2.359605e-13      1.056955e-19
+#> 553   0.1164408          -7.282755    9.332224e-13      1.365124e-30
 #>     total_padj_by_reporter rank_adjusted_total_padj_global
-#> 218           6.222073e-25                    1.866622e-24
-#> 197           4.173380e-37                    5.008056e-36
-#> 244           1.016692e-29                    8.133537e-29
-#> 177           5.057056e-35                    3.034233e-34
-#> 324           5.964639e-13                    3.067528e-12
-#> 131           3.705986e-15                    7.411973e-15
-#> 387           8.048807e-20                    3.863428e-19
-#> 410           1.623456e-07                    3.196340e-07
-#> 98            2.863950e-01                    2.493917e-01
-#> 248           2.221293e-01                    2.498954e-01
+#> 458           1.221343e-50                    8.549398e-50
+#> 496           4.147203e-33                    2.903042e-32
+#> 497           2.097234e-14                    1.468064e-14
+#> 507           3.978849e-27                    6.962986e-27
+#> 210           8.346835e-12                    1.252025e-11
+#> 208           2.433858e-18                    6.388879e-18
+#> 506           8.890030e-07                    8.297361e-07
+#> 76            8.346835e-12                    9.057424e-12
+#> 121           9.059618e-20                    1.056955e-19
+#> 553           1.950177e-31                    1.365124e-30
 #>     rank_adjusted_total_padj_by_reporter specific_padj_global
-#> 218                         6.222073e-25         1.579977e-30
-#> 197                         4.173380e-37         6.238121e-30
-#> 244                         1.016692e-29         5.934161e-26
-#> 177                         5.057056e-35         2.715796e-19
-#> 324                         5.964639e-13         2.471274e-15
-#> 131                         3.705986e-15         2.233166e-14
-#> 387                         8.048807e-20         1.596073e-13
-#> 410                         1.623456e-07         4.165939e-08
-#> 98                          2.863950e-01         2.287878e-01
-#> 248                         2.221293e-01         2.331447e-01
+#> 458                         1.221343e-50         6.550423e-36
+#> 496                         4.147203e-33         1.427289e-29
+#> 497                         2.097234e-14         1.127059e-21
+#> 507                         3.978849e-27         2.147705e-21
+#> 210                         8.346835e-12         5.637313e-16
+#> 208                         2.433858e-18         4.512271e-16
+#> 506                         8.890030e-07         4.704539e-16
+#> 76                          8.346835e-12         2.956921e-14
+#> 121                         9.059618e-20         1.725133e-11
+#> 553                         1.950177e-31         5.582366e-11
 #>     specific_padj_by_reporter   total_padj specific_padj           hit
-#> 218              1.316648e-31 1.866622e-24  1.579977e-30 Downregulated
-#> 197              1.039687e-30 5.008056e-36  6.238121e-30 Downregulated
-#> 244              1.483540e-26 8.133537e-29  5.934161e-26   Upregulated
-#> 177              4.526326e-20 3.034233e-34  2.715796e-19 Downregulated
-#> 324              3.432325e-16 3.067528e-12  2.471274e-15   Upregulated
-#> 131              1.116583e-14 7.411973e-15  2.233166e-14   Upregulated
-#> 387              4.655213e-14 3.863428e-19  1.596073e-13 Downregulated
-#> 410              2.777293e-08 3.196340e-07  4.165939e-08 Downregulated
-#> 98               8.579543e-02 2.493917e-01  2.287878e-01        Not DE
-#> 248              1.942873e-01 2.498954e-01  2.331447e-01        Not DE
+#> 458              9.357747e-37 1.221343e-50  9.357747e-37   Upregulated
+#> 496              2.038985e-30 4.147203e-33  2.038985e-30   Upregulated
+#> 497              4.830251e-22 2.097234e-14  4.830251e-22 Downregulated
+#> 507              1.227260e-21 3.978849e-27  1.227260e-21 Downregulated
+#> 210              2.818657e-16 8.346835e-12  2.818657e-16 Downregulated
+#> 208              3.223050e-16 2.433858e-18  3.223050e-16   Upregulated
+#> 506              4.032462e-16 8.890030e-07  4.032462e-16   Upregulated
+#> 76               1.126446e-14 8.346835e-12  1.126446e-14 Downregulated
+#> 121              1.109014e-11 9.059618e-20  1.109014e-11   Upregulated
+#> 553              2.924097e-11 1.950177e-31  2.924097e-11 Downregulated
 ```
 
 In real screens, the FDR cutoff should be paired with domain knowledge
-and diagnostics. For DMSO-rich designs, empirical replicate/permutation
-p-values can be used as an additional calibration check.
+and diagnostics. For reference-rich designs, empirical
+replicate/permutation p-values can be used as an additional calibration
+check.
 
 ## Visualize the screen
 
@@ -547,38 +490,3 @@ plot_response_clustered_heatmap(
 ```
 
 ![](DStressR_files/figure-html/clustered-1.png)
-
-## Optional DGrowthR handoff
-
-The current default hit model uses the exported growth summary column
-supplied to
-[`prepare_assay()`](https://muellsen.github.io/DStressR/reference/prepare_assay.md).
-If growth curves have already been modeled with DGrowthR, the
-DGrowthR-derived growth parameter can be joined explicitly before assay
-preparation.
-
-``` r
-
-screen2 <- add_dgrowthr_growth(
-  screen,
-  object = dgrowthr_fit,
-  by = "curve_id",
-  model_covariate = "curve_id",
-  growth_metric = "OD_16",
-  output = "dgrowthr_od16"
-)
-
-assay2 <- prepare_assay(
-  screen2,
-  reporter = "reporter",
-  perturbation = "perturbation",
-  control = "DMSO",
-  lux = "LUX.AUC_16",
-  growth = "dgrowthr_od16",
-  batch = "batch",
-  replicate = "replicate"
-)
-```
-
-This explicit handoff keeps the selected DStressR workflow reproducible,
-while making DGrowthR-based sensitivity analyses straightforward.
