@@ -179,7 +179,7 @@ p_hist <- ggplot2::ggplot(
     ggplot2::vars(background_rank),
     ncol = 1,
     labeller = ggplot2::as_labeller(c(
-      "0" = "Default specific effect",
+      "0" = "Specific effect",
       "1" = "Rank-adjusted total effect"
     ))
   ) +

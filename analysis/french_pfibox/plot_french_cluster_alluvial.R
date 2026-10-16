@@ -9,14 +9,16 @@ suppressPackageStartupMessages({
   library(readr)
 })
 
-out_dir <- file.path(
+in_dir <- file.path(
   "analysis", "outputs", "french_pfibox", "promoter_activity_analysis"
 )
+out_dir <- Sys.getenv("PFIBOX_FIGURE_OUTPUT_DIR", unset = in_dir)
+dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 
 run_tag <- Sys.getenv("PFIBOX_RUN_TAG", "reporters2000_perturbations100_T2-18h_treatment_replicate_scalable")
 suffix <- Sys.getenv("PFIBOX_CLUSTER_OUTPUT_SUFFIX", "total_effect_ward")
 suffix <- if (nzchar(suffix)) paste0("_", suffix) else ""
-artifact <- read_paper_artifact(file.path(out_dir,
+artifact <- read_paper_artifact(file.path(in_dir,
   paste0("pfibox_paper_mapping_", run_tag, suffix, ".rds")))
 mapping <- artifact$annotations$mapping
 dstressr_clusters <- artifact$annotations$reporter_clusters

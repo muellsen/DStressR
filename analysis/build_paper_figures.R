@@ -5,9 +5,9 @@ mode <- commandArgs(trailingOnly = TRUE)
 if (!length(mode)) mode <- "--figures"
 stopifnot(length(mode) == 1L)
 mode <- match.arg(mode, c("--analysis", "--diagnostics", "--figures", "--all"))
-run <- function(script, env = character()) {
+run <- function(script, env = character(), args = character()) {
   message("\n--- ", script, " ---")
-  status <- system2(file.path(R.home("bin"), "Rscript"), shQuote(script), env = env)
+  status <- system2(file.path(R.home("bin"), "Rscript"), c(shQuote(script), args), env = env)
   if (status != 0L) stop("Failed: ", script, call. = FALSE)
 }
 pfibox <- c("PFIBOX_REPORTER_LIMIT=2000", "PFIBOX_PERTURBATION_LIMIT=100",
@@ -34,6 +34,8 @@ if (mode %in% c("--analysis", "--all")) {
 }
 if (mode %in% c("--diagnostics", "--all")) {
   run("analysis/ecoli_promoter_screen/compute_paper_diagnostics.R")
+  run("analysis/ecoli_promoter_screen/prepare_total_effect_discovery.R")
+  run("analysis/ecoli_promoter_screen/prepare_interaction_total_effects.R")
   run("analysis/french_pfibox/compute_paper_diagnostics.R", cluster)
   run("analysis/french_pfibox/map_french_timecourse_clusters_to_destress.R", cluster)
 }
@@ -52,4 +54,7 @@ if (mode %in% c("--figures", "--all")) {
     "analysis/dryad_global_regulators/plot_rank_adjustment_figures.R",
     "analysis/dryad_global_regulators/plot_weak_stress_three_target_inference.R")
   for (script in scripts) run(script, cluster)
+  run("analysis/ecoli_promoter_screen/plot_discovery_figures.R", args = "--target=total")
+  run("analysis/french_pfibox/plot_clustering_and_inference.R", args = "--target=total")
+  run("analysis/french_pfibox/plot_pfibox_moderation_diagnostic.R", args = "--target=total")
 }

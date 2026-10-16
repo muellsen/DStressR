@@ -3,7 +3,7 @@
 # Paper-style EDA and discovery figures for the PFIbox promoter-activity
 # DStressR analysis. The clustered figure displays the fitted DStressR total
 # effect matrix. The discovery figure uses the Binsfeld-style raw p-value
-# histogram and volcano grammar for centered specific-effect tests.
+# histogram and volcano grammar for the selected inferential target.
 
 source(file.path("analysis", "_helpers.R"))
 load_destress_package()
@@ -23,17 +23,21 @@ ggplot2 <- asNamespace("ggplot2")
 gridExtra <- asNamespace("gridExtra")
 scales <- asNamespace("scales")
 
-out_dir <- analysis_output_dir("french_pfibox", "promoter_activity_analysis")
+in_dir <- analysis_output_dir("french_pfibox", "promoter_activity_analysis")
+out_dir <- Sys.getenv("PFIBOX_FIGURE_OUTPUT_DIR", unset = in_dir)
+dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
+target <- match.arg(Sys.getenv("PFIBOX_DISCOVERY_TARGET", unset = "specific"),
+                    c("specific", "total"))
 run_tag <- Sys.getenv("PFIBOX_RUN_TAG", "reporters2000_perturbations100_T2-18h_treatment_replicate_scalable")
 source(file.path("analysis", "_paper_artifacts.R"))
 suffix <- Sys.getenv("PFIBOX_CLUSTER_OUTPUT_SUFFIX", "total_effect_ward")
 suffix <- if (nzchar(suffix)) paste0("_", suffix) else ""
-artifact <- read_paper_artifact(file.path(out_dir, paste0("pfibox_paper_diagnostics_", run_tag, suffix, ".rds")))
+artifact <- read_paper_artifact(file.path(in_dir, paste0("pfibox_paper_diagnostics_", run_tag, suffix, ".rds")))
 res <- artifact$results$default
 metadata <- artifact$annotations$metadata
 required <- c(
-  "reporter", "perturbation", "total_effect", "specific_effect",
-  "specific_pvalue", "specific_padj_by_reporter"
+  "reporter", "perturbation", "total_effect", paste0(target, "_effect"),
+  paste0(target, "_pvalue"), paste0(target, "_padj_by_reporter")
 )
 missing <- setdiff(required, names(res))
 if (length(missing)) {
@@ -182,14 +186,14 @@ ggplot2$ggsave(paste0(cluster_base, ".pdf"), cluster_figure, width = 10.4, heigh
 reporter_clusters <- artifact$annotations$reporter_clusters
 perturbation_clusters <- artifact$annotations$perturbation_clusters
 discovery <- res
-discovery$specific_pvalue <- as.numeric(discovery$specific_pvalue)
-discovery$specific_padj_by_reporter <- as.numeric(discovery$specific_padj_by_reporter)
-discovery$specific_effect <- as.numeric(discovery$specific_effect)
-discovery$hit <- is.finite(discovery$specific_padj_by_reporter) &
-  discovery$specific_padj_by_reporter < fdr
+discovery$inference_pvalue <- as.numeric(discovery[[paste0(target, "_pvalue")]])
+discovery$inference_padj <- as.numeric(discovery[[paste0(target, "_padj_by_reporter")]])
+discovery$inference_effect <- as.numeric(discovery[[paste0(target, "_effect")]])
+discovery$inference_target <- target
+discovery$hit <- is.finite(discovery$inference_padj) & discovery$inference_padj < fdr
 discovery$status <- ifelse(discovery$hit, "Hit", "Not called")
 discovery$status <- factor(discovery$status, levels = c("Not called", "Hit"))
-discovery$neglog10_pvalue <- -log10(pmax(discovery$specific_pvalue, .Machine$double.xmin))
+discovery$neglog10_pvalue <- -log10(pmax(discovery$inference_pvalue, .Machine$double.xmin))
 volcano_y_cap <- as.numeric(Sys.getenv("PFIBOX_VOLCANO_Y_CAP", unset = "50"))
 if (!is.finite(volcano_y_cap) || volcano_y_cap <= 0) {
   volcano_y_cap <- 50
@@ -199,19 +203,19 @@ discovery$neglog10_pvalue_plot <- pmin(discovery$neglog10_pvalue, volcano_y_cap 
 discovery$volcano_capped <- is.finite(discovery$neglog10_pvalue) &
   discovery$neglog10_pvalue > volcano_y_cap
 discovery$label <- paste(discovery$reporter, discovery$perturbation, sep = "-")
-discovery$label_hjust <- ifelse(discovery$specific_effect > 0, 1.04, -0.04)
+discovery$label_hjust <- ifelse(discovery$inference_effect > 0, 1.04, -0.04)
 discovery$drug <- sub("-[0-9]+$", "", discovery$perturbation)
 discovery$method <- "DStressR"
 
 top_labels <- discovery[
   discovery$hit &
-    is.finite(discovery$specific_effect) &
+    is.finite(discovery$inference_effect) &
     is.finite(discovery$neglog10_pvalue),
   ,
   drop = FALSE
 ]
 top_labels <- top_labels[
-  order(-top_labels$neglog10_pvalue, -abs(top_labels$specific_effect)),
+  order(-top_labels$neglog10_pvalue, -abs(top_labels$inference_effect)),
   ,
   drop = FALSE
 ]
@@ -248,8 +252,8 @@ if (length(missing_drugs)) {
 }
 
 p_hist <- ggplot2$ggplot(
-  discovery[is.finite(discovery$specific_pvalue), , drop = FALSE],
-  ggplot2$aes(specific_pvalue)
+  discovery[is.finite(discovery$inference_pvalue), , drop = FALSE],
+  ggplot2$aes(inference_pvalue)
 ) +
   ggplot2$geom_histogram(
     bins = 40,
@@ -259,7 +263,7 @@ p_hist <- ggplot2$ggplot(
   ) +
   ggplot2$geom_histogram(
     data = discovery[
-      discovery$hit & is.finite(discovery$specific_pvalue),
+      discovery$hit & is.finite(discovery$inference_pvalue),
       ,
       drop = FALSE
     ],
@@ -283,12 +287,12 @@ p_hist <- ggplot2$ggplot(
     y = "Pairs"
   )
 
-xmax <- max(abs(discovery$specific_effect[is.finite(discovery$specific_effect)]), na.rm = TRUE)
+xmax <- max(abs(discovery$inference_effect[is.finite(discovery$inference_effect)]), na.rm = TRUE)
 xmax <- ceiling(xmax * 1.10 * 10) / 10
 
 p_volcano <- ggplot2$ggplot(
-  discovery[is.finite(discovery$specific_effect) & is.finite(discovery$neglog10_pvalue_plot), , drop = FALSE],
-  ggplot2$aes(specific_effect, neglog10_pvalue_plot)
+  discovery[is.finite(discovery$inference_effect) & is.finite(discovery$neglog10_pvalue_plot), , drop = FALSE],
+  ggplot2$aes(inference_effect, neglog10_pvalue_plot)
 ) +
   ggplot2$geom_hline(yintercept = -log10(fdr), color = "#9ca3af", linewidth = 0.3, linetype = "dashed") +
   ggplot2$geom_hline(yintercept = volcano_y_cap, color = "#9ca3af", linewidth = 0.24, linetype = "dotted") +
@@ -296,7 +300,7 @@ p_volcano <- ggplot2$ggplot(
   ggplot2$geom_point(color = "#d1d5db", alpha = 0.42, size = 0.9) +
   ggplot2$geom_point(
     data = discovery[
-      discovery$hit & is.finite(discovery$specific_effect) & is.finite(discovery$neglog10_pvalue_plot),
+      discovery$hit & is.finite(discovery$inference_effect) & is.finite(discovery$neglog10_pvalue_plot),
       ,
       drop = FALSE
     ],
@@ -335,7 +339,7 @@ p_volcano <- ggplot2$ggplot(
     )
   ) +
   ggplot2$labs(
-    x = expression(hat(delta)[aj]),
+    x = if (target == "total") expression(hat(Delta * y)[aj]^"tot") else expression(hat(delta)[aj]),
     y = expression(-log[10] * " raw p-value")
   )
 
@@ -383,7 +387,7 @@ ggplot2$ggsave(paste0(discovery_base, ".png"), discovery_figure, width = 9.4, he
 ggplot2$ggsave(paste0(discovery_base, ".pdf"), discovery_figure, width = 9.4, height = 8.4, bg = "white")
 
 utils::write.table(
-  top_labels[order(top_labels$specific_pvalue), ],
+  top_labels[order(top_labels$inference_pvalue), ],
   file.path(out_dir, paste0("pfibox_pa_binsfeld_style_discovery_top_labels_", run_tag, ".tsv")),
   sep = "\t", quote = FALSE, row.names = FALSE
 )

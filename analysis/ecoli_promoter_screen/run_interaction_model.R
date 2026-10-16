@@ -2,7 +2,7 @@ source(file.path("analysis", "_helpers.R"))
 load_destress_package()
 
 if (!requireNamespace("ggplot2", quietly = TRUE)) {
-  stop("Package `ggplot2` is required for interaction-sensitivity plots.", call. = FALSE)
+  stop("Package `ggplot2` is required for interaction-model plots.", call. = FALSE)
 }
 
 ggplot2 <- asNamespace("ggplot2")
@@ -46,6 +46,11 @@ fit_interaction <- function(use_ev = FALSE) {
     interaction = TRUE
   )
 
+  saveRDS(fit, file.path(out_dir, if (use_ev) {
+    "interaction_with_ev_fit.rds"
+  } else {
+    "interaction_without_ev_fit.rds"
+  }))
   res <- results(fit)
   res$promoter <- res$reporter
   res$compound <- res$perturbation

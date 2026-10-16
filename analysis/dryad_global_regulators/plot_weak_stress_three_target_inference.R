@@ -43,7 +43,7 @@ targets <- rbind(
   ),
   make_target(
     default,
-    "Default specific effect",
+    "Specific effect",
     "specific_effect",
     "specific_pvalue",
     "specific_padj_by_reporter"
@@ -58,7 +58,7 @@ targets <- rbind(
 )
 targets$target <- factor(
   targets$target,
-  levels = c("Total effect", "Default specific effect", "Rank-adjusted total effect")
+  levels = c("Total effect", "Specific effect", "Rank-adjusted total effect")
 )
 targets$compound <- factor(targets$compound, levels = c("Iron", "Tetracycline", "H2O2", "Kanamycin"))
 targets$promoter_label <- paste(targets$base_promoter, targets$window, sep = " | ")
@@ -105,7 +105,7 @@ p_hist <- ggplot2::ggplot(targets, ggplot2::aes(x = pvalue, fill = target)) +
   ggplot2::scale_fill_manual(
     values = c(
       "Total effect" = "#D55E00",
-      "Default specific effect" = "#009E73",
+      "Specific effect" = "#009E73",
       "Rank-adjusted total effect" = "#0072B2"
     ),
     guide = "none"
@@ -145,7 +145,7 @@ make_label_df <- function(d) {
   ]
   top_by_target <- c(
     "Total effect" = 8,
-    "Default specific effect" = 13,
+    "Specific effect" = 13,
     "Rank-adjusted total effect" = 14
   )
   candidates <- do.call(rbind, lapply(split(candidates, candidates$target), function(x) {

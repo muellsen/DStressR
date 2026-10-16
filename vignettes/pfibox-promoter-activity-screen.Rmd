@@ -128,8 +128,8 @@ tab <- results(fit, verbose = TRUE)
 hits <- call_hits(
   tab,
   fdr = 0.05,
-  effect = "specific_effect",
-  padj = "specific_padj_by_reporter"
+  effect = "total_effect",
+  padj = "total_padj_by_reporter"
 )
 ```
 

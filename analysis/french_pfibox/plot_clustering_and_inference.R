@@ -15,8 +15,17 @@ if (!requireNamespace("ggplot2", quietly = TRUE)) {
 out_dir <- file.path(
   "analysis", "outputs", "french_pfibox", "promoter_activity_analysis"
 )
+target_arg <- grep("^--target=", commandArgs(trailingOnly = TRUE), value = TRUE)
+target <- if (length(target_arg)) sub("^--target=", "", target_arg) else "specific"
+if (length(target) != 1L || !target %in% c("specific", "total")) {
+  stop("Use --target=specific or --target=total.", call. = FALSE)
+}
+if (target == "total") out_dir <- file.path(out_dir, "total_effect_discovery")
+dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 
 Sys.setenv(
+  PFIBOX_DISCOVERY_TARGET = target,
+  PFIBOX_FIGURE_OUTPUT_DIR = out_dir,
   PFIBOX_CLUSTER_TOP_REPORTERS = "2000",
   PFIBOX_CLUSTER_LINKAGE = "ward.D2",
   PFIBOX_CLUSTER_DISTANCE = "euclidean",
@@ -160,7 +169,7 @@ p_cluster <- ggplot2::ggplot(plot_long, ggplot2::aes(col_index, row_index, fill 
     limits = c(-cluster_env$clip_limit, cluster_env$clip_limit),
     oob = scales::squish,
     na.value = "#F3F4F6",
-    name = expression(hat(Delta * r)[aj]^"tot")
+    name = expression(hat(Delta * y)[aj]^"tot")
   ) +
   ggplot2::scale_x_continuous(
     breaks = seq_along(cluster_env$col_order),

@@ -3,17 +3,26 @@ source(file.path("analysis", "_paper_artifacts.R"))
 load_destress_package()
 set.seed(1) # Reproducible label placement only.
 ggplot2 <- asNamespace("ggplot2")
-out_dir <- analysis_output_dir("ecoli_interaction_model")
+target_arg <- grep("^--target=", commandArgs(trailingOnly = TRUE), value = TRUE)
+target <- if (length(target_arg)) sub("^--target=", "", target_arg) else "total"
+if (length(target) != 1L || !target %in% c("total", "specific")) {
+  stop("Use --target=total or --target=specific.", call. = FALSE)
+}
+out_dir <- analysis_output_dir(if (target == "total") {
+  "ecoli_interaction_total_effects"
+} else {
+  "ecoli_interaction_model"
+})
 artifact <- read_paper_artifact(file.path(out_dir, "binsfeld_interaction_paper.rds"))
 comparison <- artifact$annotations$comparison
 hit_cols <- artifact$annotations$hit_cols
 safe_neglog10 <- function(x) -log10(pmax(as.numeric(x), .Machine$double.xmin))
 set_labels <- c(
   binsfeld = "Binsfeld reference",
-  dstressr_without_ev = "DStressR without EV",
-  dstressr_with_ev = "DStressR with EV",
-  interaction_without_ev = "Interaction without EV",
-  interaction_with_ev = "Interaction with EV"
+  dstressr_without_ev = "DStressR without EVC",
+  dstressr_with_ev = "DStressR with EVC",
+  interaction_without_ev = "Interaction without EVC",
+  interaction_with_ev = "Interaction with EVC"
 )
 
 hit_matrix <- comparison[, hit_cols, drop = FALSE]
@@ -166,10 +175,10 @@ venn_hit_sets <- lapply(venn_order, function(nm) {
 })
 names(venn_hit_sets) <- c(
   "Binsfeld\nref.",
-  "DStressR\nno EV",
-  "Interaction\nno EV",
-  "Interaction\nwith EV",
-  "DStressR\nwith EV"
+  "DStressR\nno EVC",
+  "Interaction\nno EVC",
+  "Interaction\nwith EVC",
+  "DStressR\nwith EVC"
 )
 venn_fill <- c("#5b8fd9", "#d8b56d", "#f1d99b", "#bd8068", "#9b6a55")
 venn_outline <- c("#254f91", "#9f7625", "#b58c3d", "#7c4b38", "#633b2d")
@@ -205,10 +214,10 @@ draw_joint_venn <- function() {
   grid::grid.newpage()
   grid::grid.draw(venn_object)
   grid::grid.text("Binsfeld\nreference", x = 0.50, y = 0.965, gp = grid::gpar(col = venn_outline[1], fontsize = 15, fontface = "bold", fontfamily = "sans", lineheight = 0.9))
-  grid::grid.text("DStressR\nwithout EV", x = 0.075, y = 0.565, gp = grid::gpar(col = venn_outline[2], fontsize = 15, fontface = "bold", fontfamily = "sans", lineheight = 0.9))
-  grid::grid.text("Interaction\nwithout EV", x = 0.235, y = 0.065, gp = grid::gpar(col = venn_outline[3], fontsize = 15, fontface = "bold", fontfamily = "sans", lineheight = 0.9))
-  grid::grid.text("Interaction\nwith EV", x = 0.805, y = 0.065, gp = grid::gpar(col = venn_outline[4], fontsize = 15, fontface = "bold", fontfamily = "sans", lineheight = 0.9))
-  grid::grid.text("DStressR\nwith EV", x = 0.925, y = 0.605, gp = grid::gpar(col = venn_outline[5], fontsize = 15, fontface = "bold", fontfamily = "sans", lineheight = 0.9))
+  grid::grid.text("DStressR\nwithout EVC", x = 0.075, y = 0.565, gp = grid::gpar(col = venn_outline[2], fontsize = 13, fontface = "bold", fontfamily = "sans", lineheight = 0.9))
+  grid::grid.text("Interaction\nwithout EVC", x = 0.235, y = 0.065, gp = grid::gpar(col = venn_outline[3], fontsize = 15, fontface = "bold", fontfamily = "sans", lineheight = 0.9))
+  grid::grid.text("Interaction\nwith EVC", x = 0.805, y = 0.065, gp = grid::gpar(col = venn_outline[4], fontsize = 15, fontface = "bold", fontfamily = "sans", lineheight = 0.9))
+  grid::grid.text("DStressR\nwith EVC", x = 0.925, y = 0.605, gp = grid::gpar(col = venn_outline[5], fontsize = 13, fontface = "bold", fontfamily = "sans", lineheight = 0.9))
 }
 
 grDevices::png(
@@ -235,6 +244,14 @@ key_pairs <- data.frame(
   compound = c("Paraquat", "Caffeine", "Procaine", "Procaine", "Chloramphenicol", "Vanillin", "Paraquat", "Caffeine"),
   stringsAsFactors = FALSE
 )
+if (target == "total") {
+  key_pairs <- data.frame(
+    promoter = c("soxSp", "micFp", "micFp", "ompFp", "marRABp", "robp", "acrABp",
+                 "micFp", "micFp", "soxSp"),
+    compound = c("Paraquat", "Caffeine", "Procaine", "Procaine", "Clarithromycin",
+                 "Clarithromycin", "Clarithromycin", "Paraquat", "Vanillin", "Caffeine")
+  )
+}
 key_pairs <- merge(key_pairs, comparison, by = c("promoter", "compound"), all.x = TRUE, sort = FALSE)
 key_cols <- c(
   "promoter", "compound",
@@ -255,7 +272,7 @@ utils::write.table(
 
 plot_data <- rbind(
   data.frame(
-    variant = "without EV",
+    variant = "Without EVC",
     primary_effect = comparison$estimated_exponent_effect,
     interaction_effect = comparison$interaction_without_ev_effect,
     primary_pvalue = comparison$estimated_exponent_pvalue,
@@ -264,7 +281,7 @@ plot_data <- rbind(
     interaction_hit = comparison$interaction_without_ev_hit
   ),
   data.frame(
-    variant = "with EV",
+    variant = "With EVC",
     primary_effect = comparison$evc_huber_effect,
     interaction_effect = comparison$interaction_with_ev_effect,
     primary_pvalue = comparison$evc_huber_pvalue,
@@ -276,8 +293,9 @@ plot_data <- rbind(
 plot_data$status <- ifelse(
   plot_data$primary_hit & plot_data$interaction_hit,
   "Both",
-  ifelse(plot_data$primary_hit, "Primary only", ifelse(plot_data$interaction_hit, "Interaction only", "Neither"))
+  ifelse(plot_data$primary_hit, "Reporter-wise only", ifelse(plot_data$interaction_hit, "Interaction only", "Neither"))
 )
+plot_data$variant <- factor(plot_data$variant, levels = c("Without EVC", "With EVC"))
 
 effect_plot <- ggplot2$ggplot(
   plot_data,
@@ -290,13 +308,13 @@ effect_plot <- ggplot2$ggplot(
   ggplot2$facet_wrap(~ variant, scales = "free") +
   ggplot2$scale_color_manual(values = c(
     "Both" = "#1f77b4",
-    "Primary only" = "#d55e00",
+    "Reporter-wise only" = "#d55e00",
     "Interaction only" = "#009e73",
     "Neither" = "#9ca3af"
   )) +
   ggplot2$labs(
-    x = "Primary DStressR specific effect",
-    y = "Interaction-model specific effect",
+    x = paste("Reporter-wise", target, "effect"),
+    y = paste("Interaction-model", target, "effect"),
     color = "Hit status"
   ) +
   ggplot2$theme_bw(base_size = 11) +
@@ -328,12 +346,12 @@ pvalue_plot <- ggplot2$ggplot(
   ggplot2$facet_wrap(~ variant, scales = "free") +
   ggplot2$scale_color_manual(values = c(
     "Both" = "#1f77b4",
-    "Primary only" = "#d55e00",
+    "Reporter-wise only" = "#d55e00",
     "Interaction only" = "#009e73",
     "Neither" = "#9ca3af"
   )) +
   ggplot2$labs(
-    x = "Primary DStressR -log10 raw p-value",
+    x = "Reporter-wise -log10 raw p-value",
     y = "Interaction-model -log10 raw p-value",
     color = "Hit status"
   ) +

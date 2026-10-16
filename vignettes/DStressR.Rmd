@@ -122,7 +122,8 @@ covariates and retains the selected inferential configuration. `results()`
 then constructs the contrast-level inferential table, and `call_hits()` adds
 directional calls at a chosen false-discovery-rate threshold. The result table
 reports both the reference-relative total effect and the reporter-specific effect
-after subtracting the perturbation-wide effect.
+after subtracting the perturbation-wide effect. Total effects are the default
+for hit calling and effect plots; specific effects can be selected explicitly.
 
 ```{r fit}
 fit <- fit_destress(
@@ -142,7 +143,8 @@ The key columns are:
 - `total_effect`: reference-relative response for the reporter-perturbation pair.
 - `global_effect`: average perturbation-wide response across reporters.
 - `specific_effect`: reporter-specific deviation from the perturbation-wide effect.
-- `specific_pvalue` and `specific_padj`: test and BH-adjusted p-value.
+- `total_pvalue` and `total_padj`: test and BH-adjusted p-value for the total effect.
+- `specific_pvalue` and `specific_padj`: corresponding values for the specific effect.
 
 The direct fitting functions remain available for existing scripts, but
 `fit_destress()` is the recommended entry point for new model-based analyses.
@@ -178,14 +180,14 @@ hits <- call_hits(
   tab,
   fdr = 0.05,
   lfc = 0.5,
-  effect = "specific_effect",
-  padj = "specific_padj"
+  effect = "total_effect",
+  padj = "total_padj"
 )
 
 table(hits$hit)
 
 head(
-  hits[order(hits$specific_padj, -abs(hits$specific_effect)), ],
+  hits[order(hits$total_padj, -abs(hits$total_effect)), ],
   10
 )
 ```
@@ -201,8 +203,8 @@ The standard volcano plot labels the strongest reporter-perturbation pairs.
 ```{r volcano, eval = requireNamespace("ggplot2", quietly = TRUE)}
 plot_volcano(
   hits,
-  effect = "specific_effect",
-  padj = "specific_padj",
+  effect = "total_effect",
+  padj = "total_padj",
   fdr = 0.05,
   lfc = 0.5,
   top_n = 8,
@@ -216,7 +218,7 @@ surface.
 ```{r heatmap, eval = requireNamespace("ggplot2", quietly = TRUE)}
 plot_response_heatmap(
   hits,
-  value = "specific_effect",
+  value = "total_effect",
   top_n_perturbations = 30
 )
 ```
@@ -227,7 +229,7 @@ groups with similar response profiles.
 ```{r clustered, eval = requireNamespace("ggplot2", quietly = TRUE)}
 plot_response_clustered_heatmap(
   hits,
-  value = "specific_effect",
+  value = "total_effect",
   top_n_perturbations = 30,
   title = "Clustered DStressR response map"
 )

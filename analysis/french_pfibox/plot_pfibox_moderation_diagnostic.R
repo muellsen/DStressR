@@ -13,12 +13,19 @@ if (!requireNamespace("gridExtra", quietly = TRUE)) {
   stop("Package `gridExtra` is required for the PFIbox moderation diagnostic.", call. = FALSE)
 }
 
-out_dir <- analysis_output_dir("french_pfibox", "promoter_activity_analysis")
+in_dir <- analysis_output_dir("french_pfibox", "promoter_activity_analysis")
+target_arg <- grep("^--target=", commandArgs(trailingOnly = TRUE), value = TRUE)
+target <- if (length(target_arg)) sub("^--target=", "", target_arg) else "specific"
+if (length(target) != 1L || !target %in% c("specific", "total")) {
+  stop("Use --target=specific or --target=total.", call. = FALSE)
+}
+out_dir <- if (target == "total") file.path(in_dir, "total_effect_discovery") else in_dir
+dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 tag_moderated <- "reporters2000_perturbations100_T2-18h_treatment_replicate_scalable"
 tag_rawse <- paste0(tag_moderated, "_rawse")
 
-moderated_file <- file.path(out_dir, paste0("pfibox_pa_destress_pair_results_", tag_moderated, ".tsv"))
-rawse_file <- file.path(out_dir, paste0("pfibox_pa_destress_pair_results_", tag_rawse, ".tsv"))
+moderated_file <- file.path(in_dir, paste0("pfibox_pa_destress_pair_results_", tag_moderated, ".tsv"))
+rawse_file <- file.path(in_dir, paste0("pfibox_pa_destress_pair_results_", tag_rawse, ".tsv"))
 
 if (!file.exists(moderated_file)) {
   stop("Missing moderated result table: ", moderated_file, call. = FALSE)
@@ -30,7 +37,8 @@ if (!file.exists(rawse_file)) {
 moderated <- read_tsv_base(moderated_file)
 rawse <- read_tsv_base(rawse_file)
 
-required <- c("reporter", "perturbation", "specific_pvalue", "specific_padj_by_reporter")
+required <- c("reporter", "perturbation", paste0(target, "_pvalue"),
+              paste0(target, "_padj_by_reporter"))
 missing_moderated <- setdiff(required, names(moderated))
 missing_rawse <- setdiff(required, names(rawse))
 if (length(missing_moderated)) {
@@ -43,8 +51,8 @@ if (length(missing_rawse)) {
 make_panel_data <- function(tab, label) {
   data.frame(
     method = label,
-    pvalue = as.numeric(tab$specific_pvalue),
-    padj = as.numeric(tab$specific_padj_by_reporter),
+    pvalue = as.numeric(tab[[paste0(target, "_pvalue")]]),
+    padj = as.numeric(tab[[paste0(target, "_padj_by_reporter")]]),
     stringsAsFactors = FALSE
   )
 }
@@ -107,7 +115,7 @@ p <- ggplot2::ggplot(plot_data, ggplot2::aes(pvalue, fill = hit)) +
   ) +
   ggplot2::scale_x_continuous(limits = c(0, 1), expand = ggplot2::expansion(mult = c(0, 0.01))) +
   ggplot2::labs(
-    x = "Specific-effect p-value",
+    x = if (target == "total") "Total-effect p-value" else "Specific-effect p-value",
     y = "Number of reporter-treatment pairs"
   ) +
   paper_theme(base_size = 10)

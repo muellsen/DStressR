@@ -15,7 +15,16 @@ panel_label <- function(label, size = 16) {
     gp = grid::gpar(fontsize = size, fontface = "bold", col = "#111827")
   )
 }
-out_dir <- analysis_output_dir("binsfeld_evc_calibrated")
+target_arg <- grep("^--target=", commandArgs(trailingOnly = TRUE), value = TRUE)
+target <- if (length(target_arg)) sub("^--target=", "", target_arg) else "specific"
+if (length(target) != 1L || !target %in% c("specific", "total")) {
+  stop("Use --target=specific or --target=total.", call. = FALSE)
+}
+out_dir <- analysis_output_dir(if (target == "total") {
+  "binsfeld_total_effect_discovery"
+} else {
+  "binsfeld_evc_calibrated"
+})
 artifact <- read_paper_artifact(file.path(out_dir, "binsfeld_discovery.rds"))
 comparison <- artifact$annotations$comparison
 region_counts <- artifact$annotations$region_counts
@@ -604,7 +613,11 @@ volcano_overlap_plot <- ggplot2$ggplot(
     )
   ) +
   ggplot2$labs(
-    x = "Method-specific effect estimate",
+    x = if (target == "total") {
+      "Original workflow score / DStressR total effect"
+    } else {
+      "Method-specific effect estimate"
+    },
     y = "-log10 raw p-value"
   )
 
