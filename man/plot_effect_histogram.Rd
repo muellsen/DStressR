@@ -6,7 +6,7 @@
 \usage{
 plot_effect_histogram(
   table,
-  value = "specific_effect",
+  value = "total_effect",
   reporter = "reporter",
   by = c("all", "reporter"),
   bins = 80,

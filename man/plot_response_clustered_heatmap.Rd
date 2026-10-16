@@ -6,7 +6,7 @@
 \usage{
 plot_response_clustered_heatmap(
   table,
-  value = "specific_effect",
+  value = "total_effect",
   reporter = "reporter",
   perturbation = "perturbation",
   perturbation_label = perturbation,

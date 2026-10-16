@@ -6,8 +6,8 @@
 \usage{
 plot_volcano(
   table,
-  effect = "specific_effect",
-  padj = "specific_padj",
+  effect = "total_effect",
+  padj = sub("_effect$", "_padj", effect),
   pvalue = NULL,
   y = c("auto", "pvalue", "padj"),
   reporter = "reporter",

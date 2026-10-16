@@ -6,7 +6,7 @@
 \usage{
 plot_response_heatmap(
   table,
-  value = "specific_effect",
+  value = "total_effect",
   reporter = "reporter",
   perturbation = "perturbation",
   perturbation_label = perturbation,
@@ -94,6 +94,6 @@ A \code{ggplot} object. The plotted matrix is available as
 }
 \description{
 Creates a standard heatmap for normalized reporter-perturbation responses. The
-default \code{value} is \code{specific_effect}, matching \code{\link[=results]{results()}}, but workflow
+default \code{value} is \code{total_effect}; \code{\link[=results]{results()}} also provides specific effects. Workflow
 tables can use columns such as \code{destress_eb_effect_centered}.
 }

@@ -44,9 +44,11 @@ the model path; \code{FALSE} maps to \code{testing = "student_t"}.}
 empty-vector reporter in the model-based path. When supplied, its
 reference-relative perturbation effect is subtracted from every reporter's
 reference-relative perturbation effect before reporter-library centering.
-For new analyses, prefer \code{background_reporter} in \code{\link[=prepare_assay]{prepare_assay()}}, which
-performs explicit response-level background calibration before model
-fitting.}
+Its raw contrast variance is added to the reporter's raw contrast variance,
+with Welch-Satterthwaite degrees of freedom; the combined contrast variance
+is moderated once when requested. This effect-level adjustment is an
+alternative to response-level background calibration in \code{\link[=prepare_assay]{prepare_assay()}}.
+The two routes cannot be combined. Supported for \code{interaction = FALSE}.}
 
 \item{background_rank}{Non-negative integer. The default \code{0} removes no
 latent background. Values \code{1} or \code{2} additionally subtract a low-rank

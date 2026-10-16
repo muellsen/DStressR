@@ -6,7 +6,7 @@
 \usage{
 fit_effect_mixture(
   table,
-  value = "specific_effect",
+  value = "total_effect",
   reporter = "reporter",
   df = 4,
   max_iter = 2000,
@@ -19,8 +19,8 @@ fit_effect_mixture(
 \arguments{
 \item{table}{A data frame with one row per reporter-perturbation pair.}
 
-\item{value}{Numeric effect column, usually \code{specific_effect} or a centered
-DStressR EB effect column.}
+\item{value}{Numeric effect column. Defaults to \code{total_effect}; use
+\code{specific_effect} to fit centered reporter-specific effects.}
 
 \item{reporter}{Column identifying reporters.}
 

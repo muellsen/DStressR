@@ -884,8 +884,8 @@ test_that("fit_destress rejects unimplemented stage combinations", {
 
 test_that("call_hits adds interpretable classes", {
   tab <- data.frame(
-    specific_effect = c(1, -1, 0.1),
-    specific_padj = c(0.01, 0.01, 0.8)
+    total_effect = c(1, -1, 0.1),
+    total_padj = c(0.01, 0.01, 0.8)
   )
   out <- call_hits(tab)
   expect_equal(out$hit, c("Upregulated", "Downregulated", "Not DE"))
@@ -905,7 +905,7 @@ test_that("fit_effect_mixture separates three effect classes", {
     stats::rt(35, df = 5) * 0.08 + 0.75
   )
 
-  out <- fit_effect_mixture(tab, df = 5)
+  out <- fit_effect_mixture(tab, value = "specific_effect", df = 5)
   summary <- attr(out, "mixture_summary")
 
   expect_true(all(c(
@@ -1256,8 +1256,8 @@ test_that("plot_volcano returns a ggplot object", {
     reporter = c("P1", "P1", "P2", "P3"),
     perturbation = c("C1", "C2", "C1", "C3"),
     compound_name = c("Drug A", "Drug B", "Drug A", "Drug C"),
-    specific_effect = c(2.1, -0.3, -1.8, 0.5),
-    specific_padj = c(0.001, 0.7, 0.02, 0.4),
+    total_effect = c(2.1, -0.3, -1.8, 0.5),
+    total_padj = c(0.001, 0.7, 0.02, 0.4),
     stringsAsFactors = FALSE
   )
 
@@ -1274,7 +1274,7 @@ test_that("plot_response_heatmap returns a ggplot with matrix attribute", {
     stringsAsFactors = FALSE
   )
   tab$compound_name <- c("Drug A", "Drug A", "Drug B", "Drug B", "Drug C", "Drug C")
-  tab$specific_effect <- c(1, -1, 0.2, -0.2, 2, -2)
+  tab$total_effect <- c(1, -1, 0.2, -0.2, 2, -2)
 
   p <- plot_response_heatmap(
     tab,
@@ -1297,7 +1297,7 @@ test_that("plot_response_heatmap uses global reporter order unless clustered", {
     perturbation = c("C1", "C2"),
     stringsAsFactors = FALSE
   )
-  tab$specific_effect <- seq_len(nrow(tab))
+  tab$total_effect <- seq_len(nrow(tab))
 
   p <- plot_response_heatmap(
     tab,
@@ -1315,8 +1315,8 @@ test_that("summarize_hits returns pair, reporter, and perturbation summaries", {
     stringsAsFactors = FALSE
   )
   tab$compound_name <- c("Drug A", "Drug A", "Drug B", "Drug B", "Drug C", "Drug C")
-  tab$specific_effect <- c(1.4, -0.4, 0.2, -1.3, 1.8, 0.1)
-  tab$specific_padj_by_reporter <- c(0.01, 0.4, 0.7, 0.03, 0.001, 0.9)
+  tab$total_effect <- c(1.4, -0.4, 0.2, -1.3, 1.8, 0.1)
+  tab$total_padj_by_reporter <- c(0.01, 0.4, 0.7, 0.03, 0.001, 0.9)
 
   hit_summary <- summarize_hits(tab, perturbation_label = "compound_name", fdr = 0.05)
 
@@ -1334,8 +1334,8 @@ test_that("plot_hit_heatmap returns a ggplot with hit summaries", {
     stringsAsFactors = FALSE
   )
   tab$compound_name <- c("Drug A", "Drug A", "Drug B", "Drug B", "Drug C", "Drug C")
-  tab$specific_effect <- c(1.4, -0.4, 0.2, -1.3, 1.8, 0.1)
-  tab$specific_padj_by_reporter <- c(0.01, 0.4, 0.7, 0.03, 0.001, 0.9)
+  tab$total_effect <- c(1.4, -0.4, 0.2, -1.3, 1.8, 0.1)
+  tab$total_padj_by_reporter <- c(0.01, 0.4, 0.7, 0.03, 0.001, 0.9)
 
   p <- plot_hit_heatmap(
     tab,
@@ -1359,8 +1359,8 @@ test_that("plot_hit_heatmap uses global reporter order by default", {
     perturbation = c("C1", "C2"),
     stringsAsFactors = FALSE
   )
-  tab$specific_effect <- c(1, -1, 0.5, -0.5, 1.2, -1.2)
-  tab$specific_padj_by_reporter <- c(0.01, 0.02, 0.6, 0.7, 0.03, 0.04)
+  tab$total_effect <- c(1, -1, 0.5, -0.5, 1.2, -1.2)
+  tab$total_padj_by_reporter <- c(0.01, 0.02, 0.6, 0.7, 0.03, 0.04)
 
   p <- plot_hit_heatmap(
     tab,
@@ -1378,8 +1378,8 @@ test_that("plot_hit_heatmap drops perturbations without hits by default", {
     perturbation = c("C1", "C2", "C3"),
     stringsAsFactors = FALSE
   )
-  tab$specific_effect <- c(1, -1, 0.2, -0.2, 1.2, -1.2)
-  tab$specific_padj_by_reporter <- c(0.01, 0.02, 0.8, 0.9, 0.03, 0.04)
+  tab$total_effect <- c(1, -1, 0.2, -0.2, 1.2, -1.2)
+  tab$total_padj_by_reporter <- c(0.01, 0.02, 0.8, 0.9, 0.03, 0.04)
 
   p <- plot_hit_heatmap(tab, top_n_perturbations = Inf, order_cols = "input")
 
@@ -1393,8 +1393,8 @@ test_that("heatmaps label top perturbations by absolute column sum", {
     perturbation = paste0("C", 1:5),
     stringsAsFactors = FALSE
   )
-  tab$specific_effect <- 0.1
-  tab$specific_effect[tab$perturbation == "C5"] <- 10
+  tab$total_effect <- 0.1
+  tab$total_effect[tab$perturbation == "C5"] <- 10
 
   p <- plot_response_heatmap(
     tab,
@@ -1417,10 +1417,10 @@ test_that("automatic perturbation labels enforce spacing", {
     perturbation = paste0("C", 1:8),
     stringsAsFactors = FALSE
   )
-  tab$specific_effect <- 0.1
-  tab$specific_effect[tab$perturbation == "C4"] <- 5
-  tab$specific_effect[tab$perturbation == "C5"] <- 6
-  tab$specific_effect[tab$perturbation == "C6"] <- 4
+  tab$total_effect <- 0.1
+  tab$total_effect[tab$perturbation == "C4"] <- 5
+  tab$total_effect[tab$perturbation == "C5"] <- 6
+  tab$total_effect[tab$perturbation == "C6"] <- 4
 
   p <- plot_response_heatmap(
     tab,
@@ -1441,7 +1441,7 @@ test_that("plot_effect_histogram returns pooled and reporter-faceted plots", {
   skip_if_not_installed("ggplot2")
   tab <- data.frame(
     reporter = rep(c("P1", "P2"), each = 6),
-    specific_effect = c(-1, -0.5, -0.1, 0, 0.3, 1.2, -0.2, 0, 0.1, 0.4, 0.9, 1.4)
+    total_effect = c(-1, -0.5, -0.1, 0, 0.3, 1.2, -0.2, 0, 0.1, 0.4, 0.9, 1.4)
   )
 
   pooled <- plot_effect_histogram(tab, bins = 10)
@@ -1520,7 +1520,7 @@ test_that("plot_response_cluster_blocks returns cluster summaries", {
     stringsAsFactors = FALSE
   )
   tab$compound_name <- paste("Drug", tab$perturbation)
-  tab$specific_effect <- c(
+  tab$total_effect <- c(
     1.2, 1.1, -0.1, -0.2,
     1.0, 0.9, -0.2, -0.1,
     -0.2, -0.1, 1.3, 1.1,
@@ -1549,7 +1549,7 @@ test_that("plot_response_clustered_heatmap writes clustered heatmap output", {
     stringsAsFactors = FALSE
   )
   tab$compound_name <- paste("Drug", tab$perturbation)
-  tab$specific_effect <- c(
+  tab$total_effect <- c(
     1.2, 1.1, -0.1, -0.2,
     1.0, 0.9, -0.2, -0.1,
     -0.2, -0.1, 1.3, 1.1,

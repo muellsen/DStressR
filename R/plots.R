@@ -47,8 +47,8 @@
 #' @return A `ggplot` object.
 #' @export
 plot_volcano <- function(table,
-                         effect = "specific_effect",
-                         padj = "specific_padj",
+                         effect = "total_effect",
+                         padj = sub("_effect$", "_padj", effect),
                          pvalue = NULL,
                          y = c("auto", "pvalue", "padj"),
                          reporter = "reporter",
@@ -396,7 +396,7 @@ matrix_cluster_order <- function(mat, margin) {
 #' Heatmap of a DStressR reporter-by-perturbation response matrix
 #'
 #' Creates a standard heatmap for normalized reporter-perturbation responses. The
-#' default `value` is `specific_effect`, matching [results()], but workflow
+#' default `value` is `total_effect`; [results()] also provides specific effects. Workflow
 #' tables can use columns such as `destress_eb_effect_centered`.
 #'
 #' @param table A data frame with one row per reporter-perturbation pair.
@@ -440,7 +440,7 @@ matrix_cluster_order <- function(mat, margin) {
 #'   `attr(plot, "response_matrix")`.
 #' @export
 plot_response_heatmap <- function(table,
-                                  value = "specific_effect",
+                                  value = "total_effect",
                                   reporter = "reporter",
                                   perturbation = "perturbation",
                                   perturbation_label = perturbation,
@@ -645,8 +645,8 @@ hit_table_summary <- function(d, group_col) {
 #'   reporter- and perturbation-level summaries.
 #' @export
 summarize_hits <- function(table,
-                           effect = "specific_effect",
-                           padj = "specific_padj_by_reporter",
+                           effect = "total_effect",
+                           padj = sub("_effect$", "_padj_by_reporter", effect),
                            reporter = "reporter",
                            perturbation = "perturbation",
                            perturbation_label = perturbation,
@@ -763,8 +763,8 @@ summarize_hits <- function(table,
 #'   `plotted_pairs`, and `color_limit`.
 #' @export
 plot_hit_heatmap <- function(table,
-                             effect = "specific_effect",
-                             padj = "specific_padj_by_reporter",
+                             effect = "total_effect",
+                             padj = sub("_effect$", "_padj_by_reporter", effect),
                              reporter = "reporter",
                              perturbation = "perturbation",
                              perturbation_label = perturbation,
@@ -1001,7 +1001,7 @@ plot_hit_heatmap <- function(table,
 #' @return A `ggplot` object.
 #' @export
 plot_effect_histogram <- function(table,
-                                  value = "specific_effect",
+                                  value = "total_effect",
                                   reporter = "reporter",
                                   by = c("all", "reporter"),
                                   bins = 80,
@@ -1108,7 +1108,7 @@ plot_effect_histogram <- function(table,
 #'   and `col_hclust`.
 #' @export
 plot_response_cluster_blocks <- function(table,
-                                         value = "specific_effect",
+                                         value = "total_effect",
                                          reporter = "reporter",
                                          perturbation = "perturbation",
                                          perturbation_label = perturbation,
@@ -1419,7 +1419,7 @@ draw_clustered_heatmap_base <- function(mat,
 #'   objects, ordered matrix, cluster assignments, and color limit.
 #' @export
 plot_response_clustered_heatmap <- function(table,
-                                            value = "specific_effect",
+                                            value = "total_effect",
                                             reporter = "reporter",
                                             perturbation = "perturbation",
                                             perturbation_label = perturbation,

@@ -8,8 +8,8 @@ call_hits(
   table,
   fdr = 0.05,
   lfc = 0,
-  effect = "specific_effect",
-  padj = "specific_padj"
+  effect = "total_effect",
+  padj = sub("_effect$", "_padj", effect)
 )
 }
 \arguments{
@@ -19,7 +19,8 @@ call_hits(
 
 \item{lfc}{Minimum absolute effect size.}
 
-\item{effect}{Effect column, usually \code{specific_effect} or \code{total_effect}.}
+\item{effect}{Effect column. Defaults to \code{total_effect}; use
+\code{specific_effect} for deviations from the reporter-panel average.}
 
 \item{padj}{Adjusted p-value column.}
 }

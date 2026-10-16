@@ -114,8 +114,8 @@ predict_three_part_t <- function(x, fit) {
 #' reporter-specific variance.
 #'
 #' @param table A data frame with one row per reporter-perturbation pair.
-#' @param value Numeric effect column, usually `specific_effect` or a centered
-#'   DStressR EB effect column.
+#' @param value Numeric effect column. Defaults to `total_effect`; use
+#'   `specific_effect` to fit centered reporter-specific effects.
 #' @param reporter Column identifying reporters.
 #' @param df Degrees of freedom for each Student-t component. Smaller values
 #'   give heavier tails.
@@ -131,7 +131,7 @@ predict_three_part_t <- function(x, fit) {
 #'   `attr(result, "mixture_summary")`.
 #' @export
 fit_effect_mixture <- function(table,
-                               value = "specific_effect",
+                               value = "total_effect",
                                reporter = "reporter",
                                df = 4,
                                max_iter = 2000,

@@ -103,11 +103,18 @@ contrast_estimate <- function(fit, newdata_a, newdata_b) {
   c(estimate = estimate, std_error = se, statistic = statistic, pvalue = pvalue)
 }
 
-contrast_estimates <- function(fit, newdata_a, newdata_b) {
+contrast_estimates <- function(fit, newdata_a, newdata_b, center_by = NULL) {
   terms_obj <- stats::delete.response(fit_terms(fit))
   x_a <- stats::model.matrix(terms_obj, newdata_a, contrasts.arg = fit_contrasts(fit))
   x_b <- stats::model.matrix(terms_obj, newdata_b, contrasts.arg = fit_contrasts(fit))
   contrast <- x_a - x_b
+  if (!is.null(center_by)) {
+    stopifnot(length(center_by) == nrow(contrast))
+    for (idx in split(seq_len(nrow(contrast)), center_by)) {
+      contrast[idx, ] <- sweep(contrast[idx, , drop = FALSE], 2,
+                              colMeans(contrast[idx, , drop = FALSE]), "-")
+    }
+  }
   beta <- fit_coef(fit)
   keep <- intersect(names(beta), colnames(contrast))
   contrast <- contrast[, keep, drop = FALSE]
@@ -755,20 +762,32 @@ reporter_effect_results <- function(fit, perturbations = NULL, reporters = NULL)
   out$total_df_for_test <- total_df
   evc <- fit$empty_vector_reporter
   if (!is.null(evc) && nzchar(evc)) {
-    evc_rows <- out[out$reporter == evc, c("perturbation", "total_effect", "total_var"), drop = FALSE]
+    evc_rows <- out[out$reporter == evc, c(
+      "perturbation", "total_effect", "total_var", "total_var_raw", "residual_df"
+    ), drop = FALSE]
     if (nrow(evc_rows) == 0) {
       stop("No fitted effects found for `empty_vector_reporter = \"", evc, "\"`.", call. = FALSE)
     }
-    names(evc_rows) <- c("perturbation", "empty_vector_effect", "empty_vector_var")
+    names(evc_rows) <- c("perturbation", "empty_vector_effect", "empty_vector_var",
+                         "empty_vector_var_raw", "empty_vector_df")
     out <- merge(out, evc_rows, by = "perturbation", all.x = TRUE, sort = FALSE)
     out$background_adjusted_effect <- out$total_effect - out$empty_vector_effect
     out$background_adjusted_var <- out$total_var + out$empty_vector_var
+    out$background_adjusted_var_raw <- out$total_var_raw + out$empty_vector_var_raw
+    out$background_adjusted_df_raw <- vapply(seq_len(nrow(out)), function(i) {
+      centered_contrast_df(
+        c(out$total_var_raw[i], out$empty_vector_var_raw[i]),
+        c(out$residual_df[i], out$empty_vector_df[i])
+      )[1]
+    }, numeric(1))
     out <- out[out$reporter != evc, , drop = FALSE]
   } else {
     out$empty_vector_effect <- NA_real_
     out$empty_vector_var <- NA_real_
     out$background_adjusted_effect <- out$total_effect
     out$background_adjusted_var <- out$total_var
+    out$background_adjusted_var_raw <- out$total_var_raw
+    out$background_adjusted_df_raw <- out$residual_df
   }
 
   if (!is.null(reporters)) {
@@ -820,6 +839,17 @@ reporter_effect_results <- function(fit, perturbations = NULL, reporters = NULL)
   out$global_pvalue <- global_test$pvalue
   out$rank_adjusted_total_se <- sqrt(out$background_adjusted_var)
   rank_adjusted_total_df <- if (isTRUE(fit$empirical_bayes)) out$total_df_for_test else row_df
+  if (!is.null(evc) && nzchar(evc)) {
+    # Construct the EVC-adjusted contrast uncertainty before moderating it once.
+    out$rank_adjusted_total_se <- sqrt(out$background_adjusted_var_raw)
+    rank_adjusted_total_df <- out$background_adjusted_df_raw
+    if (isTRUE(fit$empirical_bayes)) {
+      adjusted <- eb_moderate_se(out$rank_adjusted_total_se, rank_adjusted_total_df)
+      out$rank_adjusted_total_se <- adjusted$se
+      rank_adjusted_total_df <- adjusted$df
+    }
+  }
+  out$rank_adjusted_total_df_for_test <- rank_adjusted_total_df
   rank_adjusted_total_test <- wald_t_test(
     out$rank_adjusted_total_effect,
     out$rank_adjusted_total_se,
@@ -865,10 +895,12 @@ reporter_effect_results <- function(fit, perturbations = NULL, reporters = NULL)
     "total_effect", "total_se", "total_statistic", "total_pvalue",
     "additive_total_effect", "additive_total_se",
     "empty_vector_effect", "background_adjusted_effect",
+    "background_adjusted_var_raw", "background_adjusted_df_raw",
     "global_effect", "global_se", "global_statistic", "global_pvalue",
     "low_rank_effect",
     "rank_adjusted_total_effect", "rank_adjusted_total_se",
     "rank_adjusted_total_statistic", "rank_adjusted_total_pvalue",
+    "rank_adjusted_total_df_for_test",
     "rank_adjusted_global_effect",
     "specific_effect", "specific_se", "specific_statistic", "specific_pvalue",
     "total_var_raw", "specific_var", "residual_df",
@@ -1338,9 +1370,11 @@ resolve_destress_stages <- function(preset,
 #'   empty-vector reporter in the model-based path. When supplied, its
 #'   reference-relative perturbation effect is subtracted from every reporter's
 #'   reference-relative perturbation effect before reporter-library centering.
-#'   For new analyses, prefer `background_reporter` in [prepare_assay()], which
-#'   performs explicit response-level background calibration before model
-#'   fitting.
+#'   Its raw contrast variance is added to the reporter's raw contrast variance,
+#'   with Welch-Satterthwaite degrees of freedom; the combined contrast variance
+#'   is moderated once when requested. This effect-level adjustment is an
+#'   alternative to response-level background calibration in [prepare_assay()].
+#'   The two routes cannot be combined. Supported for `interaction = FALSE`.
 #' @param background_rank Non-negative integer. The default `0` removes no
 #'   latent background. Values `1` or `2` additionally subtract a low-rank
 #'   background term from the reference-relative total-effect matrix before
@@ -1438,6 +1472,27 @@ fit_destress <- function(assay,
     assay <- prepare_assay(assay, ...)
   }
   background_reporter <- attr(assay, "destress")$background_reporter
+  if (!is.null(empty_vector_reporter)) {
+    empty_vector_reporter <- as.character(empty_vector_reporter)
+    if (length(empty_vector_reporter) != 1 || is.na(empty_vector_reporter) || !nzchar(empty_vector_reporter)) {
+      stop("`empty_vector_reporter` must be one reporter label.", call. = FALSE)
+    }
+    if (!is.null(background_reporter) && nzchar(background_reporter)) {
+      stop(
+        "Conflicting EVC settings: response-level background calibration in ",
+        "prepare_assay() cannot be combined with `empty_vector_reporter` in ",
+        "fit_destress(). Choose response-level calibration/subtraction or ",
+        "fitted-effect subtraction, not both.",
+        call. = FALSE
+      )
+    }
+    if (isTRUE(interaction)) {
+      stop("`empty_vector_reporter` requires `interaction = FALSE`.", call. = FALSE)
+    }
+    if (!empty_vector_reporter %in% levels(assay$.reporter)) {
+      stop("Empty-vector reporter '", empty_vector_reporter, "' was not found in the assay.", call. = FALSE)
+    }
+  }
   if (!is.null(background_reporter) && nzchar(background_reporter)) {
     assay_for_model <- assay[as.character(assay$.reporter) != background_reporter, , drop = FALSE]
     assay_for_model$.reporter <- droplevels(assay_for_model$.reporter)
@@ -1465,15 +1520,6 @@ fit_destress <- function(assay,
   )
   if (isTRUE(background_rank_request$auto) && interaction) {
     stop("`background_rank = \"auto\"` is currently supported for the scalable reporter-specific model only.", call. = FALSE)
-  }
-  if (!is.null(empty_vector_reporter)) {
-    empty_vector_reporter <- as.character(empty_vector_reporter)
-    if (length(empty_vector_reporter) != 1 || is.na(empty_vector_reporter) || !nzchar(empty_vector_reporter)) {
-      stop("`empty_vector_reporter` must be one reporter label.", call. = FALSE)
-    }
-    if (!empty_vector_reporter %in% levels(assay$.reporter)) {
-      stop("Empty-vector reporter '", empty_vector_reporter, "' was not found in the assay.", call. = FALSE)
-    }
   }
   formulas <- make_formulas(technical)
   total_fit <- if (interaction) {
@@ -1961,7 +2007,11 @@ fit_destress_summary <- function(data,
 #'   results also include `total_var_raw` and `specific_var` (before moderation),
 #'   `residual_df`, `specific_df_raw` (Welch-Satterthwaite effective degrees of
 #'   freedom), and `specific_df_for_test` (including prior degrees of freedom
-#'   when moderation is enabled).
+#'   when moderation is enabled). Full interaction-model results include
+#'   `total_var_raw`, `residual_df`, and `total_df_for_test`. Their
+#'   `specific_var` uses the centered contrast and full coefficient covariance;
+#'   `specific_df_raw` and `specific_df_for_test` record its ordinary and
+#'   moderated degrees of freedom. Both targets honor `empirical_bayes`.
 #' @export
 results <- function(fit, perturbations = NULL, reporters = NULL, verbose = FALSE) {
   if (inherits(fit, "destress_summary_fit")) {
@@ -2035,6 +2085,8 @@ results <- function(fit, perturbations = NULL, reporters = NULL, verbose = FALSE
 
   destress_progress(verbose, "DStressR: extracting full interaction contrasts.")
   full_total <- contrast_estimates(fit$full_fit, comp, base)
+  full_specific <- contrast_estimates(fit$full_fit, comp, base,
+                                      center_by = grid$perturbation)
 
   destress_progress(verbose, "DStressR: estimating perturbation-level global effects.")
   global <- t(vapply(perturbations, function(cmp) {
@@ -2052,10 +2104,23 @@ results <- function(fit, perturbations = NULL, reporters = NULL, verbose = FALSE
     total_se = full_total[, "std_error"],
     total_statistic = full_total[, "statistic"],
     total_pvalue = full_total[, "pvalue"],
+    specific_var = full_specific[, "std_error"]^2,
     additive_total_effect = total[, "estimate"],
     additive_total_se = total[, "std_error"],
     stringsAsFactors = FALSE
   )
+  out$residual_df <- fit_df_residual(fit$full_fit)
+  out$total_var_raw <- out$total_se^2
+  total_df <- out$residual_df
+  if (isTRUE(fit$empirical_bayes)) {
+    moderated_total <- eb_moderate_se(out$total_se, total_df)
+    out$total_se <- moderated_total$se
+    total_df <- moderated_total$df
+    total_test <- wald_t_test(out$total_effect, out$total_se, total_df)
+    out$total_statistic <- total_test$statistic
+    out$total_pvalue <- total_test$pvalue
+  }
+  out$total_df_for_test <- total_df
   out <- merge(out, global_df, by = "perturbation", sort = FALSE)
   destress_progress(verbose, "DStressR: applying low-rank background and p-value adjustment.")
   out$low_rank_effect <- low_rank_background_effect(
@@ -2066,20 +2131,23 @@ results <- function(fit, perturbations = NULL, reporters = NULL, verbose = FALSE
   )
   out$rank_adjusted_total_effect <- out$total_effect - out$low_rank_effect
   out$rank_adjusted_total_se <- out$total_se
-  rank_adjusted_total_test <- wald_t_test(out$rank_adjusted_total_effect, out$rank_adjusted_total_se, fit_df_residual(fit$full_fit))
+  rank_adjusted_total_test <- wald_t_test(out$rank_adjusted_total_effect, out$rank_adjusted_total_se, out$total_df_for_test)
   out$rank_adjusted_total_statistic <- rank_adjusted_total_test$statistic
   out$rank_adjusted_total_pvalue <- rank_adjusted_total_test$pvalue
   rank_adjusted_global <- stats::aggregate(rank_adjusted_total_effect ~ perturbation, out, mean, na.rm = TRUE)
   names(rank_adjusted_global)[2] <- "rank_adjusted_global_effect"
   out <- merge(out, rank_adjusted_global, by = "perturbation", all.x = TRUE, sort = FALSE)
   out$specific_effect <- out$rank_adjusted_total_effect - out$rank_adjusted_global_effect
-  out$specific_se <- out$total_se
+  out$specific_se <- sqrt(out$specific_var)
+  out$specific_se[out$specific_var <= 0] <- NA_real_
   specific_df <- fit_df_residual(fit$full_fit)
+  out$specific_df_raw <- rep(specific_df, nrow(out))
   if (isTRUE(fit$empirical_bayes)) {
     moderated <- eb_moderate_se(out$specific_se, specific_df)
     out$specific_se <- moderated$se
     specific_df <- moderated$df
   }
+  out$specific_df_for_test <- rep_len(specific_df, nrow(out))
   out$specific_statistic <- out$specific_effect / out$specific_se
   out$specific_pvalue <- 2 * stats::pt(abs(out$specific_statistic),
                                        df = specific_df,
@@ -2097,6 +2165,8 @@ results <- function(fit, perturbations = NULL, reporters = NULL, verbose = FALSE
     "reporter", "perturbation",
     "total_effect", "total_se", "total_statistic", "total_pvalue",
     "additive_total_effect", "additive_total_se",
+    "total_var_raw", "residual_df", "total_df_for_test",
+    "specific_var", "specific_df_raw", "specific_df_for_test",
     "global_effect", "low_rank_effect",
     "rank_adjusted_total_effect", "rank_adjusted_total_se",
     "rank_adjusted_total_statistic", "rank_adjusted_total_pvalue",
@@ -2118,7 +2188,8 @@ results <- function(fit, perturbations = NULL, reporters = NULL, verbose = FALSE
 #' @param output Name of adjusted p-value column.
 #' @param method Passed to [stats::p.adjust()].
 #' @export
-adjust_pvalues <- function(table, pvalue = "specific_pvalue", output = "specific_padj_by_reporter",
+adjust_pvalues <- function(table, pvalue = "total_pvalue",
+                           output = sub("_pvalue$", "_padj_by_reporter", pvalue),
                            method = "BH") {
   split_idx <- split(seq_len(nrow(table)), table$reporter)
   table[[output]] <- NA_real_
@@ -2133,11 +2204,16 @@ adjust_pvalues <- function(table, pvalue = "specific_pvalue", output = "specific
 #' @param table Result table from [results()].
 #' @param fdr FDR threshold.
 #' @param lfc Minimum absolute effect size.
-#' @param effect Effect column, usually `specific_effect` or `total_effect`.
+#' @param effect Effect column. Defaults to `total_effect`; use
+#'   `specific_effect` for deviations from the reporter-panel average.
 #' @param padj Adjusted p-value column.
 #' @export
-call_hits <- function(table, fdr = 0.05, lfc = 0, effect = "specific_effect",
-                      padj = "specific_padj") {
+call_hits <- function(table, fdr = 0.05, lfc = 0, effect = "total_effect",
+                      padj = sub("_effect$", "_padj", effect)) {
+  missing_cols <- setdiff(c(effect, padj), names(table))
+  if (length(missing_cols) > 0) {
+    stop("Missing required columns: ", paste(missing_cols, collapse = ", "), call. = FALSE)
+  }
   hit <- rep("Not DE", nrow(table))
   sig <- is.finite(table[[padj]]) & table[[padj]] < fdr & abs(table[[effect]]) >= lfc
   hit[sig & table[[effect]] > 0] <- "Upregulated"
