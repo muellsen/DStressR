@@ -38,7 +38,7 @@ normalize_workflow <- function(workflow) {
 #' `fit_workflow()` is a compatibility entry point for named DStressR
 #' workflows. The `workflow` argument selects a [fit_destress()] preset:
 #' `model` fits the model-based DStressR workflow, `median_polish` reproduces
-#' the legacy median-polish workflow, and `empty_vector_control` reproduces the
+#' the screen-specific median-polish workflow, and `empty_vector_control` reproduces the
 #' empty-vector-control workflow.
 #'
 #' New analyses should prefer [fit_destress()] directly so the staged

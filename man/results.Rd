@@ -17,7 +17,11 @@ results(fit, perturbations = NULL, reporters = NULL, verbose = FALSE)
 extracting model results.}
 }
 \value{
-A data frame with total and reporter-specific effects.
+A data frame with total and reporter-specific effects. Reporter-wise
+results also include \code{total_var_raw} and \code{specific_var} (before moderation),
+\code{residual_df}, \code{specific_df_raw} (Welch-Satterthwaite effective degrees of
+freedom), and \code{specific_df_for_test} (including prior degrees of freedom
+when moderation is enabled).
 }
 \description{
 Extract model results

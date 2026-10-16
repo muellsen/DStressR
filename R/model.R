@@ -161,18 +161,24 @@ trigamma_inverse <- function(y) {
 }
 
 estimate_eb_prior_variance <- function(var_raw, df, max_prior_df = 1e6) {
-  ok <- is.finite(var_raw) & var_raw > 0
-  if (sum(ok) < 2 || !is.finite(df) || df <= 0) {
+  if (length(df) == 1L) df <- rep(df, length(var_raw))
+  if (length(df) != length(var_raw)) {
+    stop("`df` must be scalar or have the same length as the variances.", call. = FALSE)
+  }
+  ok <- is.finite(var_raw) & var_raw > 0 & is.finite(df) & df > 0
+  if (sum(ok) < 2) {
     return(list(var = NA_real_, df = 0))
   }
 
-  log_var <- log(var_raw[ok])
+  df <- df[ok]
+  # Remove the known log-chi-square mean separately for each contrast.
+  log_var <- log(var_raw[ok]) - digamma(df / 2) + log(df / 2)
   log_var_var <- stats::var(log_var)
   if (!is.finite(log_var_var)) {
     return(list(var = stats::median(var_raw[ok], na.rm = TRUE), df = 0))
   }
 
-  sampling_var <- psigamma(df / 2, deriv = 1)
+  sampling_var <- mean(psigamma(df / 2, deriv = 1))
   excess_var <- log_var_var - sampling_var
   prior_df <- if (is.finite(excess_var) && excess_var > 0) {
     2 * trigamma_inverse(excess_var)
@@ -185,8 +191,7 @@ estimate_eb_prior_variance <- function(var_raw, df, max_prior_df = 1e6) {
     return(list(var = stats::median(var_raw[ok], na.rm = TRUE), df = 0))
   }
 
-  log_prior_var <- mean(log_var) -
-    digamma(df / 2) + log(df / 2) +
+  log_prior_var <- mean(log_var) +
     digamma(prior_df / 2) - log(prior_df / 2)
   prior_var <- exp(log_prior_var)
   if (!is.finite(prior_var) || prior_var <= 0) {
@@ -198,8 +203,7 @@ estimate_eb_prior_variance <- function(var_raw, df, max_prior_df = 1e6) {
 eb_moderate_se <- function(se, df) {
   var_raw <- se^2
   df <- as.numeric(df)
-  prior_df_for_estimation <- stats::median(df[is.finite(df) & df > 0], na.rm = TRUE)
-  prior <- estimate_eb_prior_variance(var_raw, prior_df_for_estimation)
+  prior <- estimate_eb_prior_variance(var_raw, df)
   if (!is.finite(prior$var) || !is.finite(prior$df) || prior$df <= 0) {
     return(list(se = se, df = df, prior_var = prior$var, prior_df = prior$df))
   }
@@ -213,6 +217,29 @@ eb_moderate_se <- function(se, df) {
     prior_var = prior$var,
     prior_df = prior$df
   )
+}
+
+centered_contrast_df <- function(variance, df) {
+  n <- length(variance)
+  if (length(df) == 1L) df <- rep(df, n)
+  if (length(df) != n) {
+    stop("`df` must be scalar or have the same length as the variances.", call. = FALSE)
+  }
+  if (n <= 1L || any(!is.finite(variance) | variance < 0) ||
+      any(is.na(df) | df <= 0) || max(variance) <= 0) {
+    return(rep(NA_real_, n))
+  }
+  # Rescaling avoids overflow; it cancels from the moment-matched df.
+  v <- variance / max(variance)
+  own_weight <- ((n - 1) / n)^2
+  other_weight <- 1 / n^2
+  combined <- own_weight * v + other_weight * (sum(v) - v)
+  component <- v^2 / df
+  denominator <- own_weight^2 * component +
+    other_weight^2 * (sum(component) - component)
+  out <- combined^2 / denominator
+  out[combined <= 0] <- NA_real_
+  out
 }
 
 wald_t_test <- function(estimate, se, df) {
@@ -712,6 +739,7 @@ reporter_effect_results <- function(fit, perturbations = NULL, reporters = NULL)
 
   out$additive_total_effect <- NA_real_
   out$additive_total_se <- NA_real_
+  out$total_var_raw <- out$total_se^2
   df <- stats::median(out$residual_df[out$residual_df > 0], na.rm = TRUE)
   total_df <- out$residual_df
   if (isTRUE(fit$empirical_bayes)) {
@@ -764,11 +792,13 @@ reporter_effect_results <- function(fit, perturbations = NULL, reporters = NULL)
 
   variance_perturbations <- unique(out$perturbation)
   total_variance_split <- split(out$total_var, out$perturbation)
+  raw_total_variance_split <- split(out$total_var_raw, out$perturbation)
   evc_variance_split <- split(out$empty_vector_var, out$perturbation)
   background_variance_split <- split(out$background_adjusted_var, out$perturbation)
   variance_summary <- data.frame(
     perturbation = variance_perturbations,
     sum_total_var = vapply(total_variance_split[variance_perturbations], sum, numeric(1), na.rm = TRUE),
+    sum_total_var_raw = vapply(raw_total_variance_split[variance_perturbations], sum, numeric(1), na.rm = TRUE),
     sum_background_adjusted_var = vapply(background_variance_split[variance_perturbations], sum, numeric(1), na.rm = TRUE),
     empty_vector_var_for_perturbation = vapply(evc_variance_split[variance_perturbations], function(x) {
       vals <- unique(x[is.finite(x)])
@@ -801,16 +831,21 @@ reporter_effect_results <- function(fit, perturbations = NULL, reporters = NULL)
   names(rank_adjusted_global)[2] <- "rank_adjusted_global_effect"
   out <- merge(out, rank_adjusted_global, by = "perturbation", all.x = TRUE, sort = FALSE)
   out$specific_effect <- out$rank_adjusted_total_effect - out$rank_adjusted_global_effect
-  out$specific_var <- ((m - 1) / m)^2 * out$total_var +
-    (out$sum_total_var - out$total_var) / m^2
+  out$specific_var <- ((m - 1) / m)^2 * out$total_var_raw +
+    (out$sum_total_var_raw - out$total_var_raw) / m^2
   out$specific_se <- sqrt(out$specific_var)
   out$specific_se[!is.finite(out$specific_se) | m <= 1] <- NA_real_
-  specific_df <- row_df
+  specific_df <- rep(NA_real_, nrow(out))
+  for (idx in split(seq_len(nrow(out)), out$perturbation)) {
+    specific_df[idx] <- centered_contrast_df(out$total_var_raw[idx], row_df[idx])
+  }
+  out$specific_df_raw <- specific_df
   if (isTRUE(fit$empirical_bayes)) {
-    moderated <- eb_moderate_se(out$specific_se, row_df)
+    moderated <- eb_moderate_se(out$specific_se, specific_df)
     out$specific_se <- moderated$se
     specific_df <- moderated$df
   }
+  out$specific_df_for_test <- specific_df
   specific_test <- wald_t_test(out$specific_effect, out$specific_se, specific_df)
   out$specific_statistic <- specific_test$statistic
   out$specific_pvalue <- specific_test$pvalue
@@ -836,6 +871,8 @@ reporter_effect_results <- function(fit, perturbations = NULL, reporters = NULL)
     "rank_adjusted_total_statistic", "rank_adjusted_total_pvalue",
     "rank_adjusted_global_effect",
     "specific_effect", "specific_se", "specific_statistic", "specific_pvalue",
+    "total_var_raw", "specific_var", "residual_df",
+    "specific_df_raw", "specific_df_for_test",
     "total_padj_global", "total_padj_by_reporter",
     "rank_adjusted_total_padj_global", "rank_adjusted_total_padj_by_reporter",
     "specific_padj_global",
@@ -1123,7 +1160,7 @@ observed_mean_results <- function(fit, perturbations = NULL, reporters = NULL) {
 #' @return A character vector of preset names accepted by [fit_destress()].
 #' @export
 destress_presets <- function() {
-  c("model", "median_polish_legacy", "empty_vector_control")
+  c("model", "median_polish", "empty_vector_control")
 }
 
 normalize_destress_preset <- function(preset) {
@@ -1137,9 +1174,9 @@ normalize_destress_preset <- function(preset) {
   aliases <- c(
     destress = "model",
     model_based = "model",
-    median_polish = "median_polish_legacy",
-    medianpolish = "median_polish_legacy",
-    legacy = "median_polish_legacy",
+    median_polish_legacy = "median_polish",
+    medianpolish = "median_polish",
+    legacy = "median_polish",
     empty_vector = "empty_vector_control",
     evc = "empty_vector_control"
   )
@@ -1187,7 +1224,7 @@ destress_preset_stages <- function(preset, empirical_bayes = TRUE) {
       aggregation = "none",
       adjustment = "global"
     ),
-    median_polish_legacy = list(
+    median_polish = list(
       normalization = "median_polish",
       testing = "gaussian_z",
       aggregation = "max_p",
@@ -1276,8 +1313,8 @@ resolve_destress_stages <- function(preset,
 #' Fit DStressR with staged statistical options
 #'
 #' `fit_destress()` is the main DStressR entry point. By default it fits the
-#' model-based analysis, but it can also run named compatibility presets for the
-#' legacy median-polish and Empty Vector Control analyses.
+#' model-based analysis, but it can also run named presets for the
+#' screen-specific median-polish and empty-vector-control analyses.
 #'
 #' The staged options make the major statistical choices explicit:
 #' normalization, test statistic and p-value calculation, replicate aggregation,
@@ -1293,7 +1330,9 @@ resolve_destress_stages <- function(preset,
 #'   technical-factor columns to include.
 #' @param empirical_bayes If `TRUE`, moderates standard errors toward an
 #'   empirical prior variance with prior degrees of freedom estimated from the
-#'   observed variance distribution. This maps to `testing = "moderated_t"` for
+#'   observed variance distribution, using each contrast's degrees of freedom.
+#'   Reporter-wise specific effects combine raw total-effect variances with
+#'   Welch-Satterthwaite degrees of freedom and are moderated once. This maps to `testing = "moderated_t"` for
 #'   the model path; `FALSE` maps to `testing = "student_t"`.
 #' @param empty_vector_reporter Optional reporter/control strain used as an
 #'   empty-vector reporter in the model-based path. When supplied, its
@@ -1327,18 +1366,19 @@ resolve_destress_stages <- function(preset,
 #' @param interaction If `FALSE`, fit one Gaussian linear
 #'   model per reporter with the control perturbation as reference and the supplied
 #'   technical covariates as design terms. The latter is the scalable path for
-#'   reporter-specific perturbation effects. If `TRUE`, fit the historical full
+#'   reporter-specific perturbation effects. If `TRUE`, fit the full
 #'   reporter-by-perturbation interaction model.
-#' @param preset Optional named preset: `"model"`, `"median_polish_legacy"`, or
-#'   `"empty_vector_control"`. Common aliases such as `"median_polish"` and
-#'   `"evc"` are accepted.
+#' @param preset Optional named preset: `"model"`, `"median_polish"`, or
+#'   `"empty_vector_control"`. The model-based workflow remains the default
+#'   when omitted. `"median_polish_legacy"` is accepted as an alias for
+#'   `"median_polish"`, and `"evc"` as an alias for `"empty_vector_control"`.
 #' @param verbose If `TRUE`, print stage-level progress messages during model
 #'   fitting. This is useful for large screens and full interaction models.
 #' @param ... For `normalization = "linear_model"` with a raw data frame,
 #'   arguments passed to [prepare_assay()], including `growth_exponent`. For
 #'   compatibility presets, arguments passed to the selected engine.
 #' @return A fitted DStressR object. The model path returns a `destress_fit`;
-#'   compatibility presets return their corresponding legacy result objects.
+#'   screen-specific presets return their corresponding workflow result objects.
 #' @export
 fit_destress <- function(assay,
                          technical = NULL,
@@ -1372,7 +1412,7 @@ fit_destress <- function(assay,
   if (stages$normalization == "median_polish") {
     destress_progress(verbose, "DStressR: running median-polish preset.")
     fit <- fit_median_polish(assay, ...)
-    attr(fit, "destress_preset") <- if (is.null(preset)) "median_polish_legacy" else preset
+    attr(fit, "destress_preset") <- if (is.null(preset)) "median_polish" else preset
     attr(fit, "destress_stages") <- stages
     return(fit)
   }
@@ -1917,7 +1957,11 @@ fit_destress_summary <- function(data,
 #' @param reporters Optional reporter subset.
 #' @param verbose If `TRUE`, print stage-level progress messages while
 #'   extracting model results.
-#' @return A data frame with total and reporter-specific effects.
+#' @return A data frame with total and reporter-specific effects. Reporter-wise
+#'   results also include `total_var_raw` and `specific_var` (before moderation),
+#'   `residual_df`, `specific_df_raw` (Welch-Satterthwaite effective degrees of
+#'   freedom), and `specific_df_for_test` (including prior degrees of freedom
+#'   when moderation is enabled).
 #' @export
 results <- function(fit, perturbations = NULL, reporters = NULL, verbose = FALSE) {
   if (inherits(fit, "destress_summary_fit")) {

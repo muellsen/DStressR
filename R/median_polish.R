@@ -1,4 +1,4 @@
-#' Reproduce the legacy median-polish workflow
+#' Reproduce the screen-specific median-polish workflow
 #'
 #' This function implements the original median-polish hit-determination
 #' workflow used for the Campylobacter reporter-library screen. It starts from a

@@ -28,7 +28,7 @@ The fitted workflow object returned by the selected engine, with a
 \code{fit_workflow()} is a compatibility entry point for named DStressR
 workflows. The \code{workflow} argument selects a \code{\link[=fit_destress]{fit_destress()}} preset:
 \code{model} fits the model-based DStressR workflow, \code{median_polish} reproduces
-the legacy median-polish workflow, and \code{empty_vector_control} reproduces the
+the screen-specific median-polish workflow, and \code{empty_vector_control} reproduces the
 empty-vector-control workflow.
 }
 \details{

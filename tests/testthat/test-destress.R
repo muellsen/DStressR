@@ -1040,7 +1040,7 @@ test_that("fit_destress can run the median-polish preset", {
   out <- fit_destress(dat, preset = "median_polish", control = c("DMSO1", "DMSO2"))
 
   expect_s3_class(out, "destress_median_polish")
-  expect_equal(attr(out, "destress_preset"), "median_polish_legacy")
+  expect_equal(attr(out, "destress_preset"), "median_polish")
   expect_equal(attr(out, "destress_stages")$normalization, "median_polish")
   expect_equal(attr(out, "destress_stages")$aggregation, "max_p")
 })

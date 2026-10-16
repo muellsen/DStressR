@@ -2,7 +2,7 @@
 % Please edit documentation in R/median_polish.R
 \name{fit_median_polish}
 \alias{fit_median_polish}
-\title{Reproduce the legacy median-polish workflow}
+\title{Reproduce the screen-specific median-polish workflow}
 \usage{
 fit_median_polish(
   data,

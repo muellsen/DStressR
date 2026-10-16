@@ -35,7 +35,9 @@ technical-factor columns to include.}
 
 \item{empirical_bayes}{If \code{TRUE}, moderates standard errors toward an
 empirical prior variance with prior degrees of freedom estimated from the
-observed variance distribution. This maps to \code{testing = "moderated_t"} for
+observed variance distribution, using each contrast's degrees of freedom.
+Reporter-wise specific effects combine raw total-effect variances with
+Welch-Satterthwaite degrees of freedom and are moderated once. This maps to \code{testing = "moderated_t"} for
 the model path; \code{FALSE} maps to \code{testing = "student_t"}.}
 
 \item{empty_vector_reporter}{Optional reporter/control strain used as an
@@ -81,12 +83,13 @@ perturbation column. \code{"global_mean"} and \code{"zero"} are also available.}
 \item{interaction}{If \code{FALSE}, fit one Gaussian linear
 model per reporter with the control perturbation as reference and the supplied
 technical covariates as design terms. The latter is the scalable path for
-reporter-specific perturbation effects. If \code{TRUE}, fit the historical full
+reporter-specific perturbation effects. If \code{TRUE}, fit the full
 reporter-by-perturbation interaction model.}
 
-\item{preset}{Optional named preset: \code{"model"}, \code{"median_polish_legacy"}, or
-\code{"empty_vector_control"}. Common aliases such as \code{"median_polish"} and
-\code{"evc"} are accepted.}
+\item{preset}{Optional named preset: \code{"model"}, \code{"median_polish"}, or
+\code{"empty_vector_control"}. The model-based workflow remains the default
+when omitted. \code{"median_polish_legacy"} is accepted as an alias for
+\code{"median_polish"}, and \code{"evc"} as an alias for \code{"empty_vector_control"}.}
 
 \item{verbose}{If \code{TRUE}, print stage-level progress messages during model
 fitting. This is useful for large screens and full interaction models.}
@@ -97,12 +100,12 @@ compatibility presets, arguments passed to the selected engine.}
 }
 \value{
 A fitted DStressR object. The model path returns a \code{destress_fit};
-compatibility presets return their corresponding legacy result objects.
+screen-specific presets return their corresponding workflow result objects.
 }
 \description{
 \code{fit_destress()} is the main DStressR entry point. By default it fits the
-model-based analysis, but it can also run named compatibility presets for the
-legacy median-polish and Empty Vector Control analyses.
+model-based analysis, but it can also run named presets for the
+screen-specific median-polish and empty-vector-control analyses.
 }
 \details{
 The staged options make the major statistical choices explicit:
