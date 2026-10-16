@@ -112,7 +112,7 @@ fit <- fit_destress(
 )
 
 tab <- results(fit)
-hits <- call_hits(tab, fdr = 0.05, effect = "specific_effect")
+hits <- call_hits(tab, fdr = 0.05, effect = "total_effect")
 ```
 
 The fitted object retains the response construction, fitted effect
@@ -286,6 +286,32 @@ The fitted object stores growth-exponent and background-calibration
 metadata, and the background reporter is excluded from model-based
 testing.
 
+Alternatively, retain the background reporter and subtract its fitted
+treatment-reference effect from each reporter’s fitted total effect:
+
+``` r
+
+assay <- prepare_assay(
+  expression_df,
+  reporter = "promoter", perturbation = "srn_code", control = "DMSO",
+  lux = "LUX.AUC_16", growth = "od_16h.measured",
+  batch = "batch", replicate = "replicate"
+)
+fit <- fit_destress(assay, technical = c("batch", "replicate"),
+                    empty_vector_reporter = "PEVC3")
+tab <- results(fit)
+```
+
+With the default `background_rank = 0`, `rank_adjusted_total_effect` and
+its matching standard errors and p-values describe the EVC-adjusted
+total effect; `total_effect` and `total_*` inference columns retain the
+unadjusted total effect. The EVC-adjusted variance combines raw reporter
+and EVC contrast variances with Welch-Satterthwaite degrees of freedom,
+followed by one moderation step. Response-level background correction
+and fitted-effect EVC subtraction are alternative routes; combining them
+raises an error before model fitting. Fitted-effect EVC subtraction
+requires `interaction = FALSE`.
+
 Estimated model components, including growth-exponent parameters and
 reporter-perturbation effect estimates, can be extracted with:
 
@@ -366,7 +392,7 @@ fit <- fit_destress(
 )
 
 tab <- results(fit)
-hits <- call_hits(tab, fdr = 0.05, effect = "specific_effect")
+hits <- call_hits(tab, fdr = 0.05, effect = "total_effect")
 ```
 
 The fitted model separates two related quantities:
@@ -378,12 +404,12 @@ The fitted model separates two related quantities:
 This distinction is important for perturbations that globally affect
 growth, luminescence, metabolism, or assay chemistry.
 
-For downstream comparisons and publication figures, use the
-reporter-specific columns from `results(fit)`: `specific_effect`,
-`specific_pvalue`, `specific_padj_global`, and
-`specific_padj_by_reporter`. The `total_*` columns remain useful
-diagnostics, but they are not the centered reporter-specific estimand
-used for DStressR hit calls in the current analysis scripts.
+Total effects are the default target for hit calling and effect plots.
+Use `total_effect`, `total_pvalue`, `total_padj_global`, and
+`total_padj_by_reporter` from `results(fit)`. Centered specific effects
+remain available through the corresponding `specific_*` columns; select
+these explicitly when the question concerns departures from the
+reporter-panel average.
 
 The compatibility wrapper
 [`fit_workflow()`](https://muellsen.github.io/DStressR/reference/fit_workflow.md)
@@ -406,15 +432,15 @@ diagnostics.
 
 plot_volcano(
   tab,
-  effect = "specific_effect",
-  padj = "specific_padj",
+  effect = "total_effect",
+  padj = "total_padj",
   top_n = 12,
   top_reporters = 6
 )
 
 plot_response_heatmap(
   tab,
-  value = "specific_effect"
+  value = "total_effect"
 )
 ```
 

@@ -7,8 +7,8 @@ Adjust p-values within reporter
 ``` r
 adjust_pvalues(
   table,
-  pvalue = "specific_pvalue",
-  output = "specific_padj_by_reporter",
+  pvalue = "total_pvalue",
+  output = sub("_pvalue$", "_padj_by_reporter", pvalue),
   method = "BH"
 )
 ```

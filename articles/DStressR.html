@@ -256,7 +256,9 @@ configuration. <code><a href="../reference/results.html">results()</a></code> th
 inferential table, and <code><a href="../reference/call_hits.html">call_hits()</a></code> adds directional calls
 at a chosen false-discovery-rate threshold. The result table reports
 both the reference-relative total effect and the reporter-specific
-effect after subtracting the perturbation-wide effect.</p>
+effect after subtracting the perturbation-wide effect. Total effects are
+the default for hit calling and effect plots; specific effects can be
+selected explicitly.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fit_destress.html">fit_destress</a></span><span class="op">(</span></span>
 <span>  <span class="va">assay</span>,</span>
@@ -282,13 +284,20 @@ effect after subtracting the perturbation-wide effect.</p>
 <span><span class="co">#&gt; 28 4.412702e-01                    NA                NA                  NA</span></span>
 <span><span class="co">#&gt; 35 9.294555e-01                    NA                NA                  NA</span></span>
 <span><span class="co">#&gt; 42 1.022436e-03                    NA                NA                  NA</span></span>
-<span><span class="co">#&gt;    background_adjusted_effect global_effect  global_se global_statistic</span></span>
-<span><span class="co">#&gt; 1                -0.021457035    0.01047815 0.05076760        0.2063945</span></span>
-<span><span class="co">#&gt; 13               -0.507066908   -0.22174188 0.05608266       -3.9538400</span></span>
-<span><span class="co">#&gt; 21               -0.127903232   -0.01358238 0.05076760       -0.2675403</span></span>
-<span><span class="co">#&gt; 28                0.078135567    0.09810077 0.05076760        1.9323501</span></span>
-<span><span class="co">#&gt; 35               -0.008980912    0.03766254 0.05076760        0.7418619</span></span>
-<span><span class="co">#&gt; 42               -0.369214389   -0.33576292 0.05608266       -5.9869289</span></span>
+<span><span class="co">#&gt;    background_adjusted_effect background_adjusted_var_raw</span></span>
+<span><span class="co">#&gt; 1                -0.021457035                  0.01018467</span></span>
+<span><span class="co">#&gt; 13               -0.507066908                  0.01246399</span></span>
+<span><span class="co">#&gt; 21               -0.127903232                  0.01018467</span></span>
+<span><span class="co">#&gt; 28                0.078135567                  0.01018467</span></span>
+<span><span class="co">#&gt; 35               -0.008980912                  0.01018467</span></span>
+<span><span class="co">#&gt; 42               -0.369214389                  0.01246399</span></span>
+<span><span class="co">#&gt;    background_adjusted_df_raw global_effect  global_se global_statistic</span></span>
+<span><span class="co">#&gt; 1                         629    0.01047815 0.05076760        0.2063945</span></span>
+<span><span class="co">#&gt; 13                        629   -0.22174188 0.05608266       -3.9538400</span></span>
+<span><span class="co">#&gt; 21                        629   -0.01358238 0.05076760       -0.2675403</span></span>
+<span><span class="co">#&gt; 28                        629    0.09810077 0.05076760        1.9323501</span></span>
+<span><span class="co">#&gt; 35                        629    0.03766254 0.05076760        0.7418619</span></span>
+<span><span class="co">#&gt; 42                        629   -0.33576292 0.05608266       -5.9869289</span></span>
 <span><span class="co">#&gt;    global_pvalue low_rank_effect rank_adjusted_total_effect</span></span>
 <span><span class="co">#&gt; 1   8.365492e-01               0               -0.021457035</span></span>
 <span><span class="co">#&gt; 13  8.559785e-05               0               -0.507066908</span></span>
@@ -303,48 +312,48 @@ effect after subtracting the perturbation-wide effect.</p>
 <span><span class="co">#&gt; 28              0.1014051                    0.77052917</span></span>
 <span><span class="co">#&gt; 35              0.1014051                   -0.08856472</span></span>
 <span><span class="co">#&gt; 42              0.1119016                   -3.29945585</span></span>
-<span><span class="co">#&gt;    rank_adjusted_total_pvalue rank_adjusted_global_effect specific_effect</span></span>
-<span><span class="co">#&gt; 1                8.324886e-01                  0.01047815     -0.03193519</span></span>
-<span><span class="co">#&gt; 13               6.992870e-06                 -0.22174188     -0.28532503</span></span>
-<span><span class="co">#&gt; 21               2.076565e-01                 -0.01358238     -0.11432085</span></span>
-<span><span class="co">#&gt; 28               4.412702e-01                  0.09810077     -0.01996520</span></span>
-<span><span class="co">#&gt; 35               9.294555e-01                  0.03766254     -0.04664346</span></span>
-<span><span class="co">#&gt; 42               1.022436e-03                 -0.33576292     -0.03345147</span></span>
-<span><span class="co">#&gt;    specific_se specific_statistic specific_pvalue total_var_raw specific_var</span></span>
-<span><span class="co">#&gt; 1   0.09962289         -0.3205608     0.748604851    0.01018467   0.00985797</span></span>
-<span><span class="co">#&gt; 13  0.10998930         -2.5941162     0.009610906    0.01246399   0.01206410</span></span>
-<span><span class="co">#&gt; 21  0.09962289         -1.1475360     0.251412462    0.01018467   0.00985797</span></span>
-<span><span class="co">#&gt; 28  0.09962289         -0.2004078     0.841199151    0.01018467   0.00985797</span></span>
-<span><span class="co">#&gt; 35  0.09962289         -0.4682002     0.639735227    0.01018467   0.00985797</span></span>
-<span><span class="co">#&gt; 42  0.10998930         -0.3041338     0.761084090    0.01246399   0.01206410</span></span>
-<span><span class="co">#&gt;    residual_df specific_df_raw specific_df_for_test total_padj_global</span></span>
-<span><span class="co">#&gt; 1          629        1071.458             1087.833      0.9619023849</span></span>
-<span><span class="co">#&gt; 13         629        1071.445             1087.820      0.0001022513</span></span>
-<span><span class="co">#&gt; 21         629        1071.458             1087.833      0.5296045464</span></span>
-<span><span class="co">#&gt; 28         629        1071.458             1087.833      0.7887503168</span></span>
-<span><span class="co">#&gt; 35         629        1071.458             1087.833      0.9940442759</span></span>
-<span><span class="co">#&gt; 42         629        1071.445             1087.820      0.0084095340</span></span>
-<span><span class="co">#&gt;    total_padj_by_reporter rank_adjusted_total_padj_global</span></span>
-<span><span class="co">#&gt; 1            9.315944e-01                    0.9619023849</span></span>
-<span><span class="co">#&gt; 13           5.975725e-05                    0.0001022513</span></span>
-<span><span class="co">#&gt; 21           4.174033e-01                    0.5296045464</span></span>
-<span><span class="co">#&gt; 28           6.690226e-01                    0.7887503168</span></span>
-<span><span class="co">#&gt; 35           9.600969e-01                    0.9940442759</span></span>
-<span><span class="co">#&gt; 42           5.653468e-03                    0.0084095340</span></span>
-<span><span class="co">#&gt;    rank_adjusted_total_padj_by_reporter specific_padj_global</span></span>
-<span><span class="co">#&gt; 1                          9.315944e-01           0.95570500</span></span>
-<span><span class="co">#&gt; 13                         5.975725e-05           0.06587475</span></span>
-<span><span class="co">#&gt; 21                         4.174033e-01           0.65308739</span></span>
-<span><span class="co">#&gt; 28                         6.690226e-01           0.97322913</span></span>
-<span><span class="co">#&gt; 35                         9.600969e-01           0.91113805</span></span>
-<span><span class="co">#&gt; 42                         5.653468e-03           0.95571246</span></span>
-<span><span class="co">#&gt;    specific_padj_by_reporter   total_padj specific_padj</span></span>
-<span><span class="co">#&gt; 1                 0.98500411 9.315944e-01    0.98500411</span></span>
-<span><span class="co">#&gt; 13                0.04522295 5.975725e-05    0.04522295</span></span>
-<span><span class="co">#&gt; 21                0.56603513 4.174033e-01    0.56603513</span></span>
-<span><span class="co">#&gt; 28                0.98500411 6.690226e-01    0.98500411</span></span>
-<span><span class="co">#&gt; 35                0.96393999 9.600969e-01    0.96393999</span></span>
-<span><span class="co">#&gt; 42                0.98500411 5.653468e-03    0.98500411</span></span></code></pre></div>
+<span><span class="co">#&gt;    rank_adjusted_total_pvalue rank_adjusted_total_df_for_test</span></span>
+<span><span class="co">#&gt; 1                8.324886e-01                        640.3341</span></span>
+<span><span class="co">#&gt; 13               6.992870e-06                        640.3341</span></span>
+<span><span class="co">#&gt; 21               2.076565e-01                        640.3341</span></span>
+<span><span class="co">#&gt; 28               4.412702e-01                        640.3341</span></span>
+<span><span class="co">#&gt; 35               9.294555e-01                        640.3341</span></span>
+<span><span class="co">#&gt; 42               1.022436e-03                        640.3341</span></span>
+<span><span class="co">#&gt;    rank_adjusted_global_effect specific_effect specific_se specific_statistic</span></span>
+<span><span class="co">#&gt; 1                   0.01047815     -0.03193519  0.09962289         -0.3205608</span></span>
+<span><span class="co">#&gt; 13                 -0.22174188     -0.28532503  0.10998930         -2.5941162</span></span>
+<span><span class="co">#&gt; 21                 -0.01358238     -0.11432085  0.09962289         -1.1475360</span></span>
+<span><span class="co">#&gt; 28                  0.09810077     -0.01996520  0.09962289         -0.2004078</span></span>
+<span><span class="co">#&gt; 35                  0.03766254     -0.04664346  0.09962289         -0.4682002</span></span>
+<span><span class="co">#&gt; 42                 -0.33576292     -0.03345147  0.10998930         -0.3041338</span></span>
+<span><span class="co">#&gt;    specific_pvalue total_var_raw specific_var residual_df specific_df_raw</span></span>
+<span><span class="co">#&gt; 1      0.748604851    0.01018467   0.00985797         629        1071.458</span></span>
+<span><span class="co">#&gt; 13     0.009610906    0.01246399   0.01206410         629        1071.445</span></span>
+<span><span class="co">#&gt; 21     0.251412462    0.01018467   0.00985797         629        1071.458</span></span>
+<span><span class="co">#&gt; 28     0.841199151    0.01018467   0.00985797         629        1071.458</span></span>
+<span><span class="co">#&gt; 35     0.639735227    0.01018467   0.00985797         629        1071.458</span></span>
+<span><span class="co">#&gt; 42     0.761084090    0.01246399   0.01206410         629        1071.445</span></span>
+<span><span class="co">#&gt;    specific_df_for_test total_padj_global total_padj_by_reporter</span></span>
+<span><span class="co">#&gt; 1              1087.833      0.9619023849           9.315944e-01</span></span>
+<span><span class="co">#&gt; 13             1087.820      0.0001022513           5.975725e-05</span></span>
+<span><span class="co">#&gt; 21             1087.833      0.5296045464           4.174033e-01</span></span>
+<span><span class="co">#&gt; 28             1087.833      0.7887503168           6.690226e-01</span></span>
+<span><span class="co">#&gt; 35             1087.833      0.9940442759           9.600969e-01</span></span>
+<span><span class="co">#&gt; 42             1087.820      0.0084095340           5.653468e-03</span></span>
+<span><span class="co">#&gt;    rank_adjusted_total_padj_global rank_adjusted_total_padj_by_reporter</span></span>
+<span><span class="co">#&gt; 1                     0.9619023849                         9.315944e-01</span></span>
+<span><span class="co">#&gt; 13                    0.0001022513                         5.975725e-05</span></span>
+<span><span class="co">#&gt; 21                    0.5296045464                         4.174033e-01</span></span>
+<span><span class="co">#&gt; 28                    0.7887503168                         6.690226e-01</span></span>
+<span><span class="co">#&gt; 35                    0.9940442759                         9.600969e-01</span></span>
+<span><span class="co">#&gt; 42                    0.0084095340                         5.653468e-03</span></span>
+<span><span class="co">#&gt;    specific_padj_global specific_padj_by_reporter   total_padj specific_padj</span></span>
+<span><span class="co">#&gt; 1            0.95570500                0.98500411 9.315944e-01    0.98500411</span></span>
+<span><span class="co">#&gt; 13           0.06587475                0.04522295 5.975725e-05    0.04522295</span></span>
+<span><span class="co">#&gt; 21           0.65308739                0.56603513 4.174033e-01    0.56603513</span></span>
+<span><span class="co">#&gt; 28           0.97322913                0.98500411 6.690226e-01    0.98500411</span></span>
+<span><span class="co">#&gt; 35           0.91113805                0.96393999 9.600969e-01    0.96393999</span></span>
+<span><span class="co">#&gt; 42           0.95571246                0.98500411 5.653468e-03    0.98500411</span></span></code></pre></div>
 <p>The key columns are:</p>
 <ul>
 <li>
@@ -357,8 +366,11 @@ across reporters.</li>
 <code>specific_effect</code>: reporter-specific deviation from the
 perturbation-wide effect.</li>
 <li>
-<code>specific_pvalue</code> and <code>specific_padj</code>: test
-and BH-adjusted p-value.</li>
+<code>total_pvalue</code> and <code>total_padj</code>: test and
+BH-adjusted p-value for the total effect.</li>
+<li>
+<code>specific_pvalue</code> and <code>specific_padj</code>:
+corresponding values for the specific effect.</li>
 </ul>
 <p>The direct fitting functions remain available for existing scripts,
 but <code><a href="../reference/fit_destress.html">fit_destress()</a></code> is the recommended entry point for new
@@ -396,140 +408,162 @@ assay without EVC calibration for a direct comparison.</p>
 <span>  <span class="va">tab</span>,</span>
 <span>  fdr <span class="op">=</span> <span class="fl">0.05</span>,</span>
 <span>  lfc <span class="op">=</span> <span class="fl">0.5</span>,</span>
-<span>  effect <span class="op">=</span> <span class="st">"specific_effect"</span>,</span>
-<span>  padj <span class="op">=</span> <span class="st">"specific_padj"</span></span>
+<span>  effect <span class="op">=</span> <span class="st">"total_effect"</span>,</span>
+<span>  padj <span class="op">=</span> <span class="st">"total_padj"</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">hits</span><span class="op">$</span><span class="va">hit</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Downregulated        Not DE   Upregulated </span></span>
-<span><span class="co">#&gt;            21           618            19</span></span>
+<span><span class="co">#&gt;            42           595            21</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span></span>
-<span>  <span class="va">hits</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/order.html" class="external-link">order</a></span><span class="op">(</span><span class="va">hits</span><span class="op">$</span><span class="va">specific_padj</span>, <span class="op">-</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">hits</span><span class="op">$</span><span class="va">specific_effect</span><span class="op">)</span><span class="op">)</span>, <span class="op">]</span>,</span>
+<span>  <span class="va">hits</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/order.html" class="external-link">order</a></span><span class="op">(</span><span class="va">hits</span><span class="op">$</span><span class="va">total_padj</span>, <span class="op">-</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">hits</span><span class="op">$</span><span class="va">total_effect</span><span class="op">)</span><span class="op">)</span>, <span class="op">]</span>,</span>
 <span>  <span class="fl">10</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt;     reporter   perturbation total_effect  total_se total_statistic total_pvalue</span></span>
-<span><span class="co">#&gt; 458    soxSp       Paraquat    2.0421536 0.1220216       16.736007 1.299286e-52</span></span>
-<span><span class="co">#&gt; 496    soxSp            PMS    1.5927747 0.1220216       13.053224 8.823718e-35</span></span>
-<span><span class="co">#&gt; 497     robp            PMS   -1.4764288 0.1750960       -8.432110 2.231139e-16</span></span>
-<span><span class="co">#&gt; 507    ompFp       Procaine   -1.7820135 0.1513196      -11.776485 4.232902e-29</span></span>
-<span><span class="co">#&gt; 208   acrABp Clarithromycin    1.0545853 0.1119016        9.424220 7.767458e-20</span></span>
-<span><span class="co">#&gt; 506    micFp       Procaine    0.7024904 0.1261821        5.567276 3.782979e-08</span></span>
-<span><span class="co">#&gt; 210     robp Clarithromycin   -1.3681767 0.1832087       -7.467859 2.663925e-13</span></span>
-<span><span class="co">#&gt; 76      robp   Azithromycin   -1.3785716 0.1832087       -7.524597 1.789489e-13</span></span>
-<span><span class="co">#&gt; 121    micFp       Caffeine    1.2532229 0.1261821        9.931861 9.637828e-22</span></span>
-<span><span class="co">#&gt; 553    soxSp     Rifampicin   -1.5424675 0.1220216      -12.640943 6.223887e-33</span></span>
-<span><span class="co">#&gt;     additive_total_effect additive_total_se empty_vector_effect</span></span>
-<span><span class="co">#&gt; 458                    NA                NA                  NA</span></span>
-<span><span class="co">#&gt; 496                    NA                NA                  NA</span></span>
-<span><span class="co">#&gt; 497                    NA                NA                  NA</span></span>
-<span><span class="co">#&gt; 507                    NA                NA                  NA</span></span>
-<span><span class="co">#&gt; 208                    NA                NA                  NA</span></span>
-<span><span class="co">#&gt; 506                    NA                NA                  NA</span></span>
-<span><span class="co">#&gt; 210                    NA                NA                  NA</span></span>
-<span><span class="co">#&gt; 76                     NA                NA                  NA</span></span>
-<span><span class="co">#&gt; 121                    NA                NA                  NA</span></span>
-<span><span class="co">#&gt; 553                    NA                NA                  NA</span></span>
-<span><span class="co">#&gt;     background_adjusted_effect global_effect  global_se global_statistic</span></span>
-<span><span class="co">#&gt; 458                  2.0421536    0.44247430 0.05076760         8.715684</span></span>
-<span><span class="co">#&gt; 496                  1.5927747    0.16081460 0.05076760         3.167662</span></span>
-<span><span class="co">#&gt; 497                 -1.4764288    0.16081460 0.05076760         3.167662</span></span>
-<span><span class="co">#&gt; 507                 -1.7820135   -0.35237122 0.05076760        -6.940869</span></span>
-<span><span class="co">#&gt; 208                  1.0545853    0.07883706 0.05335092         1.477708</span></span>
-<span><span class="co">#&gt; 506                  0.7024904   -0.35237122 0.05076760        -6.940869</span></span>
-<span><span class="co">#&gt; 210                 -1.3681767    0.07883706 0.05335092         1.477708</span></span>
-<span><span class="co">#&gt; 76                  -1.3785716   -0.01747403 0.05299562        -0.329726</span></span>
-<span><span class="co">#&gt; 121                  1.2532229    0.36926273 0.05076760         7.273591</span></span>
-<span><span class="co">#&gt; 553                 -1.5424675   -0.69445748 0.05388049       -12.888848</span></span>
+<span><span class="co">#&gt;     reporter   perturbation total_effect   total_se total_statistic</span></span>
+<span><span class="co">#&gt; 458    soxSp       Paraquat    2.0421536 0.12202155       16.736007</span></span>
+<span><span class="co">#&gt; 496    soxSp            PMS    1.5927747 0.12202155       13.053224</span></span>
+<span><span class="co">#&gt; 553    soxSp     Rifampicin   -1.5424675 0.12202155      -12.640943</span></span>
+<span><span class="co">#&gt; 507    ompFp       Procaine   -1.7820135 0.15131964      -11.776485</span></span>
+<span><span class="co">#&gt; 551   acrABp     Rifampicin   -1.2120367 0.11190160      -10.831272</span></span>
+<span><span class="co">#&gt; 121    micFp       Caffeine    1.2532229 0.12618208        9.931861</span></span>
+<span><span class="co">#&gt; 509   acrABp       Procaine   -0.9885807 0.10140507       -9.748829</span></span>
+<span><span class="co">#&gt; 208   acrABp Clarithromycin    1.0545853 0.11190160        9.424220</span></span>
+<span><span class="co">#&gt; 120  marRABp       Caffeine    0.8001456 0.09272666        8.629079</span></span>
+<span><span class="co">#&gt; 497     robp            PMS   -1.4764288 0.17509600       -8.432110</span></span>
+<span><span class="co">#&gt;     total_pvalue additive_total_effect additive_total_se empty_vector_effect</span></span>
+<span><span class="co">#&gt; 458 1.299286e-52                    NA                NA                  NA</span></span>
+<span><span class="co">#&gt; 496 8.823718e-35                    NA                NA                  NA</span></span>
+<span><span class="co">#&gt; 553 6.223887e-33                    NA                NA                  NA</span></span>
+<span><span class="co">#&gt; 507 4.232902e-29                    NA                NA                  NA</span></span>
+<span><span class="co">#&gt; 551 3.220026e-25                    NA                NA                  NA</span></span>
+<span><span class="co">#&gt; 121 9.637828e-22                    NA                NA                  NA</span></span>
+<span><span class="co">#&gt; 509 4.964862e-21                    NA                NA                  NA</span></span>
+<span><span class="co">#&gt; 208 7.767458e-20                    NA                NA                  NA</span></span>
+<span><span class="co">#&gt; 120 4.847349e-17                    NA                NA                  NA</span></span>
+<span><span class="co">#&gt; 497 2.231139e-16                    NA                NA                  NA</span></span>
+<span><span class="co">#&gt;     background_adjusted_effect background_adjusted_var_raw</span></span>
+<span><span class="co">#&gt; 458                  2.0421536                 0.014874295</span></span>
+<span><span class="co">#&gt; 496                  1.5927747                 0.014874295</span></span>
+<span><span class="co">#&gt; 553                 -1.5424675                 0.014874295</span></span>
+<span><span class="co">#&gt; 507                 -1.7820135                 0.023027442</span></span>
+<span><span class="co">#&gt; 551                 -1.2120367                 0.012463989</span></span>
+<span><span class="co">#&gt; 121                  1.2532229                 0.015925143</span></span>
+<span><span class="co">#&gt; 509                 -0.9885807                 0.010184666</span></span>
+<span><span class="co">#&gt; 208                  1.0545853                 0.012463989</span></span>
+<span><span class="co">#&gt; 120                  0.8001456                 0.008469959</span></span>
+<span><span class="co">#&gt; 497                 -1.4764288                 0.030926161</span></span>
+<span><span class="co">#&gt;     background_adjusted_df_raw global_effect  global_se global_statistic</span></span>
+<span><span class="co">#&gt; 458                        644    0.44247430 0.05076760         8.715684</span></span>
+<span><span class="co">#&gt; 496                        644    0.16081460 0.05076760         3.167662</span></span>
+<span><span class="co">#&gt; 553                        644   -0.69445748 0.05388049       -12.888848</span></span>
+<span><span class="co">#&gt; 507                        625   -0.35237122 0.05076760        -6.940869</span></span>
+<span><span class="co">#&gt; 551                        629   -0.69445748 0.05388049       -12.888848</span></span>
+<span><span class="co">#&gt; 121                        641    0.36926273 0.05076760         7.273591</span></span>
+<span><span class="co">#&gt; 509                        629   -0.35237122 0.05076760        -6.940869</span></span>
+<span><span class="co">#&gt; 208                        629    0.07883706 0.05335092         1.477708</span></span>
+<span><span class="co">#&gt; 120                        631    0.36926273 0.05076760         7.273591</span></span>
+<span><span class="co">#&gt; 497                        632    0.16081460 0.05076760         3.167662</span></span>
 <span><span class="co">#&gt;     global_pvalue low_rank_effect rank_adjusted_total_effect</span></span>
 <span><span class="co">#&gt; 458  2.534090e-17               0                  2.0421536</span></span>
 <span><span class="co">#&gt; 496  1.610766e-03               0                  1.5927747</span></span>
-<span><span class="co">#&gt; 497  1.610766e-03               0                 -1.4764288</span></span>
-<span><span class="co">#&gt; 507  9.684461e-12               0                 -1.7820135</span></span>
-<span><span class="co">#&gt; 208  1.399842e-01               0                  1.0545853</span></span>
-<span><span class="co">#&gt; 506  9.684461e-12               0                  0.7024904</span></span>
-<span><span class="co">#&gt; 210  1.399842e-01               0                 -1.3681767</span></span>
-<span><span class="co">#&gt; 76   7.417163e-01               0                 -1.3785716</span></span>
-<span><span class="co">#&gt; 121  1.039992e-12               0                  1.2532229</span></span>
 <span><span class="co">#&gt; 553  6.490793e-34               0                 -1.5424675</span></span>
+<span><span class="co">#&gt; 507  9.684461e-12               0                 -1.7820135</span></span>
+<span><span class="co">#&gt; 551  6.490793e-34               0                 -1.2120367</span></span>
+<span><span class="co">#&gt; 121  1.039992e-12               0                  1.2532229</span></span>
+<span><span class="co">#&gt; 509  9.684461e-12               0                 -0.9885807</span></span>
+<span><span class="co">#&gt; 208  1.399842e-01               0                  1.0545853</span></span>
+<span><span class="co">#&gt; 120  1.039992e-12               0                  0.8001456</span></span>
+<span><span class="co">#&gt; 497  1.610766e-03               0                 -1.4764288</span></span>
 <span><span class="co">#&gt;     rank_adjusted_total_se rank_adjusted_total_statistic</span></span>
-<span><span class="co">#&gt; 458              0.1220216                     16.736007</span></span>
-<span><span class="co">#&gt; 496              0.1220216                     13.053224</span></span>
-<span><span class="co">#&gt; 497              0.1750960                     -8.432110</span></span>
-<span><span class="co">#&gt; 507              0.1513196                    -11.776485</span></span>
-<span><span class="co">#&gt; 208              0.1119016                      9.424220</span></span>
-<span><span class="co">#&gt; 506              0.1261821                      5.567276</span></span>
-<span><span class="co">#&gt; 210              0.1832087                     -7.467859</span></span>
-<span><span class="co">#&gt; 76               0.1832087                     -7.524597</span></span>
-<span><span class="co">#&gt; 121              0.1261821                      9.931861</span></span>
-<span><span class="co">#&gt; 553              0.1220216                    -12.640943</span></span>
-<span><span class="co">#&gt;     rank_adjusted_total_pvalue rank_adjusted_global_effect specific_effect</span></span>
-<span><span class="co">#&gt; 458               1.299286e-52                  0.44247430       1.5996793</span></span>
-<span><span class="co">#&gt; 496               8.823718e-35                  0.16081460       1.4319601</span></span>
-<span><span class="co">#&gt; 497               2.231139e-16                  0.16081460      -1.6372434</span></span>
-<span><span class="co">#&gt; 507               4.232902e-29                 -0.35237122      -1.4296422</span></span>
-<span><span class="co">#&gt; 208               7.767458e-20                  0.07883706       0.9757482</span></span>
-<span><span class="co">#&gt; 506               3.782979e-08                 -0.35237122       1.0548616</span></span>
-<span><span class="co">#&gt; 210               2.663925e-13                  0.07883706      -1.4470137</span></span>
-<span><span class="co">#&gt; 76                1.789489e-13                 -0.01747403      -1.3610976</span></span>
-<span><span class="co">#&gt; 121               9.637828e-22                  0.36926273       0.8839602</span></span>
-<span><span class="co">#&gt; 553               6.223887e-33                 -0.69445748      -0.8480100</span></span>
-<span><span class="co">#&gt;     specific_se specific_statistic specific_pvalue total_var_raw specific_var</span></span>
-<span><span class="co">#&gt; 458   0.1150062          13.909508    3.641795e-40    0.01487429   0.01320770</span></span>
-<span><span class="co">#&gt; 496   0.1150062          12.451158    4.517557e-33    0.01487429   0.01320770</span></span>
-<span><span class="co">#&gt; 497   0.1563644         -10.470690    4.646025e-24    0.03092616   0.02467332</span></span>
-<span><span class="co">#&gt; 507   0.1376044         -10.389511    8.190720e-24    0.02302744   0.01903138</span></span>
-<span><span class="co">#&gt; 208   0.1086268           8.982576    1.219199e-18    0.01246399   0.01175983</span></span>
-<span><span class="co">#&gt; 506   0.1181704           8.926615    2.332857e-18    0.01592514   0.01395831</span></span>
-<span><span class="co">#&gt; 210   0.1636651          -8.841308    6.490081e-18    0.03388511   0.02706063</span></span>
-<span><span class="co">#&gt; 76    0.1635479          -8.322319    3.990072e-16    0.03388511   0.02702221</span></span>
-<span><span class="co">#&gt; 121   0.1181704           7.480386    1.725831e-13    0.01592514   0.01395831</span></span>
-<span><span class="co">#&gt; 553   0.1164120          -7.284562    6.564589e-13    0.01487429   0.01353933</span></span>
-<span><span class="co">#&gt;     residual_df specific_df_raw specific_df_for_test total_padj_global</span></span>
-<span><span class="co">#&gt; 458         644        932.6083             948.9834      8.549304e-50</span></span>
-<span><span class="co">#&gt; 496         644        932.6083             948.9834      2.903003e-32</span></span>
-<span><span class="co">#&gt; 497         632        744.2360             760.6110      1.468090e-14</span></span>
-<span><span class="co">#&gt; 507         625        788.4796             804.8547      6.963123e-27</span></span>
-<span><span class="co">#&gt; 208         629       1021.8465            1038.2216      6.388734e-18</span></span>
-<span><span class="co">#&gt; 506         641        905.5763             921.9513      8.297334e-07</span></span>
-<span><span class="co">#&gt; 210         632        745.6868             762.0618      1.252045e-11</span></span>
-<span><span class="co">#&gt; 76          632        743.5805             759.9555      9.057567e-12</span></span>
-<span><span class="co">#&gt; 121         641        905.5763             921.9513      1.056948e-19</span></span>
-<span><span class="co">#&gt; 553         644        977.1701             993.5451      1.365106e-30</span></span>
-<span><span class="co">#&gt;     total_padj_by_reporter rank_adjusted_total_padj_global</span></span>
-<span><span class="co">#&gt; 458           1.221329e-50                    8.549304e-50</span></span>
-<span><span class="co">#&gt; 496           4.147148e-33                    2.903003e-32</span></span>
-<span><span class="co">#&gt; 497           2.097271e-14                    1.468090e-14</span></span>
-<span><span class="co">#&gt; 507           3.978928e-27                    6.963123e-27</span></span>
-<span><span class="co">#&gt; 208           2.433803e-18                    6.388734e-18</span></span>
-<span><span class="co">#&gt; 506           8.890001e-07                    8.297334e-07</span></span>
-<span><span class="co">#&gt; 210           8.346966e-12                    1.252045e-11</span></span>
-<span><span class="co">#&gt; 76            8.346966e-12                    9.057567e-12</span></span>
-<span><span class="co">#&gt; 121           9.059558e-20                    1.056948e-19</span></span>
-<span><span class="co">#&gt; 553           1.950151e-31                    1.365106e-30</span></span>
-<span><span class="co">#&gt;     rank_adjusted_total_padj_by_reporter specific_padj_global</span></span>
-<span><span class="co">#&gt; 458                         1.221329e-50         2.396301e-37</span></span>
-<span><span class="co">#&gt; 496                         4.147148e-33         1.486276e-30</span></span>
-<span><span class="co">#&gt; 497                         2.097271e-14         1.019028e-21</span></span>
-<span><span class="co">#&gt; 507                         3.978928e-27         1.347373e-21</span></span>
-<span><span class="co">#&gt; 208                         2.433803e-18         1.604466e-16</span></span>
-<span><span class="co">#&gt; 506                         8.890001e-07         2.558366e-16</span></span>
-<span><span class="co">#&gt; 210                         8.346966e-12         6.100677e-16</span></span>
-<span><span class="co">#&gt; 76                          8.346966e-12         3.281834e-14</span></span>
-<span><span class="co">#&gt; 121                         9.059558e-20         1.261774e-11</span></span>
-<span><span class="co">#&gt; 553                         1.950151e-31         3.926818e-11</span></span>
-<span><span class="co">#&gt;     specific_padj_by_reporter   total_padj specific_padj           hit</span></span>
-<span><span class="co">#&gt; 458              3.423287e-38 1.221329e-50  3.423287e-38   Upregulated</span></span>
-<span><span class="co">#&gt; 496              2.123252e-31 4.147148e-33  2.123252e-31   Upregulated</span></span>
-<span><span class="co">#&gt; 497              4.367263e-22 2.097271e-14  4.367263e-22 Downregulated</span></span>
-<span><span class="co">#&gt; 507              7.699277e-22 3.978928e-27  7.699277e-22 Downregulated</span></span>
-<span><span class="co">#&gt; 208              1.146047e-16 2.433803e-18  1.146047e-16   Upregulated</span></span>
-<span><span class="co">#&gt; 506              2.192885e-16 8.890001e-07  2.192885e-16   Upregulated</span></span>
-<span><span class="co">#&gt; 210              3.050338e-16 8.346966e-12  3.050338e-16 Downregulated</span></span>
-<span><span class="co">#&gt; 76               1.250222e-14 8.346966e-12  1.250222e-14 Downregulated</span></span>
-<span><span class="co">#&gt; 121              8.111407e-12 9.059558e-20  8.111407e-12   Upregulated</span></span>
-<span><span class="co">#&gt; 553              2.056905e-11 1.950151e-31  2.056905e-11 Downregulated</span></span></code></pre></div>
+<span><span class="co">#&gt; 458             0.12202155                     16.736007</span></span>
+<span><span class="co">#&gt; 496             0.12202155                     13.053224</span></span>
+<span><span class="co">#&gt; 553             0.12202155                    -12.640943</span></span>
+<span><span class="co">#&gt; 507             0.15131964                    -11.776485</span></span>
+<span><span class="co">#&gt; 551             0.11190160                    -10.831272</span></span>
+<span><span class="co">#&gt; 121             0.12618208                      9.931861</span></span>
+<span><span class="co">#&gt; 509             0.10140507                     -9.748829</span></span>
+<span><span class="co">#&gt; 208             0.11190160                      9.424220</span></span>
+<span><span class="co">#&gt; 120             0.09272666                      8.629079</span></span>
+<span><span class="co">#&gt; 497             0.17509600                     -8.432110</span></span>
+<span><span class="co">#&gt;     rank_adjusted_total_pvalue rank_adjusted_total_df_for_test</span></span>
+<span><span class="co">#&gt; 458               1.299286e-52                        655.3341</span></span>
+<span><span class="co">#&gt; 496               8.823718e-35                        655.3341</span></span>
+<span><span class="co">#&gt; 553               6.223887e-33                        655.3341</span></span>
+<span><span class="co">#&gt; 507               4.232902e-29                        636.3341</span></span>
+<span><span class="co">#&gt; 551               3.220026e-25                        640.3341</span></span>
+<span><span class="co">#&gt; 121               9.637828e-22                        652.3341</span></span>
+<span><span class="co">#&gt; 509               4.964862e-21                        640.3341</span></span>
+<span><span class="co">#&gt; 208               7.767458e-20                        640.3341</span></span>
+<span><span class="co">#&gt; 120               4.847349e-17                        642.3341</span></span>
+<span><span class="co">#&gt; 497               2.231139e-16                        643.3341</span></span>
+<span><span class="co">#&gt;     rank_adjusted_global_effect specific_effect specific_se specific_statistic</span></span>
+<span><span class="co">#&gt; 458                  0.44247430       1.5996793  0.11500618          13.909508</span></span>
+<span><span class="co">#&gt; 496                  0.16081460       1.4319601  0.11500618          12.451158</span></span>
+<span><span class="co">#&gt; 553                 -0.69445748      -0.8480100  0.11641195          -7.284562</span></span>
+<span><span class="co">#&gt; 507                 -0.35237122      -1.4296422  0.13760438         -10.389511</span></span>
+<span><span class="co">#&gt; 551                 -0.69445748      -0.5175792  0.10888705          -4.753359</span></span>
+<span><span class="co">#&gt; 121                  0.36926273       0.8839602  0.11817040           7.480386</span></span>
+<span><span class="co">#&gt; 509                 -0.35237122      -0.6362095  0.09962289          -6.386178</span></span>
+<span><span class="co">#&gt; 208                  0.07883706       0.9757482  0.10862677           8.982576</span></span>
+<span><span class="co">#&gt; 120                  0.36926273       0.4308829  0.09333023           4.616756</span></span>
+<span><span class="co">#&gt; 497                  0.16081460      -1.6372434  0.15636443         -10.470690</span></span>
+<span><span class="co">#&gt;     specific_pvalue total_var_raw specific_var residual_df specific_df_raw</span></span>
+<span><span class="co">#&gt; 458    3.641795e-40   0.014874295  0.013207705         644        932.6083</span></span>
+<span><span class="co">#&gt; 496    4.517557e-33   0.014874295  0.013207705         644        932.6083</span></span>
+<span><span class="co">#&gt; 553    6.564589e-13   0.014874295  0.013539331         644        977.1701</span></span>
+<span><span class="co">#&gt; 507    8.190720e-24   0.023027442  0.019031381         625        788.4796</span></span>
+<span><span class="co">#&gt; 551    2.279933e-06   0.012463989  0.011817685         629       1030.5906</span></span>
+<span><span class="co">#&gt; 121    1.725831e-13   0.015925143  0.013958310         641        905.5763</span></span>
+<span><span class="co">#&gt; 509    2.515021e-10   0.010184666  0.009857970         629       1071.4578</span></span>
+<span><span class="co">#&gt; 208    1.219199e-18   0.012463989  0.011759832         629       1021.8465</span></span>
+<span><span class="co">#&gt; 120    4.317977e-06   0.008469959  0.008633179         631       1181.6394</span></span>
+<span><span class="co">#&gt; 497    4.646025e-24   0.030926161  0.024673324         632        744.2360</span></span>
+<span><span class="co">#&gt;     specific_df_for_test total_padj_global total_padj_by_reporter</span></span>
+<span><span class="co">#&gt; 458             948.9834      8.549304e-50           1.221329e-50</span></span>
+<span><span class="co">#&gt; 496             948.9834      2.903003e-32           4.147148e-33</span></span>
+<span><span class="co">#&gt; 553             993.5451      1.365106e-30           1.950151e-31</span></span>
+<span><span class="co">#&gt; 507             804.8547      6.963123e-27           3.978928e-27</span></span>
+<span><span class="co">#&gt; 551            1046.9656      4.237555e-23           3.026825e-23</span></span>
+<span><span class="co">#&gt; 121             921.9513      1.056948e-19           9.059558e-20</span></span>
+<span><span class="co">#&gt; 509            1087.8328      4.666971e-19           2.333485e-19</span></span>
+<span><span class="co">#&gt; 208            1038.2216      6.388734e-18           2.433803e-18</span></span>
+<span><span class="co">#&gt; 120            1198.0144      3.543950e-15           4.556508e-15</span></span>
+<span><span class="co">#&gt; 497             760.6110      1.468090e-14           2.097271e-14</span></span>
+<span><span class="co">#&gt;     rank_adjusted_total_padj_global rank_adjusted_total_padj_by_reporter</span></span>
+<span><span class="co">#&gt; 458                    8.549304e-50                         1.221329e-50</span></span>
+<span><span class="co">#&gt; 496                    2.903003e-32                         4.147148e-33</span></span>
+<span><span class="co">#&gt; 553                    1.365106e-30                         1.950151e-31</span></span>
+<span><span class="co">#&gt; 507                    6.963123e-27                         3.978928e-27</span></span>
+<span><span class="co">#&gt; 551                    4.237555e-23                         3.026825e-23</span></span>
+<span><span class="co">#&gt; 121                    1.056948e-19                         9.059558e-20</span></span>
+<span><span class="co">#&gt; 509                    4.666971e-19                         2.333485e-19</span></span>
+<span><span class="co">#&gt; 208                    6.388734e-18                         2.433803e-18</span></span>
+<span><span class="co">#&gt; 120                    3.543950e-15                         4.556508e-15</span></span>
+<span><span class="co">#&gt; 497                    1.468090e-14                         2.097271e-14</span></span>
+<span><span class="co">#&gt;     specific_padj_global specific_padj_by_reporter   total_padj specific_padj</span></span>
+<span><span class="co">#&gt; 458         2.396301e-37              3.423287e-38 1.221329e-50  3.423287e-38</span></span>
+<span><span class="co">#&gt; 496         1.486276e-30              2.123252e-31 4.147148e-33  2.123252e-31</span></span>
+<span><span class="co">#&gt; 553         3.926818e-11              2.056905e-11 1.950151e-31  2.056905e-11</span></span>
+<span><span class="co">#&gt; 507         1.347373e-21              7.699277e-22 3.978928e-27  7.699277e-22</span></span>
+<span><span class="co">#&gt; 551         5.173090e-05              3.571896e-05 3.026825e-23  3.571896e-05</span></span>
+<span><span class="co">#&gt; 121         1.261774e-11              8.111407e-12 9.059558e-20  8.111407e-12</span></span>
+<span><span class="co">#&gt; 509         1.272988e-08              7.880400e-09 2.333485e-19  7.880400e-09</span></span>
+<span><span class="co">#&gt; 208         1.604466e-16              1.146047e-16 2.433803e-18  1.146047e-16</span></span>
+<span><span class="co">#&gt; 120         9.165255e-05              5.073623e-05 4.556508e-15  5.073623e-05</span></span>
+<span><span class="co">#&gt; 497         1.019028e-21              4.367263e-22 2.097271e-14  4.367263e-22</span></span>
+<span><span class="co">#&gt;               hit</span></span>
+<span><span class="co">#&gt; 458   Upregulated</span></span>
+<span><span class="co">#&gt; 496   Upregulated</span></span>
+<span><span class="co">#&gt; 553 Downregulated</span></span>
+<span><span class="co">#&gt; 507 Downregulated</span></span>
+<span><span class="co">#&gt; 551 Downregulated</span></span>
+<span><span class="co">#&gt; 121   Upregulated</span></span>
+<span><span class="co">#&gt; 509 Downregulated</span></span>
+<span><span class="co">#&gt; 208   Upregulated</span></span>
+<span><span class="co">#&gt; 120   Upregulated</span></span>
+<span><span class="co">#&gt; 497 Downregulated</span></span></code></pre></div>
 <p>In real screens, the FDR cutoff should be paired with domain
 knowledge and diagnostics. For reference-rich designs, empirical
 replicate/permutation p-values can be used as an additional calibration
@@ -543,8 +577,8 @@ pairs.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/plot_volcano.html">plot_volcano</a></span><span class="op">(</span></span>
 <span>  <span class="va">hits</span>,</span>
-<span>  effect <span class="op">=</span> <span class="st">"specific_effect"</span>,</span>
-<span>  padj <span class="op">=</span> <span class="st">"specific_padj"</span>,</span>
+<span>  effect <span class="op">=</span> <span class="st">"total_effect"</span>,</span>
+<span>  padj <span class="op">=</span> <span class="st">"total_padj"</span>,</span>
 <span>  fdr <span class="op">=</span> <span class="fl">0.05</span>,</span>
 <span>  lfc <span class="op">=</span> <span class="fl">0.5</span>,</span>
 <span>  top_n <span class="op">=</span> <span class="fl">8</span>,</span>
@@ -556,7 +590,7 @@ reporter-perturbation response surface.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/plot_response_heatmap.html">plot_response_heatmap</a></span><span class="op">(</span></span>
 <span>  <span class="va">hits</span>,</span>
-<span>  value <span class="op">=</span> <span class="st">"specific_effect"</span>,</span>
+<span>  value <span class="op">=</span> <span class="st">"total_effect"</span>,</span>
 <span>  top_n_perturbations <span class="op">=</span> <span class="fl">30</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p><img src="DStressR_files/figure-html/heatmap-1.png" class="r-plt" alt="" width="672"></p>
@@ -565,7 +599,7 @@ reporter groups with similar response profiles.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/plot_response_clustered_heatmap.html">plot_response_clustered_heatmap</a></span><span class="op">(</span></span>
 <span>  <span class="va">hits</span>,</span>
-<span>  value <span class="op">=</span> <span class="st">"specific_effect"</span>,</span>
+<span>  value <span class="op">=</span> <span class="st">"total_effect"</span>,</span>
 <span>  top_n_perturbations <span class="op">=</span> <span class="fl">30</span>,</span>
 <span>  title <span class="op">=</span> <span class="st">"Clustered DStressR response map"</span></span>
 <span><span class="op">)</span></span></code></pre></div>

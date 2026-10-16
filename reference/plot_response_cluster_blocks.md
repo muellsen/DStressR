@@ -11,7 +11,7 @@ individual perturbation labels.
 ``` r
 plot_response_cluster_blocks(
   table,
-  value = "specific_effect",
+  value = "total_effect",
   reporter = "reporter",
   perturbation = "perturbation",
   perturbation_label = perturbation,

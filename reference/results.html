@@ -91,7 +91,11 @@ extracting model results.</p></dd>
 results also include <code>total_var_raw</code> and <code>specific_var</code> (before moderation),
 <code>residual_df</code>, <code>specific_df_raw</code> (Welch-Satterthwaite effective degrees of
 freedom), and <code>specific_df_for_test</code> (including prior degrees of freedom
-when moderation is enabled).</p>
+when moderation is enabled). Full interaction-model results include
+<code>total_var_raw</code>, <code>residual_df</code>, and <code>total_df_for_test</code>. Their
+<code>specific_var</code> uses the centered contrast and full coefficient covariance;
+<code>specific_df_raw</code> and <code>specific_df_for_test</code> record its ordinary and
+moderated degrees of freedom. Both targets honor <code>empirical_bayes</code>.</p>
     </div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

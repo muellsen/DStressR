@@ -9,8 +9,8 @@ and, optionally, a minimum absolute effect size.
 ``` r
 summarize_hits(
   table,
-  effect = "specific_effect",
-  padj = "specific_padj_by_reporter",
+  effect = "total_effect",
+  padj = sub("_effect$", "_padj_by_reporter", effect),
   reporter = "reporter",
   perturbation = "perturbation",
   perturbation_label = perturbation,

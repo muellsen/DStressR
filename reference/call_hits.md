@@ -9,8 +9,8 @@ call_hits(
   table,
   fdr = 0.05,
   lfc = 0,
-  effect = "specific_effect",
-  padj = "specific_padj"
+  effect = "total_effect",
+  padj = sub("_effect$", "_padj", effect)
 )
 ```
 
@@ -31,7 +31,8 @@ call_hits(
 
 - effect:
 
-  Effect column, usually `specific_effect` or `total_effect`.
+  Effect column. Defaults to `total_effect`; use `specific_effect` for
+  deviations from the reporter-panel average.
 
 - padj:
 

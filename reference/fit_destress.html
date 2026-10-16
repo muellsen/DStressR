@@ -118,9 +118,11 @@ the model path; <code>FALSE</code> maps to <code>testing = "student_t"</code>.</
 empty-vector reporter in the model-based path. When supplied, its
 reference-relative perturbation effect is subtracted from every reporter's
 reference-relative perturbation effect before reporter-library centering.
-For new analyses, prefer <code>background_reporter</code> in <code><a href="prepare_assay.html">prepare_assay()</a></code>, which
-performs explicit response-level background calibration before model
-fitting.</p></dd>
+Its raw contrast variance is added to the reporter's raw contrast variance,
+with Welch-Satterthwaite degrees of freedom; the combined contrast variance
+is moderated once when requested. This effect-level adjustment is an
+alternative to response-level background calibration in <code><a href="prepare_assay.html">prepare_assay()</a></code>.
+The two routes cannot be combined. Supported for <code>interaction = FALSE</code>.</p></dd>
 
 
 <dt id="arg-background-rank">background_rank<a class="anchor" aria-label="anchor" href="#arg-background-rank"></a></dt>

@@ -110,7 +110,7 @@ tab <- results(fit)
 hits <- call_hits(
   tab,
   fdr = 0.05,
-  effect = "specific_effect"
+  effect = "total_effect"
 )
 ```
 

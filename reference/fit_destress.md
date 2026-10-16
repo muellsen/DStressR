@@ -59,10 +59,14 @@ fit_destress(
   the model-based path. When supplied, its reference-relative
   perturbation effect is subtracted from every reporter's
   reference-relative perturbation effect before reporter-library
-  centering. For new analyses, prefer `background_reporter` in
-  [`prepare_assay()`](https://muellsen.github.io/DStressR/reference/prepare_assay.md),
-  which performs explicit response-level background calibration before
-  model fitting.
+  centering. Its raw contrast variance is added to the reporter's raw
+  contrast variance, with Welch-Satterthwaite degrees of freedom; the
+  combined contrast variance is moderated once when requested. This
+  effect-level adjustment is an alternative to response-level background
+  calibration in
+  [`prepare_assay()`](https://muellsen.github.io/DStressR/reference/prepare_assay.md).
+  The two routes cannot be combined. Supported for
+  `interaction = FALSE`.
 
 - background_rank:
 

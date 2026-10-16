@@ -1,9 +1,9 @@
 # Heatmap of a DStressR reporter-by-perturbation response matrix
 
 Creates a standard heatmap for normalized reporter-perturbation
-responses. The default `value` is `specific_effect`, matching
-[`results()`](https://muellsen.github.io/DStressR/reference/results.md),
-but workflow tables can use columns such as
+responses. The default `value` is `total_effect`;
+[`results()`](https://muellsen.github.io/DStressR/reference/results.md)
+also provides specific effects. Workflow tables can use columns such as
 `destress_eb_effect_centered`.
 
 ## Usage
@@ -11,7 +11,7 @@ but workflow tables can use columns such as
 ``` r
 plot_response_heatmap(
   table,
-  value = "specific_effect",
+  value = "total_effect",
   reporter = "reporter",
   perturbation = "perturbation",
   perturbation_label = perturbation,

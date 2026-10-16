@@ -11,8 +11,8 @@ for inspecting the discovered hit structure.
 ``` r
 plot_hit_heatmap(
   table,
-  effect = "specific_effect",
-  padj = "specific_padj_by_reporter",
+  effect = "total_effect",
+  padj = sub("_effect$", "_padj_by_reporter", effect),
   reporter = "reporter",
   perturbation = "perturbation",
   perturbation_label = perturbation,

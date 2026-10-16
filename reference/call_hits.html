@@ -65,8 +65,8 @@
 <span>  <span class="va">table</span>,</span>
 <span>  fdr <span class="op">=</span> <span class="fl">0.05</span>,</span>
 <span>  lfc <span class="op">=</span> <span class="fl">0</span>,</span>
-<span>  effect <span class="op">=</span> <span class="st">"specific_effect"</span>,</span>
-<span>  padj <span class="op">=</span> <span class="st">"specific_padj"</span></span>
+<span>  effect <span class="op">=</span> <span class="st">"total_effect"</span>,</span>
+<span>  padj <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">sub</a></span><span class="op">(</span><span class="st">"_effect$"</span>, <span class="st">"_padj"</span>, <span class="va">effect</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -87,7 +87,8 @@
 
 
 <dt id="arg-effect">effect<a class="anchor" aria-label="anchor" href="#arg-effect"></a></dt>
-<dd><p>Effect column, usually <code>specific_effect</code> or <code>total_effect</code>.</p></dd>
+<dd><p>Effect column. Defaults to <code>total_effect</code>; use
+<code>specific_effect</code> for deviations from the reporter-panel average.</p></dd>
 
 
 <dt id="arg-padj">padj<a class="anchor" aria-label="anchor" href="#arg-padj"></a></dt>
