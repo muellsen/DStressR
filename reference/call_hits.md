@@ -31,7 +31,7 @@ call_hits(
 
 - effect:
 
-  Effect column. Defaults to `total_effect`; use `specific_effect` for
+  Effect column. Defaults to `total_effect`; use `relative_effect` for
   deviations from the reporter-panel average.
 
 - padj:

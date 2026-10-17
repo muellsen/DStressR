@@ -29,13 +29,13 @@ results(fit, perturbations = NULL, reporters = NULL, verbose = FALSE)
 
 ## Value
 
-A data frame with total and reporter-specific effects. Reporter-wise
-results also include `total_var_raw` and `specific_var` (before
-moderation), `residual_df`, `specific_df_raw` (Welch-Satterthwaite
-effective degrees of freedom), and `specific_df_for_test` (including
+A data frame with total and reporter-relative effects. Reporter-wise
+results also include `total_var_raw` and `relative_var` (before
+moderation), `residual_df`, `relative_df_raw` (Welch-Satterthwaite
+effective degrees of freedom), and `relative_df_for_test` (including
 prior degrees of freedom when moderation is enabled). Full
 interaction-model results include `total_var_raw`, `residual_df`, and
-`total_df_for_test`. Their `specific_var` uses the centered contrast and
-full coefficient covariance; `specific_df_raw` and
-`specific_df_for_test` record its ordinary and moderated degrees of
+`total_df_for_test`. Their `relative_var` uses the centered contrast and
+full coefficient covariance; `relative_df_raw` and
+`relative_df_for_test` record its ordinary and moderated degrees of
 freedom. Both targets honor `empirical_bayes`.

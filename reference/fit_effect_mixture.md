@@ -32,7 +32,7 @@ fit_effect_mixture(
 - value:
 
   Numeric effect column. Defaults to `total_effect`; use
-  `specific_effect` to fit centered reporter-specific effects.
+  `relative_effect` to fit reporter-relative effects.
 
 - reporter:
 

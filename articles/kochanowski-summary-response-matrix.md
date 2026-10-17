@@ -74,7 +74,7 @@ tab <- results(summary_fit)
 ```
 
 The resulting table contains total effects, perturbation-wide global
-effects, centered specific effects, rank-adjusted total effects, and
+effects, reporter-relative effects, rank-adjusted total effects, and
 approximate p-values. The manuscript analysis uses the rank-1 component
 to compare the DStressR total-effect decomposition with the
 growth-associated singular-vector axis reported by Kochanowski et al.

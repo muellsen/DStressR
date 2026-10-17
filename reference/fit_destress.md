@@ -48,10 +48,10 @@ fit_destress(
   If `TRUE`, moderates standard errors toward an empirical prior
   variance with prior degrees of freedom estimated from the observed
   variance distribution, using each contrast's degrees of freedom.
-  Reporter-wise specific effects combine raw total-effect variances with
-  Welch-Satterthwaite degrees of freedom and are moderated once. This
-  maps to `testing = "moderated_t"` for the model path; `FALSE` maps to
-  `testing = "student_t"`.
+  Reporter-wise reporter-relative effects combine raw total-effect
+  variances with Welch-Satterthwaite degrees of freedom and are
+  moderated once. This maps to `testing = "moderated_t"` for the model
+  path; `FALSE` maps to `testing = "student_t"`.
 
 - empty_vector_reporter:
 
@@ -73,7 +73,7 @@ fit_destress(
   Non-negative integer. The default `0` removes no latent background.
   Values `1` or `2` additionally subtract a low-rank background term
   from the reference-relative total-effect matrix before testing
-  rank-adjusted total and reporter-specific residual effects. Use
+  rank-adjusted total and reporter-relative residual effects. Use
   `"auto"` to choose the rank by permutation parallel analysis.
 
 - background_rank_max:

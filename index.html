@@ -228,7 +228,7 @@
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">summary_results</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/results.html">results</a></span><span class="op">(</span><span class="va">summary_fit</span><span class="op">)</span></span></code></pre></div>
-<p>This path estimates reference-relative total effects, inverse-variance weighted perturbation-wide effects, reporter-specific effects, optional low-rank background adjustments, and summary-level Gaussian p-values. It is intended for processed datasets with reported variances and should not be confused with the replicate-level moderated model fitted by <code><a href="reference/fit_destress.html">fit_destress()</a></code>.</p>
+<p>This path estimates reference-relative total effects, inverse-variance weighted perturbation-wide effects, reporter-relative effects, optional low-rank background adjustments, and summary-level Gaussian p-values. It is intended for processed datasets with reported variances and should not be confused with the replicate-level moderated model fitted by <code><a href="reference/fit_destress.html">fit_destress()</a></code>.</p>
 </div>
 <div class="section level2">
 <h2 id="model-based-background-reporter-calibration">Model-based Background Reporter Calibration<a class="anchor" aria-label="anchor" href="#model-based-background-reporter-calibration"></a>
@@ -332,10 +332,10 @@
 <li>
 <code>total_effect</code>: control-relative reporter response for a perturbation.</li>
 <li>
-<code>specific_effect</code>: reporter-specific response after subtracting the perturbation-wide effect shared across reporters.</li>
+<code>relative_effect</code>: deviation from the mean total effect across the tested reporters for the same perturbation.</li>
 </ul>
 <p>This distinction is important for perturbations that globally affect growth, luminescence, metabolism, or assay chemistry.</p>
-<p>Total effects are the default target for hit calling and effect plots. Use <code>total_effect</code>, <code>total_pvalue</code>, <code>total_padj_global</code>, and <code>total_padj_by_reporter</code> from <code>results(fit)</code>. Centered specific effects remain available through the corresponding <code>specific_*</code> columns; select these explicitly when the question concerns departures from the reporter-panel average.</p>
+<p>Total effects are the default target for hit calling and effect plots. Use <code>total_effect</code>, <code>total_pvalue</code>, <code>total_padj_global</code>, and <code>total_padj_by_reporter</code> from <code>results(fit)</code>. Reporter-relative effects remain available through the corresponding <code>relative_*</code> columns; select these explicitly when the question concerns departures from the reporter-panel average.</p>
 <p>The compatibility wrapper <code><a href="reference/fit_workflow.html">fit_workflow()</a></code> and the lower-level functions <code><a href="reference/fit_median_polish.html">fit_median_polish()</a></code> and <code><a href="reference/fit_empty_vector_control.html">fit_empty_vector_control()</a></code> remain available for existing scripts. New analyses should prefer <code><a href="reference/fit_destress.html">fit_destress()</a></code> so that the selected statistical path is explicit in the code.</p>
 </div>
 <div class="section level2">
@@ -424,7 +424,7 @@
 <span>  libmap_file <span class="op">=</span> <span class="st">"LibMap.txt"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>The returned object has the same number of rows as <code>expression_values.tsv.gz</code>, with compound annotations added. This joined table can then be passed directly to <code><a href="reference/prepare_assay.html">prepare_assay()</a></code>.</p>
-<p>The public template script <code>scripts/export_campy_default_model_template.R</code> records the exact Campylobacter default-model call used to regenerate the local package output <code>analysis/outputs/package_results/destress_moderated_pair_results.tsv</code> from the proprietary expression table. It sets <code>testing = "moderated_t"</code>, <code>interaction = FALSE</code>, <code>background_rank = 0</code>, uses reporter-specific estimated growth exponents, and exports the <code>specific_*</code> result columns expected by the downstream analysis scripts. The <code>scripts/README.md</code> file highlights this data-free export template as the canonical place to inspect the actual local model call.</p>
+<p>The public template script <code>scripts/export_campy_default_model_template.R</code> records the exact Campylobacter default-model call used to regenerate the local package output <code>analysis/outputs/package_results/destress_moderated_pair_results.tsv</code> from the proprietary expression table. It sets <code>testing = "moderated_t"</code>, <code>interaction = FALSE</code>, <code>background_rank = 0</code>, uses reporter-specific estimated growth exponents, and exports the <code>relative_*</code> result columns expected by the downstream analysis scripts. The <code>scripts/README.md</code> file highlights this data-free export template as the canonical place to inspect the actual local model call.</p>
 <p>To reproduce the Campylobacter median-polish workflow from Zannoni et al. (2026, bioRxiv, <a href="doi:10.64898/2026.10.05.755907" class="uri">doi:10.64898/2026.10.05.755907</a>), provide the DMSO library-well IDs and optional noisy-DMSO well IDs from <code>LibMap.txt</code>:</p>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">libmap</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.delim</a></span><span class="op">(</span><span class="st">"LibMap.txt"</span>, check.names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>

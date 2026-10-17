@@ -240,7 +240,7 @@ summary_results <- results(summary_fit)
 ```
 
 This path estimates reference-relative total effects, inverse-variance
-weighted perturbation-wide effects, reporter-specific effects, optional
+weighted perturbation-wide effects, reporter-relative effects, optional
 low-rank background adjustments, and summary-level Gaussian p-values. It
 is intended for processed datasets with reported variances and should
 not be confused with the replicate-level moderated model fitted by
@@ -398,16 +398,16 @@ hits <- call_hits(tab, fdr = 0.05, effect = "total_effect")
 The fitted model separates two related quantities:
 
 - `total_effect`: control-relative reporter response for a perturbation.
-- `specific_effect`: reporter-specific response after subtracting the
-  perturbation-wide effect shared across reporters.
+- `relative_effect`: deviation from the mean total effect across the
+  tested reporters for the same perturbation.
 
 This distinction is important for perturbations that globally affect
 growth, luminescence, metabolism, or assay chemistry.
 
 Total effects are the default target for hit calling and effect plots.
 Use `total_effect`, `total_pvalue`, `total_padj_global`, and
-`total_padj_by_reporter` from `results(fit)`. Centered specific effects
-remain available through the corresponding `specific_*` columns; select
+`total_padj_by_reporter` from `results(fit)`. Reporter-relative effects
+remain available through the corresponding `relative_*` columns; select
 these explicitly when the question concerns departures from the
 reporter-panel average.
 
@@ -543,7 +543,7 @@ output
 from the proprietary expression table. It sets
 `testing = "moderated_t"`, `interaction = FALSE`, `background_rank = 0`,
 uses reporter-specific estimated growth exponents, and exports the
-`specific_*` result columns expected by the downstream analysis scripts.
+`relative_*` result columns expected by the downstream analysis scripts.
 The `scripts/README.md` file highlights this data-free export template
 as the canonical place to inspect the actual local model call.
 

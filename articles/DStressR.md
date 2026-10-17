@@ -179,9 +179,9 @@ then constructs the contrast-level inferential table, and
 [`call_hits()`](https://muellsen.github.io/DStressR/reference/call_hits.md)
 adds directional calls at a chosen false-discovery-rate threshold. The
 result table reports both the reference-relative total effect and the
-reporter-specific effect after subtracting the perturbation-wide effect.
-Total effects are the default for hit calling and effect plots; specific
-effects can be selected explicitly.
+reporter-relative effect after subtracting the perturbation-wide effect.
+Total effects are the default for hit calling and effect plots;
+reporter-relative effects can be selected explicitly.
 
 ``` r
 
@@ -244,21 +244,21 @@ head(tab)
 #> 28               4.412702e-01                        640.3341
 #> 35               9.294555e-01                        640.3341
 #> 42               1.022436e-03                        640.3341
-#>    rank_adjusted_global_effect specific_effect specific_se specific_statistic
+#>    rank_adjusted_global_effect relative_effect relative_se relative_statistic
 #> 1                   0.01047815     -0.03193519  0.09962289         -0.3205608
 #> 13                 -0.22174188     -0.28532503  0.10998930         -2.5941162
 #> 21                 -0.01358238     -0.11432085  0.09962289         -1.1475360
 #> 28                  0.09810077     -0.01996520  0.09962289         -0.2004078
 #> 35                  0.03766254     -0.04664346  0.09962289         -0.4682002
 #> 42                 -0.33576292     -0.03345147  0.10998930         -0.3041338
-#>    specific_pvalue total_var_raw specific_var residual_df specific_df_raw
+#>    relative_pvalue total_var_raw relative_var residual_df relative_df_raw
 #> 1      0.748604851    0.01018467   0.00985797         629        1071.458
 #> 13     0.009610906    0.01246399   0.01206410         629        1071.445
 #> 21     0.251412462    0.01018467   0.00985797         629        1071.458
 #> 28     0.841199151    0.01018467   0.00985797         629        1071.458
 #> 35     0.639735227    0.01018467   0.00985797         629        1071.458
 #> 42     0.761084090    0.01246399   0.01206410         629        1071.445
-#>    specific_df_for_test total_padj_global total_padj_by_reporter
+#>    relative_df_for_test total_padj_global total_padj_by_reporter
 #> 1              1087.833      0.9619023849           9.315944e-01
 #> 13             1087.820      0.0001022513           5.975725e-05
 #> 21             1087.833      0.5296045464           4.174033e-01
@@ -272,7 +272,7 @@ head(tab)
 #> 28                    0.7887503168                         6.690226e-01
 #> 35                    0.9940442759                         9.600969e-01
 #> 42                    0.0084095340                         5.653468e-03
-#>    specific_padj_global specific_padj_by_reporter   total_padj specific_padj
+#>    relative_padj_global relative_padj_by_reporter   total_padj relative_padj
 #> 1            0.95570500                0.98500411 9.315944e-01    0.98500411
 #> 13           0.06587475                0.04522295 5.975725e-05    0.04522295
 #> 21           0.65308739                0.56603513 4.174033e-01    0.56603513
@@ -286,12 +286,12 @@ The key columns are:
 - `total_effect`: reference-relative response for the
   reporter-perturbation pair.
 - `global_effect`: average perturbation-wide response across reporters.
-- `specific_effect`: reporter-specific deviation from the
+- `relative_effect`: reporter-relative deviation from the
   perturbation-wide effect.
 - `total_pvalue` and `total_padj`: test and BH-adjusted p-value for the
   total effect.
-- `specific_pvalue` and `specific_padj`: corresponding values for the
-  specific effect.
+- `relative_pvalue` and `relative_padj`: corresponding values for the
+  reporter-relative effect.
 
 The direct fitting functions remain available for existing scripts, but
 [`fit_destress()`](https://muellsen.github.io/DStressR/reference/fit_destress.md)
@@ -421,7 +421,7 @@ head(
 #> 208               7.767458e-20                        640.3341
 #> 120               4.847349e-17                        642.3341
 #> 497               2.231139e-16                        643.3341
-#>     rank_adjusted_global_effect specific_effect specific_se specific_statistic
+#>     rank_adjusted_global_effect relative_effect relative_se relative_statistic
 #> 458                  0.44247430       1.5996793  0.11500618          13.909508
 #> 496                  0.16081460       1.4319601  0.11500618          12.451158
 #> 553                 -0.69445748      -0.8480100  0.11641195          -7.284562
@@ -432,7 +432,7 @@ head(
 #> 208                  0.07883706       0.9757482  0.10862677           8.982576
 #> 120                  0.36926273       0.4308829  0.09333023           4.616756
 #> 497                  0.16081460      -1.6372434  0.15636443         -10.470690
-#>     specific_pvalue total_var_raw specific_var residual_df specific_df_raw
+#>     relative_pvalue total_var_raw relative_var residual_df relative_df_raw
 #> 458    3.641795e-40   0.014874295  0.013207705         644        932.6083
 #> 496    4.517557e-33   0.014874295  0.013207705         644        932.6083
 #> 553    6.564589e-13   0.014874295  0.013539331         644        977.1701
@@ -443,7 +443,7 @@ head(
 #> 208    1.219199e-18   0.012463989  0.011759832         629       1021.8465
 #> 120    4.317977e-06   0.008469959  0.008633179         631       1181.6394
 #> 497    4.646025e-24   0.030926161  0.024673324         632        744.2360
-#>     specific_df_for_test total_padj_global total_padj_by_reporter
+#>     relative_df_for_test total_padj_global total_padj_by_reporter
 #> 458             948.9834      8.549304e-50           1.221329e-50
 #> 496             948.9834      2.903003e-32           4.147148e-33
 #> 553             993.5451      1.365106e-30           1.950151e-31
@@ -465,7 +465,7 @@ head(
 #> 208                    6.388734e-18                         2.433803e-18
 #> 120                    3.543950e-15                         4.556508e-15
 #> 497                    1.468090e-14                         2.097271e-14
-#>     specific_padj_global specific_padj_by_reporter   total_padj specific_padj
+#>     relative_padj_global relative_padj_by_reporter   total_padj relative_padj
 #> 458         2.396301e-37              3.423287e-38 1.221329e-50  3.423287e-38
 #> 496         1.486276e-30              2.123252e-31 4.147148e-33  2.123252e-31
 #> 553         3.926818e-11              2.056905e-11 1.950151e-31  2.056905e-11

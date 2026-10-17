@@ -89,15 +89,17 @@
 PFIbox promoter-reporter screen of French, Coutts, and Brown (2018),
 <em>Cell Systems</em>, <a href="doi:10.1016/j.cels.2018.07.004" class="uri">doi:10.1016/j.cels.2018.07.004</a>. The deposited data
 contain colony-level time-course measurements for an <em>E. coli</em>
-promoter-GFP library under antibiotic treatments. The analysis used in
-the DStressR manuscript treats the established PFIbox promoter activity
-as the supplied response and then applies the DStressR effect-estimation
-and inference layers.</p>
+promoter-GFP library under antibiotic treatments. The manuscript
+analysis reconstructs unscaled promoter activity from the deposited
+biomass-normalized fluorescence, integrates each colony trajectory, and
+applies DStressR effect estimation and inference.</p>
 <div class="section level2">
 <h2 id="data-provenance">Data provenance<a class="anchor" aria-label="anchor" href="#data-provenance"></a>
 </h2>
-<p>The primary deposited dataset is listed as Mendeley Data <a href="doi:10.17632/fmv6vv4bsf.1" class="uri">doi:10.17632/fmv6vv4bsf.1</a>. The public code repository
-is:</p>
+<p>The source is <a href="https://data.mendeley.com/datasets/fmv6vv4bsf/1" class="external-link">Mendeley Data
+version 1</a>, DOI 10.17632/fmv6vv4bsf.1, under CC BY 4.0. The full
+object is approximately 1.31 GB. Download and checksum instructions are
+in the data-folder README. The public processing-code repository is:</p>
 <pre class="text"><code>https://github.com/sfrench007/pfibox</code></pre>
 <p>The local workflow expects the deposited multi-treatment
 <code>gfpData.Rdata</code> object under:</p>
@@ -111,16 +113,23 @@ The provenance note is kept in:</p>
 <div class="section level2">
 <h2 id="response-construction">Response construction<a class="anchor" aria-label="anchor" href="#response-construction"></a>
 </h2>
-<p>PFIbox estimates promoter activity from fluorescence and a biomass
-proxy before DStressR is called. In the manuscript workflow, a time
-window <code>T</code> is chosen and the supplied response is the average
-promoter activity over that window:</p>
-<pre class="text"><code>y_i = mean_t_in_T PA_i(t)</code></pre>
-<p>The default manuscript run uses <code>T = [2, 18]</code> hours. The
-DStressR model then uses treatment-level perturbations, where each
-antibiotic-dose combination is a separate perturbation. Repeated colony
-positions are included as reporter-wise adjustment terms when supported
-by the filtered data.</p>
+<p>The deposited <code>constit.normalized</code> matrices contain
+biomass-normalized fluorescence q(t). The deposited
+<code>promoter.activity</code> matrices have already been min-max-scaled
+per colony. We recover unscaled activity by differencing q(t), retaining
+difference indices 20–216, and applying quadratic LOESS with span 0.5 on
+the retained 197-sample grid. Scaling these reconstructed curves
+recovers the deposited activity to floating-point precision in the
+audit. The DStressR input is the signed trapezoidal integral of the
+unscaled activity:</p>
+<pre class="text"><code>y_i = integral from t_start to T of reconstructed_PA_i(t) dt</code></pre>
+<p>The manuscript uses the complete retained grid: 100 minutes through
+18 hours under the five-minute acquisition convention. No additional
+two-hour cutoff is applied. The integration endpoint remains
+configurable. The DStressR model uses treatment-level perturbations,
+where each antibiotic-dose combination is a separate perturbation.
+Repeated colony positions are included as reporter-wise adjustment terms
+when supported by the filtered data.</p>
 </div>
 <div class="section level2">
 <h2 id="reproduce-the-analysis">Reproduce the analysis<a class="anchor" aria-label="anchor" href="#reproduce-the-analysis"></a>
@@ -131,35 +140,63 @@ by the filtered data.</p>
 reproduce the large subset used for the manuscript figure.</p>
 <div class="sourceCode" id="cb6"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="va">PFIBOX_REPORTER_LIMIT</span><span class="op">=</span>2000 <span class="dt">\</span></span>
 <span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a><span class="va">PFIBOX_PERTURBATION_LIMIT</span><span class="op">=</span>100 <span class="dt">\</span></span>
-<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a><span class="va">PFIBOX_T_START_H</span><span class="op">=</span>2 <span class="dt">\</span></span>
-<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a><span class="va">PFIBOX_T_END_H</span><span class="op">=</span>18 <span class="dt">\</span></span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a><span class="va">PFIBOX_RESPONSE_SUMMARY</span><span class="op">=</span>unscaled_integral <span class="dt">\</span></span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a><span class="va">PFIBOX_TIME_WINDOW</span><span class="op">=</span>all_available <span class="dt">\</span></span>
 <span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a><span class="va">PFIBOX_PERTURBATION_TARGET</span><span class="op">=</span>treatment <span class="dt">\</span></span>
 <span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a><span class="va">PFIBOX_DESIGN</span><span class="op">=</span>replicate <span class="dt">\</span></span>
 <span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a><span class="va">PFIBOX_MODEL_PATH</span><span class="op">=</span>scalable <span class="dt">\</span></span>
 <span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a><span class="ex">Rscript</span> analysis/french_pfibox/run_promoter_activity_analysis.R</span></code></pre></div>
 <p>This writes the supplied response table, fitted DStressR pair
 results, and diagnostic summaries under:</p>
-<pre class="text"><code>analysis/outputs/french_pfibox/promoter_activity_analysis/</code></pre>
-<p>The corresponding manuscript figure is generated by:</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="ex">Rscript</span> analysis/french_pfibox/compute_paper_diagnostics.R</span>
-<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a><span class="ex">Rscript</span> analysis/french_pfibox/map_french_timecourse_clusters_to_destress.R</span>
-<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a><span class="ex">Rscript</span> analysis/french_pfibox/plot_clustering_and_inference.R</span></code></pre></div>
+<pre class="text"><code>analysis/outputs/french_pfibox/temporal_unscaled_integral_analysis/</code></pre>
+<p>Prepare ordinary tests and the 10-positive plus 10-negative
+illustrative selection, then compute the clustering with the settings
+below:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="ex">Rscript</span> analysis/french_pfibox/prepare_integrated_activity_supplement.R</span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a><span class="va">PFIBOX_TIMECOURSE_SELECTION</span><span class="op">=</span>directional_volcano <span class="dt">\</span></span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a><span class="ex">Rscript</span> analysis/french_pfibox/plot_integrated_activity_timecourses.R</span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a></span>
+<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a><span class="bu">export</span> <span class="va">PFIBOX_ANALYSIS_DIR</span><span class="op">=</span>analysis/outputs/french_pfibox/temporal_unscaled_integral_analysis</span>
+<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a><span class="bu">export</span> <span class="va">PFIBOX_RUN_TAG</span><span class="op">=</span>reporters2000_perturbations100_Tall_available_treatment_replicate_scalable_temporal_unscaled_integral</span>
+<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a><span class="bu">export</span> <span class="va">PFIBOX_CLUSTER_TOP_REPORTERS</span><span class="op">=</span>2000</span>
+<span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a><span class="bu">export</span> <span class="va">PFIBOX_CLUSTER_LINKAGE</span><span class="op">=</span>complete</span>
+<span id="cb8-9"><a href="#cb8-9" tabindex="-1"></a><span class="bu">export</span> <span class="va">PFIBOX_CLUSTER_DISTANCE</span><span class="op">=</span>correlation</span>
+<span id="cb8-10"><a href="#cb8-10" tabindex="-1"></a><span class="bu">export</span> <span class="va">PFIBOX_CLUSTER_OUTPUT_SUFFIX</span><span class="op">=</span>total_effect_correlation_complete</span>
+<span id="cb8-11"><a href="#cb8-11" tabindex="-1"></a><span class="bu">export</span> <span class="va">PFIBOX_ADJUSTMENT_SCOPE</span><span class="op">=</span>global</span>
+<span id="cb8-12"><a href="#cb8-12" tabindex="-1"></a><span class="ex">Rscript</span> analysis/french_pfibox/compute_paper_diagnostics.R</span>
+<span id="cb8-13"><a href="#cb8-13" tabindex="-1"></a><span class="ex">Rscript</span> analysis/french_pfibox/map_french_timecourse_clusters_to_destress.R</span>
+<span id="cb8-14"><a href="#cb8-14" tabindex="-1"></a><span class="ex">Rscript</span> analysis/french_pfibox/build_selected_activity_figure.R <span class="at">--target</span><span class="op">=</span>total</span></code></pre></div>
 <p>The moderation diagnostic in the supplement compares the same fitted
 model under moderated and ordinary standard errors:</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="ex">Rscript</span> analysis/french_pfibox/plot_pfibox_moderation_diagnostic.R</span></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="ex">Rscript</span> analysis/french_pfibox/plot_pfibox_moderation_diagnostic.R <span class="at">--target</span><span class="op">=</span>total</span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="dstressr-model-call">DStressR model call<a class="anchor" aria-label="anchor" href="#dstressr-model-call"></a>
 </h2>
-<p>The script constructs a DStressR assay-like table with one row per
-retained colony-level response summary. The model call is the same
-staged API used in the package examples:</p>
+<p>The derived tables under <code>data-raw/french_pfibox/derived/</code>
+provide observation metadata and long-format scalar responses without
+loading the large source. Their README records units, transformations,
+attribution and checksums. They are excluded from the CRAN package
+build. After joining by observation ID:</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fit_destress.html">fit_destress</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.delim</a></span><span class="op">(</span><span class="st">"data-raw/french_pfibox/derived/experimental_design.tsv.gz"</span><span class="op">)</span></span>
+<span><span class="va">scalar</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.delim</a></span><span class="op">(</span><span class="st">"data-raw/french_pfibox/derived/scalar_responses.tsv.gz"</span><span class="op">)</span></span>
+<span><span class="va">input</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/merge.html" class="external-link">merge</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">scalar</span>, by <span class="op">=</span> <span class="st">"observation_id"</span>, sort <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">assay</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/prepare_assay.html">prepare_assay</a></span><span class="op">(</span></span>
+<span>  <span class="va">input</span>,</span>
+<span>  reporter <span class="op">=</span> <span class="st">"Promoter"</span>,</span>
+<span>  perturbation <span class="op">=</span> <span class="st">"Perturbation"</span>,</span>
+<span>  control <span class="op">=</span> <span class="st">"Control"</span>,</span>
+<span>  response <span class="op">=</span> <span class="st">"value"</span>,</span>
+<span>  replicate <span class="op">=</span> <span class="st">"repeat_position"</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fit_destress.html">fit_destress</a></span><span class="op">(</span></span>
 <span>  <span class="va">assay</span>,</span>
-<span>  technical <span class="op">=</span> <span class="st">"replicate"</span>,</span>
+<span>  technical <span class="op">=</span> <span class="st">"repeat_position"</span>,</span>
 <span>  testing <span class="op">=</span> <span class="st">"moderated_t"</span>,</span>
-<span>  adjustment <span class="op">=</span> <span class="st">"by_reporter"</span>,</span>
+<span>  adjustment <span class="op">=</span> <span class="st">"global"</span>,</span>
 <span>  interaction <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span>
@@ -169,11 +206,23 @@ staged API used in the package examples:</p>
 <span>  <span class="va">tab</span>,</span>
 <span>  fdr <span class="op">=</span> <span class="fl">0.05</span>,</span>
 <span>  effect <span class="op">=</span> <span class="st">"total_effect"</span>,</span>
-<span>  padj <span class="op">=</span> <span class="st">"total_padj_by_reporter"</span></span>
+<span>  padj <span class="op">=</span> <span class="st">"total_padj_global"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>The fitted object stores the reporter-wise total-effect fits. The
-<code><a href="../reference/results.html">results()</a></code> step extracts total effects, centered specific
+<code><a href="../reference/results.html">results()</a></code> step extracts total effects, reporter-relative
 effects, moderated statistics, and adjusted p-values.</p>
+<p>Both BH families are available in the results; the manuscript uses
+the global family across all 59,301 tests, yielding 5,101 calls at 0.05.
+It contains 273,792 finite colony responses from 1,797 reporters and 33
+treatment levels. The thirteen untreated source arrays are pooled as
+references, with each source colony-condition represented once.</p>
+<p>Figure 6 uses correlation distance and complete linkage for the 1,796
+nonconstant reporter profiles. Four manually chosen examples from the
+saved 20-pair display selection are marked consistently in the heatmap,
+shown in the 2-by-2 trajectory panel, and labelled in the volcano. They
+are ompC / Ampicillin-18, msrB / Sulfamethoxazole-18, recN /
+Ciprofloxacin-18 and rmf / NalidixicAcid-18. These illustrative choices
+do not change the hypothesis tests.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
