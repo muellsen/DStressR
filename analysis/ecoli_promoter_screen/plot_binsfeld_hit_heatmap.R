@@ -16,7 +16,7 @@ if (!file.exists(result_file)) {
 }
 
 res <- read_tsv_base(result_file)
-required <- c("promoter", "compound", "specific_effect", "specific_padj_by_reporter")
+required <- c("promoter", "compound", "relative_effect", "relative_padj_by_reporter")
 missing_cols <- setdiff(required, names(res))
 if (length(missing_cols) > 0) {
   stop("Missing required columns: ", paste(missing_cols, collapse = ", "), call. = FALSE)
@@ -24,8 +24,8 @@ if (length(missing_cols) > 0) {
 
 hit_summary <- summarize_hits(
   res,
-  effect = "specific_effect",
-  padj = "specific_padj_by_reporter",
+  effect = "relative_effect",
+  padj = "relative_padj_by_reporter",
   reporter = "promoter",
   perturbation = "compound",
   fdr = 0.05
@@ -54,8 +54,8 @@ utils::write.table(
 
 base_hit_plot <- plot_hit_heatmap(
   res,
-  effect = "specific_effect",
-  padj = "specific_padj_by_reporter",
+  effect = "relative_effect",
+  padj = "relative_padj_by_reporter",
   reporter = "promoter",
   perturbation = "compound",
   show_perturbation_ids = FALSE,
@@ -65,7 +65,7 @@ base_hit_plot <- plot_hit_heatmap(
   subtitle = "",
   xlab = "Compounds",
   ylab = NULL,
-  legend_title = "Specific effect"
+  legend_title = "Reporter-relative effect"
 )
 
 hit_plot <- base_hit_plot +

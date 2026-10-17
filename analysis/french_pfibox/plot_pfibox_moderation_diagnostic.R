@@ -13,15 +13,15 @@ if (!requireNamespace("gridExtra", quietly = TRUE)) {
   stop("Package `gridExtra` is required for the PFIbox moderation diagnostic.", call. = FALSE)
 }
 
-in_dir <- analysis_output_dir("french_pfibox", "promoter_activity_analysis")
+in_dir <- Sys.getenv("PFIBOX_ANALYSIS_DIR", analysis_output_dir("french_pfibox", "promoter_activity_analysis"))
 target_arg <- grep("^--target=", commandArgs(trailingOnly = TRUE), value = TRUE)
-target <- if (length(target_arg)) sub("^--target=", "", target_arg) else "specific"
-if (length(target) != 1L || !target %in% c("specific", "total")) {
-  stop("Use --target=specific or --target=total.", call. = FALSE)
+target <- if (length(target_arg)) sub("^--target=", "", target_arg) else "relative"
+if (length(target) != 1L || !target %in% c("relative", "total")) {
+  stop("Use --target=relative or --target=total.", call. = FALSE)
 }
 out_dir <- if (target == "total") file.path(in_dir, "total_effect_discovery") else in_dir
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
-tag_moderated <- "reporters2000_perturbations100_T2-18h_treatment_replicate_scalable"
+tag_moderated <- Sys.getenv("PFIBOX_RUN_TAG", "reporters2000_perturbations100_T2-18h_treatment_replicate_scalable")
 tag_rawse <- paste0(tag_moderated, "_rawse")
 
 moderated_file <- file.path(in_dir, paste0("pfibox_pa_destress_pair_results_", tag_moderated, ".tsv"))
@@ -36,9 +36,11 @@ if (!file.exists(rawse_file)) {
 
 moderated <- read_tsv_base(moderated_file)
 rawse <- read_tsv_base(rawse_file)
+scope <- match.arg(Sys.getenv("PFIBOX_ADJUSTMENT_SCOPE", "by_reporter"),
+  c("by_reporter", "global"))
 
 required <- c("reporter", "perturbation", paste0(target, "_pvalue"),
-              paste0(target, "_padj_by_reporter"))
+              paste0(target, "_padj_", scope))
 missing_moderated <- setdiff(required, names(moderated))
 missing_rawse <- setdiff(required, names(rawse))
 if (length(missing_moderated)) {
@@ -52,7 +54,7 @@ make_panel_data <- function(tab, label) {
   data.frame(
     method = label,
     pvalue = as.numeric(tab[[paste0(target, "_pvalue")]]),
-    padj = as.numeric(tab[[paste0(target, "_padj_by_reporter")]]),
+    padj = as.numeric(tab[[paste0(target, "_padj_", scope)]]),
     stringsAsFactors = FALSE
   )
 }
@@ -79,6 +81,7 @@ summary_tab <- do.call(
     )
   })
 )
+names(summary_tab)[names(summary_tab) == "n_hits_reporter_fdr_0_05"] <- paste0("n_hits_", scope, "_fdr_0_05")
 utils::write.table(
   summary_tab,
   file.path(out_dir, "pfibox_pa_moderation_diagnostic_summary.tsv"),
@@ -115,7 +118,7 @@ p <- ggplot2::ggplot(plot_data, ggplot2::aes(pvalue, fill = hit)) +
   ) +
   ggplot2::scale_x_continuous(limits = c(0, 1), expand = ggplot2::expansion(mult = c(0, 0.01))) +
   ggplot2::labs(
-    x = if (target == "total") "Total-effect p-value" else "Specific-effect p-value",
+    x = if (target == "total") "Total-effect p-value" else "Reporter-relative effect p-value",
     y = "Number of reporter-treatment pairs"
   ) +
   paper_theme(base_size = 10)

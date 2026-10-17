@@ -34,8 +34,8 @@ if (!file.exists(input_path) || !file.exists(alpha_path)) {
   )
 }
 
-screen <- utils::read.delim(input_path, check.names = FALSE)
-alpha <- utils::read.delim(alpha_path, check.names = FALSE)
+screen <- read_analysis_delim(input_path, check.names = FALSE)
+alpha <- read_analysis_delim(alpha_path, check.names = FALSE)
 stress_alpha <- stats::setNames(alpha$alpha_calibrated, alpha$pseudo_reporter)
 
 promoter_levels <- c("Fur", "MarA", "SoxS", "LexA")
@@ -85,9 +85,9 @@ annotate_results <- function(res, rank) {
   parts <- do.call(rbind, strsplit(as.character(res$promoter), " \\| "))
   res$base_promoter <- parts[, 1]
   res$window <- parts[, 2]
-  hit_effect <- if (rank > 0) "rank_adjusted_total_effect" else "specific_effect"
-  hit_padj <- if (rank > 0) "rank_adjusted_total_padj_by_reporter" else "specific_padj_by_reporter"
-  hit_pvalue <- if (rank > 0) "rank_adjusted_total_pvalue" else "specific_pvalue"
+  hit_effect <- if (rank > 0) "rank_adjusted_total_effect" else "relative_effect"
+  hit_padj <- if (rank > 0) "rank_adjusted_total_padj_by_reporter" else "relative_padj_by_reporter"
+  hit_pvalue <- if (rank > 0) "rank_adjusted_total_pvalue" else "relative_pvalue"
   hit_table <- call_hits(
     res,
     fdr = 0.05,

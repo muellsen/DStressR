@@ -60,8 +60,8 @@ effect_long <- rbind(
   ),
   data.frame(
     res_rank1[, c("promoter", "base_promoter", "window", "compound")],
-    effect_type = "Specific effect",
-    effect = res_rank0$specific_effect,
+    effect_type = "Reporter-relative effect",
+    effect = res_rank0$relative_effect,
     stringsAsFactors = FALSE
   ),
   data.frame(
@@ -79,7 +79,7 @@ effect_long <- rbind(
 )
 effect_long$effect_type <- factor(
   effect_long$effect_type,
-  levels = c("Total effect", "Specific effect", "Rank-1 component", "Rank-adjusted total effect")
+  levels = c("Total effect", "Reporter-relative effect", "Rank-1 component", "Rank-adjusted total effect")
 )
 effect_long$compound <- factor(effect_long$compound, levels = compound_levels)
 effect_long$promoter <- factor(effect_long$promoter, levels = rev(pseudo_reporter_levels))
@@ -88,7 +88,7 @@ expected_boxes <- merge(
   expand.grid(
     base_promoter = promoter_levels,
     window = window_levels,
-    effect_type = c("Total effect", "Specific effect", "Rank-adjusted total effect"),
+    effect_type = c("Total effect", "Reporter-relative effect", "Rank-adjusted total effect"),
     stringsAsFactors = FALSE
   ),
   expected[, c("base_promoter", "compound")],
@@ -179,7 +179,7 @@ p_hist <- ggplot2::ggplot(
     ggplot2::vars(background_rank),
     ncol = 1,
     labeller = ggplot2::as_labeller(c(
-      "0" = "Specific effect",
+      "0" = "Reporter-relative effect",
       "1" = "Rank-adjusted total effect"
     ))
   ) +

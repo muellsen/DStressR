@@ -123,7 +123,7 @@ Three inferential targets:
 | target | tested pairs | significant pairs | median raw p-value |
 |---|---:|---:|---:|
 | Total effect | 48 | 36 | 2.86e-4 |
-| Default specific effect | 48 | 42 | 4.58e-8 |
+| Default reporter-relative effect | 48 | 42 | 4.58e-8 |
 | Rank-adjusted total effect | 48 | 26 | 0.0175 |
 
 Rank diagnostic:
@@ -141,9 +141,9 @@ dataset: does a reporter change under a weak stress relative to standard
 growth? These effects show the strongest agreement with the expected
 regulator-stress relationships, especially Fur under excess iron.
 
-Default specific effects ask a different question: is a reporter-window effect
+Default reporter-relative effects ask a different question: is a reporter-window effect
 large relative to the compound-wide average response? In this dataset the
-specific-effect analysis is strongly influenced by a Fur-dominated structure.
+reporter-relative-effect analysis is strongly influenced by a Fur-dominated structure.
 
 Rank-adjusted total effects remove one structured background component from
 the total-effect matrix. This absorbs much of the Fur-dominated axis while
@@ -155,7 +155,7 @@ rank-adjusted total responses.
 The manuscript should avoid saying that the Fur signal is an artefact. A
 better phrasing is that the Fur response is a strong structured mode. Depending
 on the scientific question, this mode may itself be the signal of interest or a
-background component that obscures smaller reporter-specific deviations.
+background component that obscures smaller reporter-relative deviations.
 
 ## Suggested Figure Plan
 

@@ -64,18 +64,18 @@ variance_table <- function(label, use_ev_control) {
   raw <- raw_fit$results
   moderated <- moderated_fit$results
   residual_df <- min(raw_fit$fit$reporter_effects$residual_df, na.rm = TRUE)
-  prior <- estimate_eb_prior_variance(raw$specific_se^2, residual_df)
+  prior <- estimate_eb_prior_variance(raw$relative_se^2, residual_df)
 
   tab <- data.frame(
     workflow = label,
     promoter = raw$promoter,
     compound = raw$compound,
     mean_response = raw$total_effect,
-    effect = raw$specific_effect,
-    raw_variance = raw$specific_se^2,
-    moderated_variance = moderated$specific_se^2,
-    raw_pvalue = raw$specific_pvalue,
-    moderated_pvalue = moderated$specific_pvalue,
+    effect = raw$relative_effect,
+    raw_variance = raw$relative_se^2,
+    moderated_variance = moderated$relative_se^2,
+    raw_pvalue = raw$relative_pvalue,
+    moderated_pvalue = moderated$relative_pvalue,
     residual_df = residual_df,
     diagnostic_prior_variance = prior$var,
     diagnostic_prior_df = prior$df,
@@ -149,10 +149,10 @@ variance_plot <- ggplot2$ggplot(
     legend.position = "top"
   ) +
   ggplot2$labs(
-    title = "Raw and moderated specific-effect variances in the E. coli screen",
+    title = "Raw and moderated reporter-relative-effect variances in the E. coli screen",
     subtitle = "Promoter-compound pairs are sorted from high to low raw variance within each workflow",
     x = "Promoter-compound pair index, sorted by raw variance",
-    y = "Specific-effect variance (log10 scale)",
+    y = "Reporter-relative effect variance (log10 scale)",
     color = NULL
   )
 
@@ -206,7 +206,7 @@ mean_variance_plot <- ggplot2$ggplot(
     title = "Response-contrast variance diagnostic for the E. coli screen",
     subtitle = "Black open circles: raw pairwise variance; red: contrast-variance trend; blue: moderated variance",
     x = "Estimated promoter-compound response contrast",
-    y = "Specific-effect variance (log10 scale)"
+    y = "Reporter-relative effect variance (log10 scale)"
   )
 
 ggplot2$ggsave(

@@ -13,7 +13,7 @@ dir.create(processed_dir, recursive = TRUE, showWarnings = FALSE)
 if (!file.exists(source_file)) {
   stop(
     "Missing PFIbox object: ", source_file, "\n",
-    "Download it from the public GitHub LFS/media endpoint or Mendeley Data ",
+    "Download the full deposited object from Mendeley Data ",
     "doi:10.17632/fmv6vv4bsf.1.",
     call. = FALSE
   )

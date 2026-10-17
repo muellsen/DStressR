@@ -302,8 +302,8 @@ res$window <- factor(res$window, levels = window_definitions$window)
 hit_table <- call_hits(
   res,
   fdr = 0.05,
-  effect = "specific_effect",
-  padj = "specific_padj_by_reporter"
+  effect = "relative_effect",
+  padj = "relative_padj_by_reporter"
 )
 res$hit_class <- hit_table$hit
 res$hit <- res$hit_class != "Not DE"
@@ -363,7 +363,7 @@ utils::write.table(
   row.names = FALSE
 )
 
-p_hist <- ggplot2::ggplot(res, ggplot2::aes(x = specific_pvalue)) +
+p_hist <- ggplot2::ggplot(res, ggplot2::aes(x = relative_pvalue)) +
   ggplot2::geom_histogram(bins = 20, fill = "#009E73", color = "white", linewidth = 0.2) +
   ggplot2::facet_grid(base_promoter ~ window) +
   ggplot2::theme_light(base_size = 9) +
@@ -375,7 +375,7 @@ p_hist <- ggplot2::ggplot(res, ggplot2::aes(x = specific_pvalue)) +
 ggplot2::ggsave(file.path(out_dir, "dryad_weak_stress_windows_alpha1_pvalue_histogram.png"), p_hist, width = 8, height = 6, dpi = 300)
 ggplot2::ggsave(file.path(out_dir, "dryad_weak_stress_windows_alpha1_pvalue_histogram.pdf"), p_hist, width = 8, height = 6)
 
-p_hist_combined <- ggplot2::ggplot(res, ggplot2::aes(x = specific_pvalue)) +
+p_hist_combined <- ggplot2::ggplot(res, ggplot2::aes(x = relative_pvalue)) +
   ggplot2::geom_histogram(
     breaks = seq(0, 1, by = 0.05),
     fill = "#009E73",
@@ -395,8 +395,8 @@ ggplot2::ggsave(file.path(out_dir, "dryad_weak_stress_windows_alpha1_pvalue_hist
 
 p_volcano <- plot_volcano(
   res,
-  effect = "specific_effect",
-  padj = "specific_padj_by_reporter",
+  effect = "relative_effect",
+  padj = "relative_padj_by_reporter",
   title = "Dryad weak-stress reporter windows: DStressR volcano with alpha = 1",
   label_by = "pair",
   top_n = 15,
@@ -405,7 +405,7 @@ p_volcano <- plot_volcano(
 ggplot2::ggsave(file.path(out_dir, "dryad_weak_stress_windows_alpha1_volcano.png"), p_volcano, width = 8, height = 5.5, dpi = 300)
 ggplot2::ggsave(file.path(out_dir, "dryad_weak_stress_windows_alpha1_volcano.pdf"), p_volcano, width = 8, height = 5.5)
 
-plot_window_heatmap <- function(tab, effect_col = "specific_effect", title = NULL, fill_label = NULL) {
+plot_window_heatmap <- function(tab, effect_col = "relative_effect", title = NULL, fill_label = NULL) {
   d <- tab
   d$compound <- factor(d$compound, levels = c("Iron", "Tetracycline", "H2O2", "Kanamycin"))
   d$pseudo_reporter <- factor(
@@ -444,9 +444,9 @@ plot_window_heatmap <- function(tab, effect_col = "specific_effect", title = NUL
 }
 p_heatmap <- plot_window_heatmap(
   res,
-  effect_col = "specific_effect",
-  title = "Dryad weak-stress reporter windows: DStressR specific effects with alpha = 1",
-  fill_label = "Specific effect"
+  effect_col = "relative_effect",
+  title = "Dryad weak-stress reporter windows: DStressR reporter-relative effects with alpha = 1",
+  fill_label = "Reporter-relative effect"
 )
 ggplot2::ggsave(file.path(out_dir, "dryad_weak_stress_windows_alpha1_effect_heatmap.png"), p_heatmap, width = 7.5, height = 6, dpi = 300)
 ggplot2::ggsave(file.path(out_dir, "dryad_weak_stress_windows_alpha1_effect_heatmap.pdf"), p_heatmap, width = 7.5, height = 6)

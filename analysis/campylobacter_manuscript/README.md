@@ -32,8 +32,8 @@ modeled_response.tsv
 ```
 
 For model-based DStressR outputs, `effect`, `pvalue`, and adjusted p-values
-should refer to the promoter-specific effect after subtracting the compound's
-global effect across promoters (`specific_*` columns from `results()`), not the
+should refer to the reporter-relative effect after subtracting the compound's
+global effect across promoters (`relative_*` columns from `results()`), not the
 raw promoter-wise compound-vs-control total effect (`total_*`).
 
 Set `DSTRESSR_COMPARISON_ADJUSTMENT=global` or

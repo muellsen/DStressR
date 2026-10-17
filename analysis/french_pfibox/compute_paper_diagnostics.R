@@ -1,7 +1,7 @@
 source(file.path("analysis", "_helpers.R"))
 source(file.path("analysis", "_paper_artifacts.R"))
 load_destress_package()
-out_dir <- analysis_output_dir("french_pfibox", "promoter_activity_analysis")
+out_dir <- Sys.getenv("PFIBOX_ANALYSIS_DIR", analysis_output_dir("french_pfibox", "promoter_activity_analysis"))
 run_tag <- Sys.getenv("PFIBOX_RUN_TAG", "reporters2000_perturbations100_T2-18h_treatment_replicate_scalable")
 result_file <- file.path(out_dir, paste0("pfibox_pa_destress_pair_results_", run_tag, ".tsv"))
 metadata_file <- file.path(out_dir, paste0("pfibox_pa_run_metadata_", run_tag, ".tsv"))
@@ -94,6 +94,17 @@ selected_reporters <- names(sort(row_score, decreasing = TRUE))[seq_len(top_n_re
 mat <- mat_all[selected_reporters, , drop = FALSE]
 
 cluster_mat <- impute_by_column_mean(mat)
+if (cluster_distance == "correlation") {
+  variable <- apply(cluster_mat, 1, stats::sd) > 0
+  if (any(!variable)) {
+    utils::write.table(data.frame(reporter = rownames(mat)[!variable],
+      reason = "Constant profile; correlation distance undefined"),
+      file.path(out_dir, "correlation_clustering_excluded_profiles.tsv"),
+      sep = "\t", quote = FALSE, row.names = FALSE)
+    mat <- mat[variable, , drop = FALSE]
+    cluster_mat <- cluster_mat[variable, , drop = FALSE]
+  }
+}
 row_hc <- stats::hclust(matrix_distance(cluster_mat, cluster_distance), method = cluster_linkage)
 col_hc <- stats::hclust(matrix_distance(t(cluster_mat), cluster_distance), method = cluster_linkage)
 row_order <- rownames(mat)[row_hc$order]

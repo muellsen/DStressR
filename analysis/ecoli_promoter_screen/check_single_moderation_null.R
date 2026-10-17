@@ -33,16 +33,16 @@ for (scenario in seq_len(nrow(designs))) {
     centered_variance <- function(v) {
       ((n - 1) / n)^2 * v + (rep(colSums(v), each = n) - v) / n^2
     }
-    raw_specific <- centered_variance(v)
+    raw_relative <- centered_variance(v)
     ws_df <- as.vector(vapply(seq_len(p), function(j) new$centered_contrast_df(v[, j], df), numeric(n)))
     focal_df <- rep(df, p)
     old_total <- old$eb_moderate_se(sqrt(as.vector(v)), focal_df)
-    old_specific <- old$eb_moderate_se(sqrt(as.vector(centered_variance(matrix(old_total$se^2, n, p)))), focal_df)
-    proposed <- new$eb_moderate_se(sqrt(as.vector(raw_specific)), ws_df)
+    old_relative <- old$eb_moderate_se(sqrt(as.vector(centered_variance(matrix(old_total$se^2, n, p)))), focal_df)
+    proposed <- new$eb_moderate_se(sqrt(as.vector(raw_relative)), ws_df)
     stats <- list(
-      prechange = list(se = old_specific$se, df = old_specific$df),
-      ordinary_focal = list(se = sqrt(as.vector(raw_specific)), df = focal_df),
-      ordinary_WS = list(se = sqrt(as.vector(raw_specific)), df = ws_df),
+      prechange = list(se = old_relative$se, df = old_relative$df),
+      ordinary_focal = list(se = sqrt(as.vector(raw_relative)), df = focal_df),
+      ordinary_WS = list(se = sqrt(as.vector(raw_relative)), df = ws_df),
       single_WS = list(se = proposed$se, df = proposed$df)
     )
     for (method in names(stats)) {

@@ -16,9 +16,9 @@ panel_label <- function(label, size = 16) {
   )
 }
 target_arg <- grep("^--target=", commandArgs(trailingOnly = TRUE), value = TRUE)
-target <- if (length(target_arg)) sub("^--target=", "", target_arg) else "specific"
-if (length(target) != 1L || !target %in% c("specific", "total")) {
-  stop("Use --target=specific or --target=total.", call. = FALSE)
+target <- if (length(target_arg)) sub("^--target=", "", target_arg) else "relative"
+if (length(target) != 1L || !target %in% c("relative", "total")) {
+  stop("Use --target=relative or --target=total.", call. = FALSE)
 }
 out_dir <- analysis_output_dir(if (target == "total") {
   "binsfeld_total_effect_discovery"

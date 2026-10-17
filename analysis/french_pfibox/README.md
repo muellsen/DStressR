@@ -1,115 +1,115 @@
-# French PFIbox Promoter-Reporter Analysis
+# French PFIbox integrated-activity analysis
 
-This folder contains the reproducible DStressR analysis of the
-PFIbox dataset of French, Coutts, and Brown (2018), *Cell Systems*,
-doi:10.1016/j.cels.2018.07.004.
+This is the retained DStressR reanalysis of French, Coutts and Brown (2018),
+*Cell Systems*, DOI <https://doi.org/10.1016/j.cels.2018.07.004>.
+It reconstructs unscaled promoter activity from deposited biomass-normalized
+fluorescence and uses its signed integral as the colony-level response.
+Discarded scalar-summary, temporal-PCA, alternative-clustering and figure
+reconstruction explorations have been removed.
 
-The assay differs from the Binsfeld luminescence screen. The public workflow
-contains colony-level GFP fluorescence time courses and promoter-position
-metadata for the Zaslaver *E. coli* promoter-GFP library. Growth is represented
-through a constitutive-reporter biomass proxy, not through matched OD600
-kinetics for every reporter colony. The primary DStressR workflow in this folder
-therefore treats the deposited promoter activity as a supplied response and
-summarizes it over a user-defined time window.
+## Data and numerical provenance
 
-## Data Sources
+Download instructions, source paths and the data licence are in
+[`data-raw/french_pfibox/README.md`](../../data-raw/french_pfibox/README.md).
+The 1.31-GB source stays local and Git-ignored. The source-stage audit is in
+`FRENCH_FIGURE3_AUDIT.md`; response and model details are in
+`UNSCALED_ACTIVITY_INTEGRAL.md`. Completed cleanup and validation checks are
+recorded in `WORKFLOW_CLEANUP_PLAN.md`.
 
-Primary article data:
+## Retained pipeline
 
-- Mendeley Data doi:10.17632/fmv6vv4bsf.1
-
-Code and sample files:
-
-- <https://github.com/sfrench007/pfibox>
-
-The GitHub sample contains one untreated time-course file and is useful for
-parser validation. The DStressR perturbation analysis requires the deposited
-multi-treatment `gfpData.Rdata` object, or an equivalent processed time-course
-object, placed under `data-raw/french_pfibox/source/`. Supplementary article
-tables, such as the French et al. time-course cluster assignment table, can be
-placed in the same folder when reproducing the cluster-mapping figure.
-
-Large source files and bulky derived tables are intentionally not versioned.
-The local data provenance and expected file layout are described in
-`data-raw/french_pfibox/README.md`.
-
-## Scripts
-
-Validate the public GitHub sample parser:
+From the repository root:
 
 ```sh
-Rscript analysis/french_pfibox/prepare_pfibox_sample_data.R
-```
-
-Audit the full deposited `gfpData.Rdata` object:
-
-```sh
+# Source-structure and exact activity-reconstruction checks.
 Rscript analysis/french_pfibox/audit_pfibox_data.R
-```
+Rscript analysis/french_pfibox/audit_french_figure3_inputs.R
+Rscript analysis/french_pfibox/audit_activity_reconstruction.R
 
-Run the DStressR alpha-comparison analysis after placing a multi-treatment
-`gfpData.Rdata` file under `data-raw/french_pfibox/source/`:
-
-```sh
-Rscript analysis/french_pfibox/run_french_pfibox_destress_analysis.R
-```
-
-The script pools the deposited `*-0` treatments as the reference condition,
-keeps nonzero drug-dose entries as perturbations, and runs the model twice:
-once with reporter-specific response exponents estimated from the reference
-colonies and once with the fixed exponent `alpha = 1`.
-By default, it reuses the cached compact AUC table when available. Set
-`PFIBOX_REBUILD_AUC=true` to rebuild that table from `gfpData.Rdata`.
-For a quick smoke test, set `PFIBOX_REPORTER_LIMIT` and
-`PFIBOX_PERTURBATION_LIMIT`; subset outputs are tagged so they do not overwrite
-the full-run files.
-
-Run the promoter-activity workflow on a reproducible subset:
-
-```sh
-PFIBOX_REPORTER_LIMIT=250 \
-PFIBOX_PERTURBATION_LIMIT=8 \
-PFIBOX_T_START_H=2 \
-PFIBOX_T_END_H=18 \
+# Integrate unscaled activity and fit the reporter-wise DStressR model.
+PFIBOX_RESPONSE_SUMMARY=unscaled_integral \
+PFIBOX_TIME_WINDOW=all_available \
+PFIBOX_REPORTER_LIMIT=2000 PFIBOX_PERTURBATION_LIMIT=100 \
+PFIBOX_DESIGN=replicate \
 Rscript analysis/french_pfibox/run_promoter_activity_analysis.R
+
+# Re-extract ordinary tests from the saved fit; no refitting.
+Rscript analysis/french_pfibox/prepare_integrated_activity_supplement.R
+Rscript analysis/french_pfibox/export_public_response_tables.R
+
+# Save the documented 10-positive and 10-negative display selection.
+PFIBOX_TIMECOURSE_SELECTION=directional_volcano \
+Rscript analysis/french_pfibox/plot_integrated_activity_timecourses.R
 ```
 
-This script uses
-`y_i^{PA}(T) = |T|^{-1} int_T PA_i(t) dt` as the supplied DStressR response,
-where the time window `T` is controlled by `PFIBOX_T_START_H` and
-`PFIBOX_T_END_H`. The defaults analyze roughly 2,000 reporter-perturbation
-pairs before missing-value filtering and write the response table, pair-level
-DStressR results, perturbation diagnostics, and a compact summary figure.
-
-Generate paper-style plots for the same promoter-activity subset:
+Set the following environment for clustering and supplementary plots:
 
 ```sh
-PFIBOX_RUN_TAG=reporters250_perturbations8_T2-18h_treatment_dose_replicate_scalable \
-Rscript analysis/french_pfibox/plot_pfibox_promoter_activity_figures.R
+export PFIBOX_ANALYSIS_DIR=analysis/outputs/french_pfibox/temporal_unscaled_integral_analysis
+export PFIBOX_RUN_TAG=reporters2000_perturbations100_Tall_available_treatment_replicate_scalable_temporal_unscaled_integral
+export PFIBOX_CLUSTER_TOP_REPORTERS=2000
+export PFIBOX_CLUSTER_LINKAGE=complete
+export PFIBOX_CLUSTER_DISTANCE=correlation
+export PFIBOX_CLUSTER_OUTPUT_SUFFIX=total_effect_correlation_complete
+export PFIBOX_ADJUSTMENT_SCOPE=global
+
+Rscript analysis/french_pfibox/compute_paper_diagnostics.R
+Rscript analysis/french_pfibox/map_french_timecourse_clusters_to_destress.R
+Rscript analysis/french_pfibox/build_selected_activity_figure.R --target=total
+Rscript analysis/french_pfibox/plot_pfibox_moderation_diagnostic.R --target=total
+
+PFIBOX_DISCOVERY_TARGET=relative PFIBOX_VOLCANO_LABEL_REGION=right \
+PFIBOX_FIGURE_OUTPUT_DIR="$PFIBOX_ANALYSIS_DIR/relative_effect_discovery" \
+Rscript analysis/french_pfibox/plot_pfibox_model_cluster_and_discovery.R
 ```
 
-These figures mirror the Binsfeld application figures after response
-construction: total and specific effect matrices, a rank-variance diagnostic,
-specific-effect p-value histogram, volcano plot, and a table-style display of
-the strongest specific effects. The response-modeling parameter panels are not
-generated for this workflow because promoter activity is supplied directly.
+The repository-wide `analysis/build_paper_figures.R` runs these stages with
+the other manuscript applications. Figure-only mode reads the saved results
+and trajectory data without fitting DStressR or recomputing clusters.
 
-The manuscript uses `PFIBOX_REPORTER_LIMIT=2000`,
-`PFIBOX_PERTURBATION_LIMIT=100`, and `PFIBOX_DESIGN=replicate`. To repeat only
-model fitting and inference, set `PFIBOX_RESPONSE_TABLE` to the previously
-generated response TSV for the same subset and time window. The script checks
-the cached window and subset bounds. Omit this option to reconstruct responses
-from the deposited time series. Both paths save a fitted RDS object separately
-from the result table; `results(readRDS(fit_path))` repeats inference without
-refitting. Set `PFIBOX_EMPIRICAL_BAYES=false` for the ordinary-test comparison.
+The attributed, compact metadata and long-format scalar tables are under
+[`data-raw/french_pfibox/derived/`](../../data-raw/french_pfibox/derived/README.md).
+They can be used without loading the 1.31-GB source when only model fitting is
+needed. `check_integral_workflow.R` validates their keys and values; add
+`--refit` to verify the entire model against the protected paper results.
 
-For the manuscript Figure 6, run `compute_paper_diagnostics.R` followed by
-`map_french_timecourse_clusters_to_destress.R`, then
-`plot_clustering_and_inference.R`. The diagnostic and mapping artifacts use an
-explicit run tag and cluster suffix; plotting does not select the most recent
-file or recompute clusters. The exact manuscript settings and staged rebuild
-commands are in `analysis/PAPER_FIGURES.md`.
+## Scientific target and output
 
-Generated compact tables are written under
-`data-raw/french_pfibox/processed/`; figures and analysis outputs are written
-under `analysis/outputs/french_pfibox/`. Both locations are ignored by Git.
+The response uses all 197 retained activity samples (100 minutes to 18 hours
+on the five-minute source grid), with no per-colony min-max normalization.
+Each source colony-condition contributes once. The 13 untreated source arrays
+form the reference; they are not labelled as independent biological replicates.
+The model adjusts for the repeated colony-position index within each reporter.
+
+The current result has 1,797 reporters, 33 antibiotic-dose treatments,
+273,792 finite observations and 59,301 total-effect tests. Global BH correction
+at 0.05 yields 5,101 calls. Correlation/complete-linkage clustering includes
+1,796 nonconstant reporter profiles.
+
+The final Figure 6 is written to:
+
+```text
+analysis/outputs/french_pfibox/temporal_unscaled_integral_analysis/selected_four_figure6/
+```
+
+The four handpicked illustrations are ompC / Ampicillin-18,
+msrB / Sulfamethoxazole-18, recN / Ciprofloxacin-18 and
+rmf / NalidixicAcid-18. Their identities are shared across heatmap callouts,
+the 2-by-2 time-series panel and volcano annotations. Selection does not alter
+inference. No exploratory result is an input to this pipeline.
+
+## Reuse the trajectory style
+
+`activity_plotting.R` defines `plot_activity_trajectories()` for any long-format
+trajectory table. Time, value, condition, observation and facet columns are
+configurable. The function draws individual observations and optional pointwise
+medians or means; it does not smooth trajectories, fit a model or infer effects.
+The manuscript generator adds its mathematical annotations afterwards.
+
+```r
+source("analysis/french_pfibox/activity_plotting.R")
+p <- plot_activity_trajectories(
+  curves, time = "hours", response = "activity", condition = "condition",
+  trajectory = "colony_id", panel = "pair", ncol = 2, summary = "median"
+)
+```

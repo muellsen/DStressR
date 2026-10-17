@@ -52,7 +52,7 @@ make_workflow_diag <- function(d, variance_effect) {
 }
 
 total_diag <- make_workflow_diag(diagnostics, variance_effect = "mean_response")
-specific_diag <- make_workflow_diag(diagnostics, variance_effect = "effect")
+relative_diag <- make_workflow_diag(diagnostics, variance_effect = "effect")
 
 model_variance <- stats::aggregate(
   moderated_variance ~ workflow + compound,
@@ -67,7 +67,7 @@ compound_diag <- merge(
     "effect_variance", "n_reporters", "rank_abs_mean_effect",
     "variance_trend", "variance_residual", "rank_variance_residual"
   )],
-  specific_diag[, c("workflow", "perturbation", "effect_variance")],
+  relative_diag[, c("workflow", "perturbation", "effect_variance")],
   by = c("workflow", "perturbation"),
   all = TRUE,
   sort = FALSE
@@ -76,7 +76,7 @@ names(compound_diag) <- c(
   "workflow", "compound", "mean_total_response", "abs_mean_total_response",
   "total_effect_variance", "n_reporters", "rank_abs_mean_total_response",
   "variance_trend", "variance_residual", "rank_variance_residual",
-  "specific_effect_variance"
+  "relative_effect_variance"
 )
 compound_diag <- merge(compound_diag, model_variance, by = c("workflow", "compound"), all.x = TRUE, sort = FALSE)
 compound_diag <- compound_diag[
@@ -198,7 +198,7 @@ ggplot2$ggsave(
 
 fit_summary <- fit_variance_distribution(
   compound_diag,
-  variance = "specific_effect_variance"
+  variance = "relative_effect_variance"
 )
 utils::write.table(
   fit_summary,
@@ -211,7 +211,7 @@ utils::write.table(
 variance_density_plot <- plot_variance_distribution(
   compound_diag,
   fit = fit_summary,
-  variance = "specific_effect_variance",
+  variance = "relative_effect_variance",
   title = NULL,
   subtitle = ""
 )

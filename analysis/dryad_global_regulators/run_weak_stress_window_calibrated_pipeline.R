@@ -247,7 +247,7 @@ if (any(!is.finite(stress_alpha))) {
   stop("Could not assign calibrated alpha values to all weak-stress pseudo-reporters.", call. = FALSE)
 }
 
-screen <- utils::read.delim(weak_input_path, check.names = FALSE)
+screen <- read_analysis_delim(weak_input_path, check.names = FALSE)
 screen$promoter <- factor(screen$promoter, levels = promoter_levels)
 screen$window <- factor(screen$window, levels = window_definitions$window)
 screen$pseudo_reporter <- factor(screen$pseudo_reporter, levels = pseudo_reporter_levels)
@@ -283,8 +283,8 @@ res$window <- factor(res$window, levels = window_definitions$window)
 hit_table <- call_hits(
   res,
   fdr = 0.05,
-  effect = "specific_effect",
-  padj = "specific_padj_by_reporter"
+  effect = "relative_effect",
+  padj = "relative_padj_by_reporter"
 )
 res$hit_class <- hit_table$hit
 res$hit <- res$hit_class != "Not DE"
@@ -356,10 +356,10 @@ utils::write.table(
 )
 
 comparison <- merge(
-  utils::read.delim(file.path(out_dir, "dryad_weak_stress_windows_alpha1_pair_results.tsv"))[
-    , c("promoter", "compound", "total_effect", "specific_effect", "specific_pvalue", "specific_padj_by_reporter", "hit")
+  read_analysis_delim(file.path(out_dir, "dryad_weak_stress_windows_alpha1_pair_results.tsv"))[
+    , c("promoter", "compound", "total_effect", "relative_effect", "relative_pvalue", "relative_padj_by_reporter", "hit")
   ],
-  res[, c("promoter", "compound", "total_effect", "specific_effect", "specific_pvalue", "specific_padj_by_reporter", "hit")],
+  res[, c("promoter", "compound", "total_effect", "relative_effect", "relative_pvalue", "relative_padj_by_reporter", "hit")],
   by = c("promoter", "compound"),
   suffixes = c("_alpha1", "_calibrated_alpha"),
   all = TRUE,

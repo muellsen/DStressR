@@ -14,7 +14,7 @@ fit_paths <- c(
                                      "destress_estimated_exponent_fit.rds"),
   evc_huber = file.path(source_dir, "evc_huber_fit.rds")
 )
-tables <- lapply(fit_paths, function(path) results(readRDS(path)))
+tables <- lapply(fit_paths, function(path) results(read_analysis_rds(path)))
 key <- function(reporter, perturbation) paste(reporter, perturbation, sep = "::")
 comparison_key <- key(comparison$promoter, comparison$compound)
 stopifnot(!anyDuplicated(comparison_key))
@@ -40,9 +40,9 @@ for (method in names(tables)) {
     -log10(pmax(table$total_pvalue, .Machine$double.xmin))
   new_hits <- comparison[[paste0(method, "_hit")]]
   target_counts[[method]] <- data.frame(
-    method = method, pairs = nrow(table), specific_hits = sum(old_hits),
+    method = method, pairs = nrow(table), relative_hits = sum(old_hits),
     total_hits = sum(new_hits), shared = sum(old_hits & new_hits),
-    total_only = sum(!old_hits & new_hits), specific_only = sum(old_hits & !new_hits)
+    total_only = sum(!old_hits & new_hits), relative_only = sum(old_hits & !new_hits)
   )
 }
 b <- as.logical(comparison$binsfeld_hit)

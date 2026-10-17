@@ -1,4 +1,4 @@
-# Reporter-Specific Inference Audit
+# Reporter-Reporter-relative Inference Audit
 
 The audited statistical update has been promoted to the package, manuscript,
 and application outputs. Progress is recorded in `INFERENCE_REVISION_STAGES.md`.
@@ -22,7 +22,7 @@ variances, computes Welch--Satterthwaite effective degrees of freedom, and
 moderates the centered variance once. The empirical prior uses per-contrast
 log-chi-square corrections for unequal degrees of freedom. Total-effect
 moderation remains a separate calculation. Result tables expose raw variances
-and raw/final specific-effect degrees of freedom for audit.
+and raw/final reporter-relative-effect degrees of freedom for audit.
 
 The full interaction-model path retains its common residual degrees of freedom.
 The dedicated screen-specific workflows and supplied-summary path are unchanged.

@@ -11,7 +11,7 @@ load_sources <- function(path) {
 }
 old <- load_sources(file.path(audit, "baseline_R"))
 new <- load_sources(file.path(root, "R"))
-read_tab <- function(path) read.delim(path, check.names = FALSE)
+read_tab <- function(path) read_analysis_delim(path, check.names = FALSE)
 write_tab <- function(x, name) write.table(x, file.path(out_dir, name),
                                           sep = "\t", quote = FALSE, row.names = FALSE)
 key <- function(x) paste(x$reporter, x$perturbation, sep = "::")
@@ -47,7 +47,7 @@ original_hashes <- tools::md5sum(unlist(paths))
 
 get_fit <- function(name, build) {
   path <- file.path(out_dir, paste0(name, "_baseline_fit.rds"))
-  if (file.exists(path)) return(readRDS(path))
+  if (file.exists(path)) return(read_analysis_rds(path))
   fit <- build()
   saveRDS(fit, path)
   fit
@@ -69,12 +69,12 @@ focal <- load_sources(file.path(root, "R"))
 focal$centered_contrast_df <- function(variance, df) df
 pfibox_focal <- focal$results(pfibox_fit)
 ablation <- data.frame(method = c("Prechange", "Single moderation, focal df", "Single moderation, effective df"),
-  reporter_wise_hits = c(sum(pfibox_old$specific_padj_by_reporter < 0.05),
-                         sum(pfibox_focal$specific_padj_by_reporter < 0.05),
-                         sum(pfibox_new$specific_padj_by_reporter < 0.05)),
-  global_hits = c(sum(pfibox_old$specific_padj_global < 0.05),
-                   sum(pfibox_focal$specific_padj_global < 0.05),
-                   sum(pfibox_new$specific_padj_global < 0.05)))
+  reporter_wise_hits = c(sum(pfibox_old$relative_padj_by_reporter < 0.05),
+                         sum(pfibox_focal$relative_padj_by_reporter < 0.05),
+                         sum(pfibox_new$relative_padj_by_reporter < 0.05)),
+  global_hits = c(sum(pfibox_old$relative_padj_global < 0.05),
+                   sum(pfibox_focal$relative_padj_global < 0.05),
+                   sum(pfibox_new$relative_padj_global < 0.05)))
 write_tab(ablation, "pfibox_moderation_ablation.tsv")
 
 message("Dash: reconstructing the effect fit using the saved calibrated exponents.")
@@ -160,13 +160,13 @@ rank_check <- data.frame(convention = "Unaugmented residual df for rank-adjusted
   max_abs_p_difference = max(abs(historical_rank_p - dash_rank_archive$rank_adjusted_total_pvalue)))
 write_tab(rank_check, "dash_historical_rank_reconstruction.tsv")
 stopifnot(rank_check$max_abs_p_difference < 1e-10)
-for (target in c("total", "specific")) {
+for (target in c("total", "relative")) {
   compare("PFIbox", target, pfibox_old, pfibox_new, pfibox_archive, "by_reporter")
   compare("Dash", target, dash_old, dash_new, dash_archive, "by_reporter")
 }
-compare("PFIbox", "specific", pfibox_old, pfibox_new, pfibox_archive, "global")
+compare("PFIbox", "relative", pfibox_old, pfibox_new, pfibox_archive, "global")
 compare("Dash", "rank_adjusted_total", dash_rank_old, dash_rank_new, dash_rank_archive, "by_reporter")
-for (target in c("total", "specific", "rank_adjusted_total")) {
+for (target in c("total", "relative", "rank_adjusted_total")) {
   compare("Kochanowski", target, kochanowski_old, kochanowski_new, kochanowski_archive, "global")
 }
 summary <- do.call(rbind, comparisons)
@@ -180,8 +180,8 @@ write_tab(preservation, "source_preservation_checks.tsv")
 stopifnot(all(preservation$unchanged))
 
 if (requireNamespace("ggplot2", quietly = TRUE)) {
-  d <- do.call(rbind, pair_tables[c("PFIbox_specific_by_reporter", "Dash_specific_by_reporter",
-                                    "Kochanowski_specific_global")])
+  d <- do.call(rbind, pair_tables[c("PFIbox_relative_by_reporter", "Dash_relative_by_reporter",
+                                    "Kochanowski_relative_global")])
   plot_data <- rbind(data.frame(example = d$example, method = "Prechange code", pvalue = d$baseline_pvalue),
                      data.frame(example = d$example, method = "Candidate", pvalue = d$candidate_pvalue))
   plot_data$example <- factor(plot_data$example, levels = c("PFIbox", "Dash", "Kochanowski"))

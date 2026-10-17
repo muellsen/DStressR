@@ -25,17 +25,17 @@ if (any(!file.exists(required_files))) {
   }
 }
 
-all_pairs <- read.delim(
+all_pairs <- read_analysis_delim(
   file.path(out_dir, "binsfeld_destress_all_pair_comparison.tsv"),
   check.names = FALSE,
   stringsAsFactors = FALSE
 )
-union_pairs <- read.delim(
+union_pairs <- read_analysis_delim(
   file.path(out_dir, "binsfeld_destress_significant_union.tsv"),
   check.names = FALSE,
   stringsAsFactors = FALSE
 )
-growth_exponents <- read.delim(
+growth_exponents <- read_analysis_delim(
   file.path(out_dir, "destress_default_growth_exponents.tsv"),
   check.names = FALSE,
   stringsAsFactors = FALSE
@@ -113,17 +113,17 @@ promoter_summary <- promoter_summary[order(promoter_summary$Promoter), ]
 
 both <- union_pairs[union_pairs$overlap_class == "Both", ]
 both$binsfeld_padj <- fmt_num(both$binsfeld_padj)
-both$specific_padj_by_reporter <- fmt_num(both$specific_padj_by_reporter)
+both$relative_padj_by_reporter <- fmt_num(both$relative_padj_by_reporter)
 both$mean_z <- fmt_num(both$mean_z)
-both$specific_effect <- fmt_num(both$specific_effect)
+both$relative_effect <- fmt_num(both$relative_effect)
 
 appendix <- union_pairs
 appendix$mean_z <- fmt_num(appendix$mean_z)
 appendix$binsfeld_pvalue <- fmt_num(appendix$binsfeld_pvalue)
 appendix$binsfeld_padj <- fmt_num(appendix$binsfeld_padj)
-appendix$specific_effect <- fmt_num(appendix$specific_effect)
-appendix$specific_pvalue <- fmt_num(appendix$specific_pvalue)
-appendix$specific_padj_by_reporter <- fmt_num(appendix$specific_padj_by_reporter)
+appendix$relative_effect <- fmt_num(appendix$relative_effect)
+appendix$relative_pvalue <- fmt_num(appendix$relative_pvalue)
+appendix$relative_padj_by_reporter <- fmt_num(appendix$relative_padj_by_reporter)
 
 binsfeld_only <- appendix[appendix$overlap_class == "Binsfeld only", ]
 destress_only <- appendix[appendix$overlap_class == "DStressR only", ]
@@ -189,7 +189,7 @@ code { background: #f3f4f6; padding: 1px 4px; border-radius: 3px; }
 <li>Input: WT AUC rows from <code>binsfeld_reporter_auc</code> with <code>removed == "No"</code>.</li>
 <li>Response: default growth-modeled response, <code>log2(lux_auc) - alpha_g * log2(od_auc)</code>, with promoter-specific <code>alpha_g</code> estimated from water controls and no EVC calibration.</li>
 <li>Model: DStressR model preset, empirical-Bayes moderation enabled, technical terms for replicate and dose level.</li>
-<li>Call a hit using promoter-specific effect p-values adjusted within promoter at FDR 0.05.</li>
+<li>Call a hit using reporter-relative effect p-values adjusted within promoter at FDR 0.05.</li>
 </ul>
 
 <h3>Estimated Growth-Response Exponents</h3>
@@ -207,19 +207,19 @@ html_table(promoter_summary),
 '<h2>Figures</h2>
 <div class="figure"><img alt="Hit overlap Venn diagram" src="', img_uri(file.path(out_dir, "hit_overlap_venn.png")), '"><div class="caption">Figure 1. Exact promoter-compound hit overlap.</div></div>
 <div class="figure"><img alt="P-value histograms" src="', img_uri(file.path(out_dir, "pvalue_histograms.png")), '"><div class="caption">Figure 2. Raw and promoter-wise BH-adjusted p-value distributions. Colored bars are method-specific hits.</div></div>
-<div class="figure"><img alt="Effect histograms" src="', img_uri(file.path(out_dir, "effect_histograms.png")), '"><div class="caption">Figure 3. Effect-score distributions for original mean Z-scores and DStressR specific effects.</div></div>
+<div class="figure"><img alt="Effect histograms" src="', img_uri(file.path(out_dir, "effect_histograms.png")), '"><div class="caption">Figure 3. Effect-score distributions for original mean Z-scores and DStressR reporter-relative effects.</div></div>
 <div class="grid">
 <div class="figure"><img alt="Effect scatter" src="', img_uri(file.path(out_dir, "effect_scatter.png")), '"><div class="caption">Figure 4. Effect-score comparison across all tested promoter-compound pairs.</div></div>
 <div class="figure"><img alt="P-value scatter zoomed" src="', img_uri(file.path(out_dir, "pvalue_scatter_zoom.png")), '"><div class="caption">Figure 5. Zoomed raw p-value comparison.</div></div>
 </div>
 
 <h2>Interpretation</h2>
-<p>The two analyses agree on a shared core of ', overlap_n, ' promoter-compound interactions. DStressR calls reflect modeled growth-adjusted AUC responses, promoter-specific effects after compound-wide centering, and moderated model-based uncertainty rather than the original Z-score/Wilcoxon rule. Binsfeld-only hits tend to be pairs whose mean Z-score and Wilcoxon evidence pass the original thresholds but whose DStressR promoter-specific effect is weaker after model adjustment.</p>
+<p>The two analyses agree on a shared core of ', overlap_n, ' promoter-compound interactions. DStressR calls reflect modeled growth-adjusted AUC responses, reporter-relative effects after compound-wide centering, and moderated model-based uncertainty rather than the original Z-score/Wilcoxon rule. Binsfeld-only hits tend to be pairs whose mean Z-score and Wilcoxon evidence pass the original thresholds but whose DStressR reporter-relative effect is weaker after model adjustment.</p>
 
 <h2>Top Overlapping Hits</h2>',
 html_table(
   both[order(as.numeric(both$binsfeld_padj)), ],
-  columns = c("promoter", "compound", "mean_z", "binsfeld_padj", "specific_effect", "specific_padj_by_reporter", "destress_hit_class"),
+  columns = c("promoter", "compound", "mean_z", "binsfeld_padj", "relative_effect", "relative_padj_by_reporter", "destress_hit_class"),
   max_rows = 20
 ),
 
@@ -234,26 +234,26 @@ html_table(
 <h3>Binsfeld-only Significant Pairs</h3>',
 html_table(
   binsfeld_only,
-  columns = c("promoter", "compound", "mean_z", "binsfeld_padj", "binsfeld_direction", "specific_effect", "specific_padj_by_reporter")
+  columns = c("promoter", "compound", "mean_z", "binsfeld_padj", "binsfeld_direction", "relative_effect", "relative_padj_by_reporter")
 ),
 
 '<h3>DStressR-only Significant Pairs</h3>',
 html_table(
   destress_only,
-  columns = c("promoter", "compound", "mean_z", "binsfeld_padj", "specific_effect", "specific_padj_by_reporter", "destress_hit_class")
+  columns = c("promoter", "compound", "mean_z", "binsfeld_padj", "relative_effect", "relative_padj_by_reporter", "destress_hit_class")
 ),
 
 '<h3>Overlapping Significant Pairs</h3>',
 html_table(
   overlap_hits,
-  columns = c("promoter", "compound", "mean_z", "binsfeld_padj", "binsfeld_direction", "specific_effect", "specific_padj_by_reporter", "destress_hit_class")
+  columns = c("promoter", "compound", "mean_z", "binsfeld_padj", "binsfeld_direction", "relative_effect", "relative_padj_by_reporter", "destress_hit_class")
 ),
 
 '<h3>Full Union of Significant Pairings</h3>
 <p>The table below is the union of all promoter-compound pairs significant by either method. The same table is written as a shareable TSV at <code>analysis/outputs/binsfeld/binsfeld_destress_significant_union.tsv</code>.</p>',
 html_table(
   appendix,
-  columns = c("promoter", "compound", "overlap_class", "mean_z", "binsfeld_padj", "binsfeld_direction", "specific_effect", "specific_padj_by_reporter", "destress_hit_class")
+  columns = c("promoter", "compound", "overlap_class", "mean_z", "binsfeld_padj", "binsfeld_direction", "relative_effect", "relative_padj_by_reporter", "destress_hit_class")
 ),
 
 '<h2>Reproducibility</h2>

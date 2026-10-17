@@ -20,7 +20,7 @@ read_paper_artifact <- function(path) {
     stop("Missing paper artifact: ", path, ". Run its analysis/diagnostic generator first.",
          call. = FALSE)
   }
-  artifact <- readRDS(path)
+  artifact <- read_analysis_rds(path)
   required <- c("results", "assays", "parameters", "diagnostics", "annotations", "provenance")
   if (!identical(artifact$schema_version, 1L) || !all(required %in% names(artifact))) {
     stop("Unsupported paper artifact: ", path, call. = FALSE)

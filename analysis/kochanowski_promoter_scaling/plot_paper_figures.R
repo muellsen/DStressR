@@ -628,13 +628,13 @@ p_volcano_total <- plot_koch_volcano_panel(
   show_y = TRUE,
   show_legend = FALSE
 )
-p_volcano_specific <- plot_koch_volcano_panel(
-  effect_col = "specific_effect",
-  pvalue_col = "approx_specific_pvalue",
-  padj_col = "approx_specific_padj",
+p_volcano_relative <- plot_koch_volcano_panel(
+  effect_col = "relative_effect",
+  pvalue_col = "approx_relative_pvalue",
+  padj_col = "approx_relative_padj",
   panel_tag = "b",
-  panel_label = "Specific effect",
-  xlab = expression(hat(Delta*y)[aj]^"spec"),
+  panel_label = "Reporter-relative effect",
+  xlab = expression(hat(Delta*y)[aj]^"rel"),
   show_y = FALSE,
   show_legend = FALSE
 )
@@ -650,7 +650,7 @@ p_volcano_rank_adjusted <- plot_koch_volcano_panel(
 )
 koch_volcano_composite <- gridExtra::arrangeGrob(
   p_volcano_total,
-  p_volcano_specific,
+  p_volcano_relative,
   p_volcano_rank_adjusted,
   ncol = 3,
   widths = c(1, 1, 1)
@@ -703,7 +703,7 @@ summary <- data.frame(
   analysis_rank = analysis_rank,
   finite_pairs = sum(is.finite(effects$total_effect)),
   approx_total_fdr_0_05 = sum(effects$approx_total_padj < 0.05, na.rm = TRUE),
-  approx_specific_fdr_0_05 = sum(effects$approx_specific_padj < 0.05, na.rm = TRUE),
+  approx_relative_fdr_0_05 = sum(effects$approx_relative_padj < 0.05, na.rm = TRUE),
   approx_rank_adjusted_total_fdr_0_05 =
     sum(effects$approx_rank_adjusted_total_padj < 0.05, na.rm = TRUE)
 )

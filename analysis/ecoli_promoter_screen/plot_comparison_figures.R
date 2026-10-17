@@ -58,8 +58,8 @@ destress <- destress[destress$compound != "Water", ]
 destress$destress_hit_class <- call_hits(
   destress,
   fdr = 0.05,
-  effect = "specific_effect",
-  padj = "specific_padj_by_reporter"
+  effect = "relative_effect",
+  padj = "relative_padj_by_reporter"
 )$hit
 destress$destress_hit <- destress$destress_hit_class != "Not DE"
 destress$pair_id <- hit_key(destress)
@@ -108,8 +108,8 @@ comparison <- merge(
     "binsfeld_padj", "binsfeld_hit", "binsfeld_direction"
   )],
   destress[, c(
-    "promoter", "compound", "pair_id", "specific_effect", "specific_pvalue",
-    "specific_padj_by_reporter", "destress_hit", "destress_hit_class"
+    "promoter", "compound", "pair_id", "relative_effect", "relative_pvalue",
+    "relative_padj_by_reporter", "destress_hit", "destress_hit_class"
   )],
   by = c("promoter", "compound", "pair_id"),
   all = TRUE,
@@ -135,8 +135,8 @@ utils::write.table(
 
 significant_union <- comparison[comparison$overlap_class != "Neither", c(
   "promoter", "compound", "overlap_class", "mean_z", "binsfeld_pvalue",
-  "binsfeld_padj", "binsfeld_direction", "specific_effect", "specific_pvalue",
-  "specific_padj_by_reporter", "destress_hit_class"
+  "binsfeld_padj", "binsfeld_direction", "relative_effect", "relative_pvalue",
+  "relative_padj_by_reporter", "destress_hit_class"
 )]
 significant_union <- significant_union[order(
   factor(significant_union$overlap_class, levels = c("Both", "Binsfeld only", "DStressR only")),
@@ -225,8 +225,8 @@ pvalue_df <- rbind(
   data.frame(
     method = "DStressR without EV control",
     promoter = destress$promoter,
-    raw_pvalue = destress$specific_pvalue,
-    adjusted_pvalue = destress$specific_padj_by_reporter,
+    raw_pvalue = destress$relative_pvalue,
+    adjusted_pvalue = destress$relative_padj_by_reporter,
     hit = destress$destress_hit,
     stringsAsFactors = FALSE
   )
@@ -303,16 +303,16 @@ effect_df <- rbind(
     stringsAsFactors = FALSE
   ),
   data.frame(
-    method = "DStressR specific effect",
+    method = "DStressR reporter-relative effect",
     promoter = destress$promoter,
-    value = destress$specific_effect,
+    value = destress$relative_effect,
     hit = destress$destress_hit,
     stringsAsFactors = FALSE
   )
 )
 effect_df$method <- factor(effect_df$method, levels = c(
   "Binsfeld mean Z-score",
-  "DStressR specific effect"
+  "DStressR reporter-relative effect"
 ))
 
 effect_hist <- ggplot2$ggplot(effect_df, ggplot2$aes(value)) +
@@ -334,7 +334,7 @@ effect_hist <- ggplot2$ggplot(effect_df, ggplot2$aes(value)) +
   ggplot2$facet_wrap(ggplot2$vars(method), scales = "free_x", ncol = 1) +
   ggplot2$scale_fill_manual(values = c(
     "Binsfeld mean Z-score" = "#2563eb",
-    "DStressR specific effect" = "#dc2626"
+    "DStressR reporter-relative effect" = "#dc2626"
   )) +
   ggplot2$theme_light(base_size = 10) +
   ggplot2$theme(
@@ -350,7 +350,7 @@ effect_hist <- ggplot2$ggplot(effect_df, ggplot2$aes(value)) +
   )
 
 comparison$neglog10_binsfeld <- safe_neglog10(comparison$binsfeld_pvalue)
-comparison$neglog10_destress <- safe_neglog10(comparison$specific_pvalue)
+comparison$neglog10_destress <- safe_neglog10(comparison$relative_pvalue)
 comparison$overlap_class <- factor(
   comparison$overlap_class,
   levels = c("Neither", "Binsfeld only", "DStressR only", "Both")
@@ -358,7 +358,7 @@ comparison$overlap_class <- factor(
 
 scatter_effect <- ggplot2$ggplot(
   comparison,
-  ggplot2$aes(mean_z, specific_effect, color = overlap_class)
+  ggplot2$aes(mean_z, relative_effect, color = overlap_class)
 ) +
   ggplot2$geom_hline(yintercept = 0, color = "#6b7280", linewidth = 0.25) +
   ggplot2$geom_vline(xintercept = 0, color = "#6b7280", linewidth = 0.25) +
@@ -378,7 +378,7 @@ scatter_effect <- ggplot2$ggplot(
   ggplot2$labs(
     title = "Effect comparison across all WT promoter-compound pairs",
     x = "Binsfeld mean Z-score",
-    y = "DStressR specific effect"
+    y = "DStressR reporter-relative effect"
   )
 
 scatter_pvalue <- ggplot2$ggplot(

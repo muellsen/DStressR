@@ -69,7 +69,40 @@ load_destress_package <- function() {
 }
 
 read_tsv_base <- function(path) {
-  read.delim(path, sep = "\t", check.names = FALSE, stringsAsFactors = FALSE)
+  read_analysis_delim(path, sep = "\t", check.names = FALSE, stringsAsFactors = FALSE)
+}
+
+# Normalize preserved analysis caches without changing the stored originals.
+normalize_analysis_effect_names <- function(x) {
+  rename <- function(nm) {
+    nm <- gsub("specific_", "relative_", nm, fixed = TRUE)
+    sub("_specific$", "_relative", nm)
+  }
+  if (is.data.frame(x)) {
+    names(x) <- rename(names(x))
+    for (nm in names(x)[vapply(x, is.character, logical(1))]) {
+      x[[nm]] <- normalize_analysis_effect_names(x[[nm]])
+    }
+  } else if (is.list(x) && (!is.object(x) ||
+             inherits(x, c("destress_fit", "destress_summary_fit")))) {
+    x[] <- lapply(x, normalize_analysis_effect_names)
+    if (!is.null(names(x))) names(x) <- rename(names(x))
+  }
+  if (is.character(x)) {
+    x[x == "specific"] <- "relative"
+    x <- gsub("Specific effect", "Reporter-relative effect", x, fixed = TRUE)
+    x <- gsub("specific effect", "reporter-relative effect", x, fixed = TRUE)
+  }
+  if (is.atomic(x) && !is.null(names(x))) names(x) <- rename(names(x))
+  x
+}
+
+read_analysis_rds <- function(path, ...) {
+  normalize_analysis_effect_names(readRDS(path, ...))
+}
+
+read_analysis_delim <- function(...) {
+  normalize_analysis_effect_names(utils::read.delim(...))
 }
 
 load_binsfeld_paper_data <- function(envir = parent.frame()) {

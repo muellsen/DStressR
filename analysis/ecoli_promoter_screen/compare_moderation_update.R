@@ -46,8 +46,8 @@ fit_current <- function(use_ev_control) {
   calls <- call_hits(
     res,
     fdr = 0.05,
-    effect = "specific_effect",
-    padj = "specific_padj_by_reporter"
+    effect = "relative_effect",
+    padj = "relative_padj_by_reporter"
   )
   res$hit <- calls$hit != "Not DE"
   res$hit_class <- calls$hit
@@ -58,7 +58,7 @@ fit_current <- function(use_ev_control) {
 current_no_ev <- fit_current(FALSE)
 current_ev <- fit_current(TRUE)
 
-old_comparison <- read.delim(
+old_comparison <- read_analysis_delim(
   analysis_path(
     "analysis", "outputs", "binsfeld_evc_calibrated",
     "evc_huber_comparison_to_binsfeld_and_default.tsv"
@@ -70,7 +70,7 @@ old_no_ev_ids <- old_comparison$pair_id[old_comparison$estimated_exponent_hit]
 old_ev_ids <- old_comparison$pair_id[old_comparison$evc_huber_hit]
 binsfeld_ids <- old_comparison$pair_id[old_comparison$binsfeld_hit]
 
-old_ev <- read.delim(
+old_ev <- read_analysis_delim(
   analysis_path(
     "analysis", "outputs", "binsfeld_evc_calibrated",
     "evc_huber_significant_pairs.tsv"
@@ -90,9 +90,9 @@ comparison_table <- function(current, old_ids, label) {
       status = character(),
       promoter = character(),
       compound = character(),
-      specific_effect = numeric(),
-      specific_pvalue = numeric(),
-      specific_padj_by_reporter = numeric(),
+      relative_effect = numeric(),
+      relative_pvalue = numeric(),
+      relative_padj_by_reporter = numeric(),
       hit_class = character(),
       stringsAsFactors = FALSE
     ))
@@ -100,8 +100,8 @@ comparison_table <- function(current, old_ids, label) {
   changed$status <- ifelse(changed$pair_id %in% gained, "Gained", "Lost")
   changed$workflow <- label
   changed[, c(
-    "workflow", "status", "promoter", "compound", "specific_effect",
-    "specific_pvalue", "specific_padj_by_reporter", "hit_class"
+    "workflow", "status", "promoter", "compound", "relative_effect",
+    "relative_pvalue", "relative_padj_by_reporter", "hit_class"
   ), drop = FALSE]
 }
 
@@ -132,7 +132,7 @@ summary <- data.frame(
 pvalue_summary <- function(current, old_effect_col, old_p_col, old_q_col, label) {
   old <- old_comparison[, c("pair_id", old_effect_col, old_p_col, old_q_col), drop = FALSE]
   names(old) <- c("pair_id", "old_effect", "old_pvalue", "old_qvalue")
-  cur <- current[, c("pair_id", "specific_effect", "specific_pvalue", "specific_padj_by_reporter"), drop = FALSE]
+  cur <- current[, c("pair_id", "relative_effect", "relative_pvalue", "relative_padj_by_reporter"), drop = FALSE]
   names(cur) <- c("pair_id", "current_effect", "current_pvalue", "current_qvalue")
   merged <- merge(old, cur, by = "pair_id", all = FALSE, sort = FALSE)
   data.frame(

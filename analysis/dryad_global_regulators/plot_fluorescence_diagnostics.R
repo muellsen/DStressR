@@ -18,7 +18,7 @@ if (!file.exists(res_file)) {
 }
 
 res <- read_tsv_base(res_file)
-required <- c("promoter", "compound", "total_effect", "specific_effect", "specific_pvalue")
+required <- c("promoter", "compound", "total_effect", "relative_effect", "relative_pvalue")
 missing_cols <- setdiff(required, names(res))
 if (length(missing_cols) > 0) {
   stop("Missing required columns: ", paste(missing_cols, collapse = ", "), call. = FALSE)
@@ -52,7 +52,7 @@ compound_diag <- perturbation_diagnostics(
 reporter_diag <- perturbation_diagnostics(
   res,
   mean_effect = "total_effect",
-  variance_effect = "specific_effect",
+  variance_effect = "relative_effect",
   reporter = "compound",
   perturbation = "promoter",
   perturbation_label = "promoter",
@@ -93,7 +93,7 @@ compound_plot <- plot_mean_variance_diagnostic(
 reporter_plot <- plot_mean_variance_diagnostic(
   diagnostics = reporter_diag,
   mean_effect = "total_effect",
-  variance_effect = "specific_effect",
+  variance_effect = "relative_effect",
   label_by = "variance",
   top_n = 6,
   add_trend = TRUE,
@@ -101,13 +101,13 @@ reporter_plot <- plot_mean_variance_diagnostic(
   title = NULL,
   subtitle = NULL,
   xlab = expression("Rank of " * abs(hat(Delta * bar(y))[a]^"tot")),
-  ylab = expression("Variance across perturbations of " * hat(Delta * y)[a * "\u00b7"]^"spec"),
+  ylab = expression("Variance across perturbations of " * hat(Delta * y)[a * "\u00b7"]^"rel"),
   legend_position = "right"
 )
 
 p_hist <- plot_pvalue_histogram(
   res,
-  pvalue = "specific_pvalue",
+  pvalue = "relative_pvalue",
   reporter = "promoter",
   by = "all",
   bins = 20,
@@ -119,14 +119,14 @@ p_hist <- plot_pvalue_histogram(
 
 p_volcano <- plot_volcano(
   res,
-  effect = "specific_effect",
-  pvalue = "specific_pvalue",
-  padj = "specific_padj_by_reporter",
+  effect = "relative_effect",
+  pvalue = "relative_pvalue",
+  padj = "relative_padj_by_reporter",
   reporter = "promoter",
   perturbation = "compound",
   title = NULL,
   subtitle = NULL,
-  xlab = expression(hat(Delta * y)[aj]^"spec"),
+  xlab = expression(hat(Delta * y)[aj]^"rel"),
   ylab = expression(-log[10] * " raw p-value"),
   top_n = 8,
   top_reporters = 12

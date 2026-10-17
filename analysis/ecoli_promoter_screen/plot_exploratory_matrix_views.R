@@ -13,7 +13,7 @@ artifact <- read_paper_artifact(file.path(out_dir, "binsfeld_effect_paper.rds"))
 res <- artifact$results$with_EVC
 res$promoter <- res$reporter
 res$compound <- res$perturbation
-shared_color_limit <- max(abs(as.numeric(res$specific_effect)), na.rm = TRUE)
+shared_color_limit <- max(abs(as.numeric(res$relative_effect)), na.rm = TRUE)
 style_matrix_plot <- function(plot) {
   plot +
     ggplot2$theme(
@@ -44,7 +44,7 @@ style_matrix_plot <- function(plot) {
 plots <- list(
   raw_effect_matrix = plot_response_heatmap(
     res,
-    value = "specific_effect",
+    value = "relative_effect",
     reporter = "promoter",
     perturbation = "compound",
     show_perturbation_ids = FALSE,
@@ -57,11 +57,11 @@ plots <- list(
     subtitle = "",
     xlab = "Compounds",
     ylab = NULL,
-    legend_title = "Specific effect"
+    legend_title = "Reporter-relative effect"
   ),
   clustered_effect_matrix = plot_response_heatmap(
     res,
-    value = "specific_effect",
+    value = "relative_effect",
     reporter = "promoter",
     perturbation = "compound",
     show_perturbation_ids = FALSE,
@@ -74,12 +74,12 @@ plots <- list(
     subtitle = "",
     xlab = "Compounds",
     ylab = NULL,
-    legend_title = "Specific effect"
+    legend_title = "Reporter-relative effect"
   ),
   significant_hit_matrix = plot_hit_heatmap(
     res,
-    effect = "specific_effect",
-    padj = "specific_padj_by_reporter",
+    effect = "relative_effect",
+    padj = "relative_padj_by_reporter",
     reporter = "promoter",
     perturbation = "compound",
     show_perturbation_ids = FALSE,
@@ -92,12 +92,12 @@ plots <- list(
     subtitle = "",
     xlab = "Compounds",
     ylab = NULL,
-    legend_title = "Specific effect"
+    legend_title = "Reporter-relative effect"
   ),
   clustered_significant_hit_matrix = plot_hit_heatmap(
     res,
-    effect = "specific_effect",
-    padj = "specific_padj_by_reporter",
+    effect = "relative_effect",
+    padj = "relative_padj_by_reporter",
     reporter = "promoter",
     perturbation = "compound",
     show_perturbation_ids = FALSE,
@@ -110,14 +110,14 @@ plots <- list(
     subtitle = "",
     xlab = "Compounds",
     ylab = NULL,
-    legend_title = "Specific effect"
+    legend_title = "Reporter-relative effect"
   )
 )
 plots <- lapply(plots, style_matrix_plot)
 
 for (name in names(plots)) {
   ggplot2$ggsave(
-    file.path(out_dir, paste0("binsfeld_evc_specific_", name, ".png")),
+    file.path(out_dir, paste0("binsfeld_evc_relative_", name, ".png")),
     plots[[name]],
     width = 10.4,
     height = 4.4,
@@ -125,7 +125,7 @@ for (name in names(plots)) {
     bg = "white"
   )
   ggplot2$ggsave(
-    file.path(out_dir, paste0("binsfeld_evc_specific_", name, ".pdf")),
+    file.path(out_dir, paste0("binsfeld_evc_relative_", name, ".pdf")),
     plots[[name]],
     width = 10.4,
     height = 4.4

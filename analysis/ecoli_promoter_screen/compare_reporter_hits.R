@@ -38,8 +38,8 @@ destress_results <- results(fit)
 destress_hits <- call_hits(
   destress_results,
   fdr = 0.05,
-  effect = "specific_effect",
-  padj = "specific_padj_by_reporter"
+  effect = "relative_effect",
+  padj = "relative_padj_by_reporter"
 )
 destress_hits <- destress_hits[destress_hits$hit != "Not DE", ]
 
@@ -84,7 +84,7 @@ destress_key <- hit_key(destress_hits)
 
 comparison <- merge(
   author_hits[, c("promoter", "compound", "mean_z", "padj")],
-  destress_hits[, c("promoter", "compound", "specific_effect", "specific_padj_by_reporter", "hit")],
+  destress_hits[, c("promoter", "compound", "relative_effect", "relative_padj_by_reporter", "hit")],
   by = c("promoter", "compound"),
   all = TRUE
 )

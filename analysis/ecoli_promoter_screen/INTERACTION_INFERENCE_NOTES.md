@@ -13,18 +13,18 @@ The saved result artifact supplies the raw contrasts needed for the existing
 paper analysis. The preparer validates the earlier ordinary p-values before
 reconstructing moderated total tests. Future analysis runs also save fit objects.
 
-The pre-change specific-effect outputs and manuscript are preserved locally in
+The pre-change reporter-relative-effect outputs and manuscript are preserved locally in
 `analysis/outputs/inference_audit_2026-10-16/pre_interaction_total_effects.tar.gz`.
 
-## Specific-Effect Covariance
+## Reporter-relative-Effect Covariance
 
 The full-interaction path centers each treatment-versus-reference design
 contrast across the selected reporters, then evaluates its variance using the
 full coefficient covariance. The raw centered variance is stored as
-`specific_var` and moderated once with the common model residual degrees of
+`relative_var` and moderated once with the common model residual degrees of
 freedom. This replaces the older reuse of uncentered total-effect uncertainty.
 Tests compare the result with explicitly constructed joint contrasts in an
 unbalanced design and cover moderation, rank adjustment, and a single-reporter
 selection. Supplementary Note F uses total effects only and is unchanged by
-this specific-effect correction. Earlier archived specific-effect outputs must
+this reporter-relative-effect correction. Earlier archived reporter-relative-effect outputs must
 be regenerated before reuse.

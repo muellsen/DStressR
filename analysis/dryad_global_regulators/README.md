@@ -273,7 +273,7 @@ The main outputs are:
 - `dryad_weak_stress_windows_calibrated_alpha_pair_results.tsv`
 - `dryad_weak_stress_windows_calibrated_alpha_significant_pairs.tsv`
 - `dryad_weak_stress_windows_calibrated_alpha_total_effect_heatmap.{png,pdf}`
-- `dryad_weak_stress_windows_calibrated_alpha_specific_effect_heatmap.{png,pdf}`
+- `dryad_weak_stress_windows_calibrated_alpha_relative_effect_heatmap.{png,pdf}`
 - `dryad_weak_stress_windows_calibrated_alpha_pvalue_histogram_combined.{png,pdf}`
 - `dryad_weak_stress_windows_calibrated_alpha_volcano.{png,pdf}`
 - `dryad_weak_stress_windows_alpha1_vs_calibrated_alpha_comparison.tsv`

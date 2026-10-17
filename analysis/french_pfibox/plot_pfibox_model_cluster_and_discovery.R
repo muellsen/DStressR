@@ -23,21 +23,23 @@ ggplot2 <- asNamespace("ggplot2")
 gridExtra <- asNamespace("gridExtra")
 scales <- asNamespace("scales")
 
-in_dir <- analysis_output_dir("french_pfibox", "promoter_activity_analysis")
+in_dir <- Sys.getenv("PFIBOX_ANALYSIS_DIR", analysis_output_dir("french_pfibox", "promoter_activity_analysis"))
 out_dir <- Sys.getenv("PFIBOX_FIGURE_OUTPUT_DIR", unset = in_dir)
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
-target <- match.arg(Sys.getenv("PFIBOX_DISCOVERY_TARGET", unset = "specific"),
-                    c("specific", "total"))
+target <- match.arg(Sys.getenv("PFIBOX_DISCOVERY_TARGET", unset = "relative"),
+                    c("relative", "total"))
 run_tag <- Sys.getenv("PFIBOX_RUN_TAG", "reporters2000_perturbations100_T2-18h_treatment_replicate_scalable")
 source(file.path("analysis", "_paper_artifacts.R"))
 suffix <- Sys.getenv("PFIBOX_CLUSTER_OUTPUT_SUFFIX", "total_effect_ward")
 suffix <- if (nzchar(suffix)) paste0("_", suffix) else ""
 artifact <- read_paper_artifact(file.path(in_dir, paste0("pfibox_paper_diagnostics_", run_tag, suffix, ".rds")))
 res <- artifact$results$default
+adjustment_scope <- match.arg(Sys.getenv("PFIBOX_ADJUSTMENT_SCOPE", "by_reporter"),
+  c("by_reporter", "global"))
 metadata <- artifact$annotations$metadata
 required <- c(
   "reporter", "perturbation", "total_effect", paste0(target, "_effect"),
-  paste0(target, "_pvalue"), paste0(target, "_padj_by_reporter")
+  paste0(target, "_pvalue"), paste0(target, "_padj_", adjustment_scope)
 )
 missing <- setdiff(required, names(res))
 if (length(missing)) {
@@ -180,14 +182,17 @@ cluster_figure <- gridExtra$arrangeGrob(
 )
 
 cluster_base <- file.path(out_dir, paste0("pfibox_pa_model_clustered_total_effect_", run_tag, cluster_output_suffix))
+standalone_exports <- !nzchar(Sys.getenv("PFIBOX_TIMECOURSE_PANEL_RDS", ""))
+if (standalone_exports) {
 ggplot2$ggsave(paste0(cluster_base, ".png"), cluster_figure, width = 10.4, height = 9.2, dpi = 300, bg = "white")
 ggplot2$ggsave(paste0(cluster_base, ".pdf"), cluster_figure, width = 10.4, height = 9.2, bg = "white")
+}
 
 reporter_clusters <- artifact$annotations$reporter_clusters
 perturbation_clusters <- artifact$annotations$perturbation_clusters
 discovery <- res
 discovery$inference_pvalue <- as.numeric(discovery[[paste0(target, "_pvalue")]])
-discovery$inference_padj <- as.numeric(discovery[[paste0(target, "_padj_by_reporter")]])
+discovery$inference_padj <- as.numeric(discovery[[paste0(target, "_padj_", adjustment_scope)]])
 discovery$inference_effect <- as.numeric(discovery[[paste0(target, "_effect")]])
 discovery$inference_target <- target
 discovery$hit <- is.finite(discovery$inference_padj) & discovery$inference_padj < fdr
@@ -219,7 +224,16 @@ top_labels <- top_labels[
   ,
   drop = FALSE
 ]
-top_labels <- utils::head(top_labels, as.integer(Sys.getenv("PFIBOX_VOLCANO_LABELS", unset = "18")))
+label_pairs_file <- Sys.getenv("PFIBOX_VOLCANO_LABEL_PAIRS", "")
+if (nzchar(label_pairs_file)) {
+  requested <- read.delim(label_pairs_file, check.names = FALSE)
+  requested_key <- paste(requested$reporter, requested$perturbation, sep = "::")
+  available_key <- paste(top_labels$reporter, top_labels$perturbation, sep = "::")
+  stopifnot(!anyDuplicated(requested_key), all(requested_key %in% available_key))
+  top_labels <- top_labels[match(requested_key, available_key), ]
+} else {
+  top_labels <- utils::head(top_labels, as.integer(Sys.getenv("PFIBOX_VOLCANO_LABELS", unset = "18")))
+}
 top_labels$label_display <- ifelse(
   top_labels$volcano_capped,
   paste0(top_labels$label, "\n", sprintf("%.1f", top_labels$neglog10_pvalue)),
@@ -343,7 +357,32 @@ p_volcano <- ggplot2$ggplot(
     y = expression(-log[10] * " raw p-value")
   )
 
-if (nrow(top_labels) > 0 && requireNamespace("ggrepel", quietly = TRUE)) {
+if (nrow(top_labels) > 0 && Sys.getenv("PFIBOX_VOLCANO_LABEL_REGION") == "right") {
+  top_labels <- top_labels[order(top_labels$inference_effect), ]
+  lane <- rep(1:2, each = ceiling(nrow(top_labels) / 2))[seq_len(nrow(top_labels))]
+  top_labels$label_x <- c(-.30, .35)[lane] * xmax
+  top_labels$label_y <- volcano_y_cap - 3 - (ave(seq_len(nrow(top_labels)), lane,
+    FUN = seq_along) - 1) * 2.8
+  p_volcano <- p_volcano +
+    ggplot2$geom_segment(data = top_labels,
+      ggplot2$aes(xend = label_x, yend = label_y), color = "#9ca3af",
+      linewidth = .15, alpha = .65) +
+    ggplot2$geom_text(data = top_labels,
+      ggplot2$aes(x = label_x, y = label_y, label = label_display, color = drug),
+      size = 2.05, hjust = 0, lineheight = .95, show.legend = FALSE)
+} else if (nrow(top_labels) > 0 && Sys.getenv("PFIBOX_VOLCANO_LABEL_REGION") == "near") {
+  outer_negative <- top_labels$inference_effect < -.35 * xmax
+  top_labels$label_x <- top_labels$inference_effect + ifelse(
+    top_labels$inference_effect > 0 | outer_negative, .04 * xmax, -.03 * xmax)
+  top_labels$label_y <- pmin(top_labels$neglog10_pvalue_plot + 3, volcano_y_cap - 1)
+  top_labels$label_hjust <- ifelse(top_labels$inference_effect > 0 | outer_negative, 0, 1)
+  p_volcano <- p_volcano +
+    ggplot2$geom_segment(data = top_labels,
+      ggplot2$aes(xend = label_x, yend = label_y), color = "#555555", linewidth = .22) +
+    ggplot2$geom_text(data = top_labels,
+      ggplot2$aes(x = label_x, y = label_y, label = label_display, hjust = label_hjust),
+      color = "#171717", size = 3.5, show.legend = FALSE)
+} else if (nrow(top_labels) > 0 && requireNamespace("ggrepel", quietly = TRUE)) {
   p_volcano <- p_volcano +
     ggrepel::geom_text_repel(
       data = top_labels,
@@ -375,6 +414,12 @@ if (nrow(top_labels) > 0 && requireNamespace("ggrepel", quietly = TRUE)) {
     )
 }
 
+if (nzchar(label_pairs_file)) {
+  p_volcano <- p_volcano + ggplot2$geom_point(data = top_labels,
+    shape = 21, fill = NA, color = "#222222", size = 2.5, stroke = .45,
+    show.legend = FALSE)
+}
+
 discovery_figure <- gridExtra$arrangeGrob(
   panel_label("a", p_hist),
   panel_label("b", p_volcano),
@@ -383,8 +428,17 @@ discovery_figure <- gridExtra$arrangeGrob(
 )
 
 discovery_base <- file.path(out_dir, paste0("pfibox_pa_binsfeld_style_discovery_", run_tag))
-ggplot2$ggsave(paste0(discovery_base, ".png"), discovery_figure, width = 9.4, height = 8.4, dpi = 300, bg = "white")
-ggplot2$ggsave(paste0(discovery_base, ".pdf"), discovery_figure, width = 9.4, height = 8.4, bg = "white")
+if (nzchar(label_pairs_file)) {
+  volcano_only <- p_volcano + ggplot2$theme(strip.text = ggplot2$element_blank(),
+    strip.background = ggplot2$element_blank())
+  volcano_grob <- ggplot2$ggplotGrob(volcano_only)
+  ggplot2$ggsave(file.path(out_dir, "volcano_selected_pairs.png"),
+    volcano_grob, width = 12, height = 7, dpi = 250, bg = "white")
+}
+if (standalone_exports) {
+  ggplot2$ggsave(paste0(discovery_base, ".png"), discovery_figure, width = 9.4, height = 8.4, dpi = 300, bg = "white")
+  ggplot2$ggsave(paste0(discovery_base, ".pdf"), discovery_figure, width = 9.4, height = 8.4, bg = "white")
+}
 
 utils::write.table(
   top_labels[order(top_labels$inference_pvalue), ],
@@ -394,6 +448,8 @@ utils::write.table(
 
 message("Using PFIbox DStressR run tag: ", run_tag)
 message("Clustered matrix: ", nrow(mat), " reporters x ", ncol(mat), " treatments")
-message("Within-reporter FDR < ", fdr, " hits: ", sum(discovery$hit, na.rm = TRUE))
-message("Wrote clustered figure: ", paste0(cluster_base, ".png"))
-message("Wrote discovery figure: ", paste0(discovery_base, ".png"))
+message(adjustment_scope, " BH FDR < ", fdr, " hits: ", sum(discovery$hit, na.rm = TRUE))
+if (standalone_exports) {
+  message("Wrote clustered figure: ", paste0(cluster_base, ".png"))
+  message("Wrote discovery figure: ", paste0(discovery_base, ".png"))
+}

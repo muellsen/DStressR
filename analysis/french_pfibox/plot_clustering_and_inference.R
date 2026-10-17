@@ -12,24 +12,24 @@ if (!requireNamespace("ggplot2", quietly = TRUE)) {
   stop("Package `ggplot2` is required for the composite PFIbox figure.", call. = FALSE)
 }
 
-out_dir <- file.path(
-  "analysis", "outputs", "french_pfibox", "promoter_activity_analysis"
-)
+out_dir <- Sys.getenv("PFIBOX_ANALYSIS_DIR", file.path(
+  "analysis", "outputs", "french_pfibox", "promoter_activity_analysis"))
 target_arg <- grep("^--target=", commandArgs(trailingOnly = TRUE), value = TRUE)
-target <- if (length(target_arg)) sub("^--target=", "", target_arg) else "specific"
-if (length(target) != 1L || !target %in% c("specific", "total")) {
-  stop("Use --target=specific or --target=total.", call. = FALSE)
+target <- if (length(target_arg)) sub("^--target=", "", target_arg) else "relative"
+if (length(target) != 1L || !target %in% c("relative", "total")) {
+  stop("Use --target=relative or --target=total.", call. = FALSE)
 }
 if (target == "total") out_dir <- file.path(out_dir, "total_effect_discovery")
+out_dir <- Sys.getenv("PFIBOX_FIGURE_OUTPUT_DIR", out_dir)
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 
 Sys.setenv(
   PFIBOX_DISCOVERY_TARGET = target,
   PFIBOX_FIGURE_OUTPUT_DIR = out_dir,
   PFIBOX_CLUSTER_TOP_REPORTERS = "2000",
-  PFIBOX_CLUSTER_LINKAGE = "ward.D2",
-  PFIBOX_CLUSTER_DISTANCE = "euclidean",
-  PFIBOX_CLUSTER_OUTPUT_SUFFIX = "total_effect_ward",
+  PFIBOX_CLUSTER_LINKAGE = Sys.getenv("PFIBOX_CLUSTER_LINKAGE", "ward.D2"),
+  PFIBOX_CLUSTER_DISTANCE = Sys.getenv("PFIBOX_CLUSTER_DISTANCE", "euclidean"),
+  PFIBOX_CLUSTER_OUTPUT_SUFFIX = Sys.getenv("PFIBOX_CLUSTER_OUTPUT_SUFFIX", "total_effect_ward"),
   PFIBOX_VOLCANO_LABELS = "18"
 )
 
@@ -73,6 +73,8 @@ reporter_map <- alluvial_env$reporter_cluster_order[, c("reporter_cluster", "dis
 names(reporter_map) <- c("raw_cluster", "display_cluster")
 reporter_map$raw_cluster <- as.character(reporter_map$raw_cluster)
 reporter_map$display_cluster <- as.character(reporter_map$display_cluster)
+stopifnot(!anyDuplicated(reporter_map$raw_cluster),
+          !anyDuplicated(reporter_map$display_cluster))
 
 row_df <- data.frame(
   reporter = cluster_env$row_order,
@@ -82,6 +84,7 @@ row_df <- data.frame(
 )
 row_df$y <- length(cluster_env$row_order) - row_df$row_top + 1
 row_df <- merge(row_df, reporter_map, by = "raw_cluster", all.x = TRUE, sort = FALSE)
+stopifnot(!anyDuplicated(row_df$reporter), !anyNA(row_df$display_cluster))
 row_df$display_cluster <- factor(
   row_df$display_cluster,
   levels = alluvial_env$reporter_cluster_order$display_cluster
@@ -151,7 +154,7 @@ p_cluster <- ggplot2::ggplot(plot_long, ggplot2::aes(col_index, row_index, fill 
     color = "white"
   ) +
   ggplot2::geom_hline(
-    yintercept = cluster_blocks$ymin[-1],
+    yintercept = head(cluster_blocks$ymin, -1),
     color = "#374151",
     linewidth = 0.20,
     alpha = 0.62
@@ -203,10 +206,36 @@ p_cluster <- ggplot2::ggplot(plot_long, ggplot2::aes(col_index, row_index, fill 
     )
   )
 
+marked_pairs_file <- Sys.getenv("PFIBOX_HEATMAP_MARK_PAIRS", "")
+if (nzchar(marked_pairs_file)) {
+  marked <- read.delim(marked_pairs_file, check.names = FALSE)
+  keys <- paste(plot_long$reporter, plot_long$perturbation, sep = "::")
+  requested_keys <- paste(marked$reporter, marked$perturbation, sep = "::")
+  stopifnot(!anyDuplicated(keys), all(requested_keys %in% keys))
+  points <- plot_long[match(requested_keys, keys), ]
+  points$label <- paste(points$reporter, points$perturbation, sep = "\n")
+  p_cluster <- p_cluster + ggplot2::geom_point(data = points,
+    shape = 21, color = "#111111", fill = NA, size = 3, stroke = .6,
+    show.legend = FALSE)
+  if (requireNamespace("ggrepel", quietly = TRUE)) {
+    p_cluster <- p_cluster + ggrepel::geom_label_repel(data = points,
+      ggplot2::aes(label = label), fill = "white", color = "#111111",
+      size = 2.5, label.size = .15, label.padding = grid::unit(.12, "lines"),
+      box.padding = .4, point.padding = .3, min.segment.length = 0,
+      segment.color = "#222222", segment.size = .25,
+      max.overlaps = Inf, seed = 621, max.time = 3, show.legend = FALSE)
+  }
+  utils::write.table(points[, c("reporter", "perturbation", "col_index", "row_index", "effect")],
+    file.path(out_dir, "selected_heatmap_coordinates.tsv"), sep = "\t",
+    quote = FALSE, row.names = FALSE)
+}
+
 p_alluvial <- alluvial_env$p +
   ggplot2::theme(
     plot.margin = ggplot2::margin(-2, 2, 44, 2)
   )
+timecourse_panel <- Sys.getenv("PFIBOX_TIMECOURSE_PANEL_RDS", "")
+if (nzchar(timecourse_panel)) p_alluvial <- readRDS(timecourse_panel)
 
 p_hist <- cluster_env$p_hist +
   ggplot2::theme(
@@ -247,7 +276,16 @@ png_path <- file.path(out_dir, "pfibox_clustering_and_inference.png")
 pdf_path <- file.path(out_dir, "pfibox_clustering_and_inference.pdf")
 
 ggplot2::ggsave(png_path, clustering_inference_figure, width = 13.6, height = 11.2, dpi = 320, bg = "white")
-ggplot2::ggsave(pdf_path, clustering_inference_figure, width = 13.6, height = 11.2, device = grDevices::pdf, bg = "white")
+if (identical(Sys.getenv("PFIBOX_RASTER_PDF"), "1")) {
+  # Preserve the verified mathematical glyphs on hosts without working Cairo.
+  grDevices::pdf(pdf_path, width = 13.6, height = 11.2)
+  grid::grid.raster(png::readPNG(png_path))
+  grDevices::dev.off()
+} else {
+  ggplot2::ggsave(pdf_path, clustering_inference_figure, width = 13.6, height = 11.2,
+    device = grDevices::pdf, bg = "white")
+}
+saveRDS(clustering_inference_figure, file.path(out_dir, "pfibox_clustering_and_inference_grob.rds"))
 
 message("Wrote composite Figure 6:")
 message("  ", png_path)

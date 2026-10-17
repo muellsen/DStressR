@@ -9,9 +9,8 @@ suppressPackageStartupMessages({
   library(readr)
 })
 
-in_dir <- file.path(
-  "analysis", "outputs", "french_pfibox", "promoter_activity_analysis"
-)
+in_dir <- Sys.getenv("PFIBOX_ANALYSIS_DIR", file.path(
+  "analysis", "outputs", "french_pfibox", "promoter_activity_analysis"))
 out_dir <- Sys.getenv("PFIBOX_FIGURE_OUTPUT_DIR", unset = in_dir)
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 
@@ -280,12 +279,12 @@ png_path <- file.path(out_dir, "pfibox_french_to_destress_cluster_alluvial.png")
 pdf_path <- file.path(out_dir, "pfibox_french_to_destress_cluster_alluvial.pdf")
 tsv_path <- file.path(out_dir, "pfibox_french_to_destress_cluster_alluvial_counts.tsv")
 
-ggsave(png_path, p, width = 8.2, height = 7.2, dpi = 320)
-ggsave(pdf_path, p, width = 8.2, height = 7.2, device = grDevices::pdf)
+if (!nzchar(Sys.getenv("PFIBOX_TIMECOURSE_PANEL_RDS", ""))) {
+  ggsave(png_path, p, width = 8.2, height = 7.2, dpi = 320)
+  ggsave(pdf_path, p, width = 8.2, height = 7.2, device = grDevices::pdf)
+  message("Wrote alluvial plot: ", png_path)
+}
 write_tsv(flow_counts, tsv_path)
 
-message("Wrote alluvial plot:")
-message("  ", png_path)
-message("  ", pdf_path)
 message("Wrote flow counts:")
 message("  ", tsv_path)

@@ -52,18 +52,18 @@ moderated_fit <- fit_pair_results(empirical_bayes = TRUE)
 raw <- raw_fit$results
 moderated <- moderated_fit$results
 residual_df <- min(raw_fit$fit$reporter_effects$residual_df, na.rm = TRUE)
-prior <- estimate_eb_prior_variance(raw$specific_se^2, residual_df)
+prior <- estimate_eb_prior_variance(raw$relative_se^2, residual_df)
 
 diagnostics <- data.frame(
   workflow = "DStressR Campylobacter workflow",
   promoter = raw$promoter,
   compound = raw$compound,
   response_contrast = raw$total_effect,
-  effect = raw$specific_effect,
-  raw_variance = raw$specific_se^2,
-  moderated_variance = moderated$specific_se^2,
-  raw_pvalue = raw$specific_pvalue,
-  moderated_pvalue = moderated$specific_pvalue,
+  effect = raw$relative_effect,
+  raw_variance = raw$relative_se^2,
+  moderated_variance = moderated$relative_se^2,
+  raw_pvalue = raw$relative_pvalue,
+  moderated_pvalue = moderated$relative_pvalue,
   residual_df = residual_df,
   diagnostic_prior_variance = prior$var,
   diagnostic_prior_df = prior$df,
@@ -117,10 +117,10 @@ sorted_variance_plot <- ggplot2$ggplot(
     legend.position = "top"
   ) +
   ggplot2$labs(
-    title = "Raw and moderated specific-effect variances in the Campylobacter screen",
+    title = "Raw and moderated reporter-relative-effect variances in the Campylobacter screen",
     subtitle = "Promoter-compound pairs are sorted from high to low raw variance",
     x = "Promoter-compound pair index, sorted by raw variance",
-    y = "Specific-effect variance (log10 scale)",
+    y = "Reporter-relative effect variance (log10 scale)",
     color = NULL
   )
 
@@ -166,7 +166,7 @@ contrast_variance_plot <- ggplot2$ggplot(
     title = "Response-contrast variance diagnostic for the Campylobacter screen",
     subtitle = "Black open circles: raw pairwise variance; red: contrast-variance trend; blue: moderated variance",
     x = "Estimated promoter-compound response contrast",
-    y = "Specific-effect variance (log10 scale)"
+    y = "Reporter-relative effect variance (log10 scale)"
   )
 
 ggplot2$ggsave(

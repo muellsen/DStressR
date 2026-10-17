@@ -197,8 +197,8 @@ res <- results(fit)
 hit_table <- call_hits(
   res,
   fdr = 0.05,
-  effect = "specific_effect",
-  padj = "specific_padj_by_reporter"
+  effect = "relative_effect",
+  padj = "relative_padj_by_reporter"
 )
 res$hit_class <- hit_table$hit
 res$hit <- res$hit_class != "Not DE"
@@ -254,7 +254,7 @@ utils::write.table(
   row.names = FALSE
 )
 
-p_hist <- ggplot2::ggplot(res, ggplot2::aes(x = specific_pvalue)) +
+p_hist <- ggplot2::ggplot(res, ggplot2::aes(x = relative_pvalue)) +
   ggplot2::geom_histogram(bins = 30, fill = "#009E73", color = "white", linewidth = 0.2) +
   ggplot2::theme_light(base_size = 10) +
   ggplot2::labs(
@@ -267,8 +267,8 @@ ggplot2::ggsave(file.path(out_dir, "dryad_growth_transition_alpha1_pvalue_histog
 
 p_volcano <- plot_volcano(
   res,
-  effect = "specific_effect",
-  padj = "specific_padj_by_reporter",
+  effect = "relative_effect",
+  padj = "relative_padj_by_reporter",
   title = "Dryad growth-transition reporters: DStressR volcano with alpha = 1",
   label_by = "pair",
   top_n = 15,
@@ -280,11 +280,11 @@ ggplot2::ggsave(file.path(out_dir, "dryad_growth_transition_alpha1_volcano.pdf")
 plot_transition_heatmap <- function(tab) {
   d <- tab
   d$compound <- factor(d$compound, levels = window_definitions$compound[-1])
-  reporter_order <- stats::aggregate(abs(d$specific_effect), by = list(promoter = d$promoter), FUN = max)
+  reporter_order <- stats::aggregate(abs(d$relative_effect), by = list(promoter = d$promoter), FUN = max)
   reporter_order <- reporter_order[order(reporter_order$x), "promoter"]
   d$promoter <- factor(d$promoter, levels = reporter_order)
-  limit <- stats::quantile(abs(d$specific_effect), 0.98, na.rm = TRUE)
-  ggplot2::ggplot(d, ggplot2::aes(compound, promoter, fill = pmax(pmin(specific_effect, limit), -limit))) +
+  limit <- stats::quantile(abs(d$relative_effect), 0.98, na.rm = TRUE)
+  ggplot2::ggplot(d, ggplot2::aes(compound, promoter, fill = pmax(pmin(relative_effect, limit), -limit))) +
     ggplot2::geom_tile(color = "white", linewidth = 0.25) +
     ggplot2::scale_fill_gradient2(
       low = "#2166AC",
@@ -303,7 +303,7 @@ plot_transition_heatmap <- function(tab) {
       title = "Dryad growth-transition reporters: DStressR effects with alpha = 1",
       x = "Growth-phase window",
       y = "Reporter",
-      fill = "Specific effect"
+      fill = "Reporter-relative effect"
     )
 }
 p_heatmap <- plot_transition_heatmap(res)

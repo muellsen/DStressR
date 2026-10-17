@@ -69,12 +69,12 @@ export_rank_results <- function(rank) {
   pairs <- data.frame(
     promoter = res$promoter,
     compound = res$compound,
-    effect = res$specific_effect,
+    effect = res$relative_effect,
     low_rank_effect = res$low_rank_effect,
     global_effect = res$global_effect,
-    pvalue = res$specific_pvalue,
-    padj_global = res$specific_padj_global,
-    padj_by_reporter = res$specific_padj_by_reporter,
+    pvalue = res$relative_pvalue,
+    padj_global = res$relative_padj_global,
+    padj_by_reporter = res$relative_padj_by_reporter,
     stringsAsFactors = FALSE
   )
   write.table(

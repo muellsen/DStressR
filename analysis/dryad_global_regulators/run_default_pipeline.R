@@ -255,8 +255,8 @@ res <- results(fit)
 hit_table <- call_hits(
   res,
   fdr = 0.05,
-  effect = "specific_effect",
-  padj = "specific_padj_by_reporter"
+  effect = "relative_effect",
+  padj = "relative_padj_by_reporter"
 )
 res$hit_class <- hit_table$hit
 res$hit <- res$hit_class != "Not DE"
@@ -330,7 +330,7 @@ utils::write.table(
   row.names = FALSE
 )
 
-p_hist <- ggplot2::ggplot(res, ggplot2::aes(x = specific_pvalue)) +
+p_hist <- ggplot2::ggplot(res, ggplot2::aes(x = relative_pvalue)) +
   ggplot2::geom_histogram(bins = 20, fill = "#3B82F6", color = "white", linewidth = 0.2) +
   ggplot2::facet_wrap(ggplot2::vars(promoter), scales = "free_y") +
   ggplot2::theme_light(base_size = 10) +
@@ -344,8 +344,8 @@ ggplot2::ggsave(file.path(out_dir, "dryad_default_pvalue_histogram.pdf"), p_hist
 
 p_volcano <- plot_volcano(
   res,
-  effect = "specific_effect",
-  padj = "specific_padj_by_reporter",
+  effect = "relative_effect",
+  padj = "relative_padj_by_reporter",
   title = "Dryad global-regulator reporters: default DStressR volcano",
   label_by = "pair",
   top_n = 12
@@ -357,10 +357,10 @@ plot_dryad_heatmap <- function(tab, title) {
   d <- tab
   d$compound <- factor(d$compound, levels = c("Iron", "Kanamycin", "Tetracycline", "H2O2"))
   d$promoter <- factor(d$promoter, levels = rev(c("Fur", "MarA", "SoxS", "LexA")))
-  limit <- max(abs(d$specific_effect), na.rm = TRUE)
-  ggplot2::ggplot(d, ggplot2::aes(compound, promoter, fill = specific_effect)) +
+  limit <- max(abs(d$relative_effect), na.rm = TRUE)
+  ggplot2::ggplot(d, ggplot2::aes(compound, promoter, fill = relative_effect)) +
     ggplot2::geom_tile(color = "white", linewidth = 0.5) +
-    ggplot2::geom_text(ggplot2::aes(label = sprintf("%.2f", specific_effect)), size = 3) +
+    ggplot2::geom_text(ggplot2::aes(label = sprintf("%.2f", relative_effect)), size = 3) +
     ggplot2::scale_fill_gradient2(
       low = "#2166AC",
       mid = "white",
@@ -378,7 +378,7 @@ plot_dryad_heatmap <- function(tab, title) {
       title = title,
       x = "Weak-stress condition",
       y = "Reporter",
-      fill = "Specific effect"
+      fill = "Reporter-relative effect"
     )
 }
 
@@ -400,8 +400,8 @@ res_alpha1 <- results(fit_alpha1)
 hit_table_alpha1 <- call_hits(
   res_alpha1,
   fdr = 0.05,
-  effect = "specific_effect",
-  padj = "specific_padj_by_reporter"
+  effect = "relative_effect",
+  padj = "relative_padj_by_reporter"
 )
 res_alpha1$hit_class <- hit_table_alpha1$hit
 res_alpha1$hit <- res_alpha1$hit_class != "Not DE"
@@ -461,7 +461,7 @@ utils::write.table(
   row.names = FALSE
 )
 
-p_hist_alpha1 <- ggplot2::ggplot(res_alpha1, ggplot2::aes(x = specific_pvalue)) +
+p_hist_alpha1 <- ggplot2::ggplot(res_alpha1, ggplot2::aes(x = relative_pvalue)) +
   ggplot2::geom_histogram(bins = 20, fill = "#009E73", color = "white", linewidth = 0.2) +
   ggplot2::facet_wrap(ggplot2::vars(promoter), scales = "free_y") +
   ggplot2::theme_light(base_size = 10) +
@@ -475,8 +475,8 @@ ggplot2::ggsave(file.path(out_dir, "dryad_alpha1_pvalue_histogram.pdf"), p_hist_
 
 p_volcano_alpha1 <- plot_volcano(
   res_alpha1,
-  effect = "specific_effect",
-  padj = "specific_padj_by_reporter",
+  effect = "relative_effect",
+  padj = "relative_padj_by_reporter",
   title = "Dryad global-regulator reporters: DStressR volcano with alpha = 1",
   label_by = "pair",
   top_n = 12
@@ -489,8 +489,8 @@ ggplot2::ggsave(file.path(out_dir, "dryad_alpha1_effect_heatmap.png"), p_heatmap
 ggplot2::ggsave(file.path(out_dir, "dryad_alpha1_effect_heatmap.pdf"), p_heatmap_alpha1, width = 7, height = 4.5)
 
 comparison <- merge(
-  res[, c("promoter", "compound", "specific_effect", "specific_pvalue", "specific_padj_by_reporter", "hit")],
-  res_alpha1[, c("promoter", "compound", "specific_effect", "specific_pvalue", "specific_padj_by_reporter", "hit")],
+  res[, c("promoter", "compound", "relative_effect", "relative_pvalue", "relative_padj_by_reporter", "hit")],
+  res_alpha1[, c("promoter", "compound", "relative_effect", "relative_pvalue", "relative_padj_by_reporter", "hit")],
   by = c("promoter", "compound"),
   suffixes = c("_estimated_alpha", "_alpha1"),
   all = TRUE,

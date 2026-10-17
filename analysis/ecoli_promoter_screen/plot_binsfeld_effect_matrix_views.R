@@ -155,7 +155,7 @@ if (nrow(comparison)) {
     limitsize = FALSE
   )
 
-  specific_long <- rbind(
+  relative_long <- rbind(
     data.frame(
       method = "Original workflow",
       promoter = comparison$promoter,
@@ -178,16 +178,16 @@ if (nrow(comparison)) {
       stringsAsFactors = FALSE
     )
   )
-  specific_long$promoter <- factor(specific_long$promoter, levels = rev(reporter_order))
-  specific_long$compound <- factor(specific_long$compound, levels = compound_score$compound)
-  specific_long$method <- factor(
-    specific_long$method,
+  relative_long$promoter <- factor(relative_long$promoter, levels = rev(reporter_order))
+  relative_long$compound <- factor(relative_long$compound, levels = compound_score$compound)
+  relative_long$method <- factor(
+    relative_long$method,
     levels = c("Original workflow", "DStressR without EVC", "DStressR with EVC")
   )
-  specific_limit <- stats::quantile(abs(specific_long$effect), 0.98, na.rm = TRUE)
+  relative_limit <- stats::quantile(abs(relative_long$effect), 0.98, na.rm = TRUE)
 
-  specific_plot <- ggplot2$ggplot(
-    specific_long,
+  relative_plot <- ggplot2$ggplot(
+    relative_long,
     ggplot2$aes(compound, promoter, fill = effect)
   ) +
     ggplot2$geom_tile(width = 0.98, height = 0.95, color = "white", linewidth = 0.07) +
@@ -197,7 +197,7 @@ if (nrow(comparison)) {
       mid = "white",
       high = "#c93f3f",
       midpoint = 0,
-      limits = c(-specific_limit, specific_limit),
+      limits = c(-relative_limit, relative_limit),
       oob = scales$squish,
       name = "Matrix value"
     ) +
@@ -236,7 +236,7 @@ if (nrow(comparison)) {
 
   ggplot2$ggsave(
     file.path(out_dir, "binsfeld_three_specific_effect_matrices.png"),
-    specific_plot,
+    relative_plot,
     width = 16.5,
     height = 8.5,
     dpi = 260,
@@ -245,7 +245,7 @@ if (nrow(comparison)) {
   )
   ggplot2$ggsave(
     file.path(out_dir, "binsfeld_three_specific_effect_matrices.pdf"),
-    specific_plot,
+    relative_plot,
     width = 16.5,
     height = 8.5,
     limitsize = FALSE

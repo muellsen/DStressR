@@ -178,15 +178,15 @@ p_total <- plot_window_heatmap(
 ggplot2::ggsave(file.path(out_dir, "dryad_weak_stress_windows_calibrated_alpha_total_effect_heatmap.png"), p_total, width = 7.5, height = 6, dpi = 300)
 ggplot2::ggsave(file.path(out_dir, "dryad_weak_stress_windows_calibrated_alpha_total_effect_heatmap.pdf"), p_total, width = 7.5, height = 6)
 
-p_specific <- plot_window_heatmap(
+p_relative <- plot_window_heatmap(
   res,
-  "specific_effect",
-  "Estimated specific effect"
+  "relative_effect",
+  "Estimated reporter-relative effect"
 )
-ggplot2::ggsave(file.path(out_dir, "dryad_weak_stress_windows_calibrated_alpha_specific_effect_heatmap.png"), p_specific, width = 7.5, height = 6, dpi = 300)
-ggplot2::ggsave(file.path(out_dir, "dryad_weak_stress_windows_calibrated_alpha_specific_effect_heatmap.pdf"), p_specific, width = 7.5, height = 6)
+ggplot2::ggsave(file.path(out_dir, "dryad_weak_stress_windows_calibrated_alpha_specific_effect_heatmap.png"), p_relative, width = 7.5, height = 6, dpi = 300)
+ggplot2::ggsave(file.path(out_dir, "dryad_weak_stress_windows_calibrated_alpha_specific_effect_heatmap.pdf"), p_relative, width = 7.5, height = 6)
 
-p_hist <- ggplot2::ggplot(res, ggplot2::aes(x = specific_pvalue)) +
+p_hist <- ggplot2::ggplot(res, ggplot2::aes(x = relative_pvalue)) +
   ggplot2::geom_histogram(breaks = seq(0, 1, by = 0.05), fill = "#009E73", color = "white", linewidth = 0.25) +
   ggplot2::theme_light(base_size = 10) +
   ggplot2::labs(
@@ -198,13 +198,13 @@ ggplot2::ggsave(file.path(out_dir, "dryad_weak_stress_windows_calibrated_alpha_p
 
 p_volcano <- plot_volcano(
   res,
-  effect = "specific_effect",
-  padj = "specific_padj_by_reporter",
+  effect = "relative_effect",
+  padj = "relative_padj_by_reporter",
   title = NULL,
   label_by = "pair",
   top_n = 15,
   top_reporters = 8,
-  xlab = "Estimated specific effect",
+  xlab = "Estimated reporter-relative effect",
   ylab = "-log10 adjusted p-value"
 )
 ggplot2::ggsave(file.path(out_dir, "dryad_weak_stress_windows_calibrated_alpha_volcano.png"), p_volcano, width = 8, height = 5.5, dpi = 300)

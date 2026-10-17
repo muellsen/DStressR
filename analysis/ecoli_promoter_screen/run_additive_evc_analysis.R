@@ -54,13 +54,13 @@ tables <- lapply(tables, function(d) {
   stopifnot(!anyDuplicated(pair_key(d)), setequal(keys, pair_key(d)))
   d <- d[match(keys, pair_key(d)), , drop = FALSE]
   d$total_hit <- !is.na(d$total_padj_by_reporter) & d$total_padj_by_reporter < 0.05
-  d$specific_hit <- !is.na(d$specific_padj_by_reporter) & d$specific_padj_by_reporter < 0.05
+  d$relative_hit <- !is.na(d$relative_padj_by_reporter) & d$relative_padj_by_reporter < 0.05
   d
 })
 write_tsv(tables$additive_evc, "additive_evc_full_results.tsv")
 write_tsv(tables$additive_evc[tables$additive_evc$total_hit, ],
           "additive_evc_significant_total_pairs.tsv")
-write_tsv(tables$additive_evc[tables$additive_evc$specific_hit, ],
+write_tsv(tables$additive_evc[tables$additive_evc$relative_hit, ],
           "additive_evc_significant_specific_pairs.tsv")
 
 summary <- do.call(rbind, lapply(names(tables), function(method) {
@@ -70,13 +70,13 @@ summary <- do.call(rbind, lapply(names(tables), function(method) {
   data.frame(method = method, input_observations = nrow(fits[[method]]$assay_data),
              modeled_observations = sum(model_counts$n_observations),
              pairs = nrow(d), total_hits = sum(d$total_hit),
-             specific_hits = sum(d$specific_hit))
+             relative_hits = sum(d$relative_hit))
 }))
 write_tsv(summary, "hit_counts.tsv")
 comparison <- tables$additive_evc[, c("reporter", "perturbation")]
 for (method in names(tables)) {
   columns <- c("total_effect", "total_se", "total_pvalue", "total_padj_by_reporter",
-               "total_hit", "specific_effect", "specific_padj_by_reporter", "specific_hit")
+               "total_hit", "relative_effect", "relative_padj_by_reporter", "relative_hit")
   for (column in columns) comparison[[paste(method, column, sep = "_")]] <- tables[[method]][[column]]
 }
 write_tsv(comparison, "three_method_pair_comparison.tsv")

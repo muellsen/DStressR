@@ -4,7 +4,7 @@
 #
 # The public supplementary tables contain processed steady-state promoter
 # activities and estimated standard deviations, not individual replicate wells.
-# We therefore analyze total/specific effect matrices and low-rank diagnostics,
+# We therefore analyze total/reporter-relative effect matrices and low-rank diagnostics,
 # while keeping the p-values below as summary-level approximations.
 
 source(file.path("analysis", "_helpers.R"))
@@ -216,8 +216,8 @@ effects$rank_adjusted_total_effect <- effects$rank_adjusted_effect
 effects$total_effect_se <- effects$total_se
 effects$approx_total_pvalue <- effects$total_pvalue
 effects$approx_total_padj <- effects$total_padj
-effects$approx_specific_pvalue <- effects$specific_pvalue
-effects$approx_specific_padj <- effects$specific_padj
+effects$approx_relative_pvalue <- effects$relative_pvalue
+effects$approx_relative_padj <- effects$relative_padj
 effects$approx_rank_adjusted_total_pvalue <- effects$rank_adjusted_total_pvalue
 effects$approx_rank_adjusted_total_padj <- effects$rank_adjusted_total_padj
 

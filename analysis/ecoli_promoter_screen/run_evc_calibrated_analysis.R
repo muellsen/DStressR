@@ -74,8 +74,8 @@ utils::write.table(res, file.path(out_dir, "evc_huber_full_results.tsv"),
 res$evc_huber_hit_class <- call_hits(
   res,
   fdr = 0.05,
-  effect = "specific_effect",
-  padj = "specific_padj_by_reporter"
+  effect = "relative_effect",
+  padj = "relative_padj_by_reporter"
 )$hit
 res$evc_huber_hit <- res$evc_huber_hit_class != "Not DE"
 
@@ -100,8 +100,8 @@ if (!is.null(params$growth_exponents)) {
 
 pair_results <- res[, c(
   "reporter", "perturbation", "total_effect", "global_effect", "low_rank_effect",
-  "specific_effect", "specific_se", "specific_statistic", "specific_pvalue",
-  "specific_padj_by_reporter", "evc_huber_hit", "evc_huber_hit_class"
+  "relative_effect", "relative_se", "relative_statistic", "relative_pvalue",
+  "relative_padj_by_reporter", "evc_huber_hit", "evc_huber_hit_class"
 )]
 names(pair_results)[names(pair_results) == "reporter"] <- "promoter"
 names(pair_results)[names(pair_results) == "perturbation"] <- "compound"
@@ -122,10 +122,10 @@ utils::write.table(
 
 comparison_file <- file.path(workflow_comparison_dir, "binsfeld_workflow_comparison_all_pair_comparison.tsv")
 if (file.exists(comparison_file)) {
-  comparison <- utils::read.delim(comparison_file, check.names = FALSE)
+  comparison <- read_analysis_delim(comparison_file, check.names = FALSE)
   evc <- pair_results[, c(
-    "promoter", "compound", "specific_effect", "specific_pvalue",
-    "specific_padj_by_reporter", "evc_huber_hit", "evc_huber_hit_class"
+    "promoter", "compound", "relative_effect", "relative_pvalue",
+    "relative_padj_by_reporter", "evc_huber_hit", "evc_huber_hit_class"
   )]
   names(evc) <- c(
     "promoter", "compound", "evc_huber_effect", "evc_huber_pvalue",
@@ -169,7 +169,7 @@ if (file.exists(comparison_file)) {
   ]
   literature_file <- file.path(workflow_comparison_dir, "dstressr_only_literature_support.tsv")
   if (file.exists(literature_file)) {
-    literature <- utils::read.delim(literature_file, check.names = FALSE)
+    literature <- read_analysis_delim(literature_file, check.names = FALSE)
     literature <- literature[, c("promoter", "compound", "literature_support", "support_note", "source")]
     primary_dstressr_only <- merge(
       primary_dstressr_only,

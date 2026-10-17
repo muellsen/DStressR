@@ -23,7 +23,7 @@ source_file <- analysis_path(
   "data-raw", "french_pfibox", "source",
   "french_pfibox_table_s3_clusterdata_mmc2.xlsx"
 )
-out_dir <- analysis_output_dir("french_pfibox", "promoter_activity_analysis")
+out_dir <- Sys.getenv("PFIBOX_ANALYSIS_DIR", analysis_output_dir("french_pfibox", "promoter_activity_analysis"))
 run_tag <- Sys.getenv("PFIBOX_RUN_TAG", "reporters2000_perturbations100_T2-18h_treatment_replicate_scalable")
 suffix <- Sys.getenv("PFIBOX_CLUSTER_OUTPUT_SUFFIX", "total_effect_ward")
 suffix <- if (nzchar(suffix)) paste0("_", suffix) else ""
@@ -83,7 +83,7 @@ map <- merge(
 
 utils::write.table(
   map,
-  file.path(out_dir, "pfibox_destress_ward_clusters_mapped_to_french_mfuzz.tsv"),
+  file.path(out_dir, "pfibox_effect_clusters_mapped_to_french_mfuzz.tsv"),
   sep = "\t",
   quote = FALSE,
   row.names = FALSE
@@ -133,3 +133,13 @@ write_paper_artifact(file.path(out_dir, paste0("pfibox_paper_mapping_", run_tag,
   diagnostics = list(long_counts = long_counts),
   annotations = list(mapping = map, reporter_clusters = dstressr),
   provenance = list(run_tag = run_tag, cluster_file = dstressr_cluster_file))
+
+counts <- table(mapped$reporter_cluster, mapped$french_major_cluster)
+c2 <- function(x) x * (x - 1) / 2
+expected <- sum(c2(rowSums(counts))) * sum(c2(colSums(counts))) / c2(sum(counts))
+maximum <- (sum(c2(rowSums(counts))) + sum(c2(colSums(counts)))) / 2
+audit <- data.frame(clustered_reporters = nrow(map), matched_reporters = nrow(mapped),
+  unmatched_reporters = nrow(map) - nrow(mapped),
+  adjusted_rand_index = (sum(c2(counts)) - expected) / (maximum - expected))
+write.table(audit, file.path(out_dir, "figure6_cluster_mapping_audit.tsv"),
+  sep = "\t", quote = FALSE, row.names = FALSE)

@@ -42,7 +42,7 @@ make_response_effects <- function(activity, reference = "Glucose", eps = 1) {
   )
   names(global)[3] <- "global_effect"
   d <- merge(d, global, by = c("growth_rate", "condition_label"), all.x = TRUE, sort = FALSE)
-  d$specific_effect <- d$total_effect - d$global_effect
+  d$relative_effect <- d$total_effect - d$global_effect
   d
 }
 
@@ -84,16 +84,16 @@ utils::write.table(
   quote = FALSE
 )
 
-top_specific <- effect_table[
-  order(-abs(effect_table$specific_effect)),
+top_relative <- effect_table[
+  order(-abs(effect_table$relative_effect)),
   c("growth_rate", "condition_label", "reporter_id", "reporter", "reference_reporter",
     "promoter_activity", "reference_promoter_activity", "total_effect",
-    "global_effect", "specific_effect", "ribosomes", "ribosomal_proteins",
+    "global_effect", "relative_effect", "ribosomes", "ribosomal_proteins",
     "metabolism", "carbon_utilization", "nitrogen_metabolism", "phosphorous_metabolism")
 ]
-top_specific <- head(top_specific, 300)
+top_relative <- head(top_relative, 300)
 utils::write.table(
-  top_specific,
+  top_relative,
   file.path(out_dir, "zaslaver_top_specific_effects.tsv"),
   sep = "\t",
   row.names = FALSE,
@@ -141,16 +141,16 @@ utils::write.table(
 
 annotation_cols <- setdiff(names(zaslaver_promoter_annotations), c("reporter_index", "reporter_id", "reporter"))
 top_by_reporter <- stats::aggregate(
-  abs(specific_effect) ~ growth_rate + reporter_id,
+  abs(relative_effect) ~ growth_rate + reporter_id,
   effect_table,
   max,
   na.rm = TRUE
 )
-names(top_by_reporter)[3] <- "max_abs_specific_effect"
+names(top_by_reporter)[3] <- "max_abs_relative_effect"
 
 enrichment_rows <- lapply(split(top_by_reporter, top_by_reporter$growth_rate), function(dg) {
-  cutoff <- stats::quantile(dg$max_abs_specific_effect, probs = 0.95, na.rm = TRUE)
-  selected <- dg$reporter_id[dg$max_abs_specific_effect >= cutoff]
+  cutoff <- stats::quantile(dg$max_abs_relative_effect, probs = 0.95, na.rm = TRUE)
+  selected <- dg$reporter_id[dg$max_abs_relative_effect >= cutoff]
   ann <- zaslaver_promoter_annotations
   ann$selected <- ann$reporter_id %in% selected
   rows <- lapply(annotation_cols, function(term) {
@@ -224,7 +224,7 @@ ggplot2::ggsave(
   height = 3.5
 )
 
-top_ids <- unique(top_specific$reporter_id)[seq_len(min(top_n_reporters, length(unique(top_specific$reporter_id))))]
+top_ids <- unique(top_relative$reporter_id)[seq_len(min(top_n_reporters, length(unique(top_relative$reporter_id))))]
 heat_data <- effect_table[effect_table$reporter_id %in% top_ids, , drop = FALSE]
 label_map <- unique(heat_data[, c("reporter_id", "reporter")])
 label_map$label <- paste0(label_map$reporter, " (", sub("^reporter_", "", label_map$reporter_id), ")")
@@ -234,7 +234,7 @@ heat_data$reporter_label <- factor(heat_data$reporter_label, levels = rev(label_
 
 p_heat <- ggplot2::ggplot(
   heat_data,
-  ggplot2::aes(x = condition_label, y = reporter_label, fill = specific_effect)
+  ggplot2::aes(x = condition_label, y = reporter_label, fill = relative_effect)
 ) +
   ggplot2::geom_tile(color = "white", linewidth = 0.12) +
   ggplot2::facet_wrap(~growth_rate, nrow = 1, labeller = ggplot2::label_both) +
@@ -313,7 +313,7 @@ rank1_table$row_order <- rank1_order$row_order[
 
 rank1_table <- merge(
   rank1_table,
-  unique(effect_table[, c("growth_rate", "condition_label", "reporter_id", "reporter", "specific_effect")]),
+  unique(effect_table[, c("growth_rate", "condition_label", "reporter_id", "reporter", "relative_effect")]),
   by = c("growth_rate", "condition_label", "reporter_id"),
   all.x = TRUE,
   sort = FALSE
@@ -327,7 +327,7 @@ if ("reporter.x" %in% names(rank1_table)) {
   rank1_table$reporter.x <- NULL
   rank1_table$reporter.y <- NULL
 }
-names(rank1_table)[names(rank1_table) == "specific_effect"] <- "specific_effect_rank0"
+names(rank1_table)[names(rank1_table) == "relative_effect"] <- "relative_effect_rank0"
 rank1_table$rank_adjusted_total_effect <- rank1_table$residual_effect
 rank1_global <- stats::aggregate(
   rank_adjusted_total_effect ~ growth_rate + condition_label,
@@ -343,17 +343,17 @@ rank1_table <- merge(
   all.x = TRUE,
   sort = FALSE
 )
-rank1_table$specific_effect_rank1 <- rank1_table$rank_adjusted_total_effect -
+rank1_table$relative_effect_rank1 <- rank1_table$rank_adjusted_total_effect -
   rank1_table$rank_adjusted_global_effect
 
 rank0_tail_scores <- effect_tail_scores(
   rank1_table,
-  effect = "specific_effect_rank0",
+  effect = "relative_effect_rank0",
   group = c("growth_rate", "condition_label")
 )
 rank1_tail_scores <- effect_tail_scores(
   rank1_table,
-  effect = "specific_effect_rank1",
+  effect = "relative_effect_rank1",
   group = c("growth_rate", "condition_label")
 )
 rank1_table$diagnostic_pvalue_rank0 <- rank0_tail_scores$tail_probability
@@ -401,14 +401,14 @@ rank1_pvalue_long <- rbind(
   data.frame(
     rank1_table[, c("growth_rate", "condition_label", "reporter_id", "reporter")],
     model = "before rank-1 adjustment",
-    effect = rank1_table$specific_effect_rank0,
+    effect = rank1_table$relative_effect_rank0,
     diagnostic_pvalue = rank1_table$diagnostic_pvalue_rank0,
     diagnostic_padj_global = rank1_table$diagnostic_padj_global_rank0
   ),
   data.frame(
     rank1_table[, c("growth_rate", "condition_label", "reporter_id", "reporter")],
     model = "after rank-1 adjustment",
-    effect = rank1_table$specific_effect_rank1,
+    effect = rank1_table$relative_effect_rank1,
     diagnostic_pvalue = rank1_table$diagnostic_pvalue_rank1,
     diagnostic_padj_global = rank1_table$diagnostic_padj_global_rank1
   )
@@ -500,7 +500,7 @@ p_fixed_volcano <- ggplot2::ggplot(
   ggplot2::scale_color_manual(values = c("FALSE" = "#BDBDBD", "TRUE" = "#D55E00"), guide = "none") +
   ggplot2::facet_grid(growth_label ~ condition_label) +
   ggplot2::labs(
-    x = expression("Rank-1 adjusted specific effect " * hat(delta)[aj]^spec),
+    x = expression("Rank-1 adjusted reporter-relative effect " * hat(delta)[aj]^spec),
     y = expression(-log[10] * " diagnostic tail probability")
   ) +
   plot_theme(7)
@@ -1227,11 +1227,11 @@ ggplot2::ggsave(
 
 p_dist <- ggplot2::ggplot(
   effect_table,
-  ggplot2::aes(x = specific_effect, color = condition_label)
+  ggplot2::aes(x = relative_effect, color = condition_label)
 ) +
   ggplot2::geom_density(linewidth = 0.45, adjust = 1.1) +
   ggplot2::facet_wrap(~growth_rate, nrow = 2, labeller = ggplot2::label_both) +
-  ggplot2::labs(x = expression("Specific condition effect " * hat(delta)[aj]^spec), y = "Density", color = NULL) +
+  ggplot2::labs(x = expression("Reporter-relative condition effect " * hat(delta)[aj]^spec), y = "Density", color = NULL) +
   plot_theme(9) +
   ggplot2::theme(legend.position = c(0.98, 0.98), legend.justification = c(1, 1))
 
@@ -1251,7 +1251,7 @@ ggplot2::ggsave(
 
 cat("Wrote Zaslaver exploratory outputs to:", out_dir, "\n")
 cat("Effect rows:", nrow(effect_table), "\n")
-cat("Top specific-effect table:", file.path(out_dir, "zaslaver_top_specific_effects.tsv"), "\n")
+cat("Top reporter-relative-effect table:", file.path(out_dir, "zaslaver_top_specific_effects.tsv"), "\n")
 
 # Exploratory time-course model ------------------------------------------------
 #
@@ -1302,7 +1302,7 @@ fit_timecourse_rank <- function(background_rank) {
   )
   res$background_rank <- background_rank
   res$model <- if (background_rank == 0) "rank 0" else paste0("rank ", background_rank)
-  res[order(res$specific_padj_global, -abs(res$specific_effect)), ]
+  res[order(res$relative_padj_global, -abs(res$relative_effect)), ]
 }
 
 res_tc_rank0 <- fit_timecourse_rank(0)
@@ -1356,19 +1356,19 @@ utils::write.table(
 )
 
 rank_compare <- merge(
-  res_tc_rank0[, c("reporter", "perturbation", "reporter_label", "total_effect", "specific_effect",
-                   "specific_pvalue", "specific_padj_global")],
+  res_tc_rank0[, c("reporter", "perturbation", "reporter_label", "total_effect", "relative_effect",
+                   "relative_pvalue", "relative_padj_global")],
   res_tc_rank1[, c("reporter", "perturbation", "low_rank_effect", "rank_adjusted_total_effect",
-                   "specific_effect", "specific_pvalue", "specific_padj_global")],
+                   "relative_effect", "relative_pvalue", "relative_padj_global")],
   by = c("reporter", "perturbation"),
   suffixes = c("_rank0", "_rank1"),
   all = FALSE,
   sort = FALSE
 )
-rank_compare$abs_specific_change <- abs(rank_compare$specific_effect_rank1 - rank_compare$specific_effect_rank0)
-rank_compare$log10_pvalue_change <- log10(rank_compare$specific_pvalue_rank1) -
-  log10(rank_compare$specific_pvalue_rank0)
-rank_compare <- rank_compare[order(-abs(rank_compare$low_rank_effect), -rank_compare$abs_specific_change), ]
+rank_compare$abs_relative_change <- abs(rank_compare$relative_effect_rank1 - rank_compare$relative_effect_rank0)
+rank_compare$log10_pvalue_change <- log10(rank_compare$relative_pvalue_rank1) -
+  log10(rank_compare$relative_pvalue_rank0)
+rank_compare <- rank_compare[order(-abs(rank_compare$low_rank_effect), -rank_compare$abs_relative_change), ]
 utils::write.table(
   rank_compare,
   file.path(out_dir, "zaslaver_timecourse_rank1_comparison.tsv"),
@@ -1379,8 +1379,8 @@ utils::write.table(
 
 low_rank_matrix <- res_tc_rank1[, c(
   "reporter", "reporter_label", "perturbation", "total_effect",
-  "low_rank_effect", "rank_adjusted_total_effect", "specific_effect",
-  "specific_pvalue", "specific_padj_global"
+  "low_rank_effect", "rank_adjusted_total_effect", "relative_effect",
+  "relative_pvalue", "relative_padj_global"
 )]
 low_rank_matrix <- low_rank_matrix[order(low_rank_matrix$reporter, low_rank_matrix$perturbation), ]
 utils::write.table(
@@ -1456,9 +1456,9 @@ pvalue_summary <- do.call(rbind, lapply(split(res_tc, res_tc$model), function(d)
   data.frame(
     model = unique(d$model),
     n_tests = nrow(d),
-    median_pvalue = stats::median(d$specific_pvalue, na.rm = TRUE),
-    prop_pvalue_lt_0.01 = mean(d$specific_pvalue < 0.01, na.rm = TRUE),
-    n_fdr_0.05 = sum(d$specific_padj_global < 0.05, na.rm = TRUE),
+    median_pvalue = stats::median(d$relative_pvalue, na.rm = TRUE),
+    prop_pvalue_lt_0.01 = mean(d$relative_pvalue < 0.01, na.rm = TRUE),
+    n_fdr_0.05 = sum(d$relative_padj_global < 0.05, na.rm = TRUE),
     stringsAsFactors = FALSE
   )
 }))
@@ -1470,7 +1470,7 @@ utils::write.table(
   quote = FALSE
 )
 
-top_tc <- head(res_tc_rank1[is.finite(res_tc_rank1$specific_pvalue), ], 100)
+top_tc <- head(res_tc_rank1[is.finite(res_tc_rank1$relative_pvalue), ], 100)
 utils::write.table(
   top_tc,
   file.path(out_dir, "zaslaver_timecourse_top_specific_hits_rank1.tsv"),
@@ -1479,7 +1479,7 @@ utils::write.table(
   quote = FALSE
 )
 
-p_tc_hist <- ggplot2::ggplot(res_tc, ggplot2::aes(x = specific_pvalue)) +
+p_tc_hist <- ggplot2::ggplot(res_tc, ggplot2::aes(x = relative_pvalue)) +
   ggplot2::geom_histogram(bins = 50, fill = "#6BAED6", color = "white", linewidth = 0.15) +
   ggplot2::facet_grid(model ~ perturbation) +
   ggplot2::labs(x = "Raw p-value", y = "Reporter-condition tests") +
@@ -1500,19 +1500,19 @@ ggplot2::ggsave(
   height = 4.6
 )
 
-volcano_data <- res_tc[is.finite(res_tc$specific_pvalue) & res_tc$specific_pvalue > 0, ]
-volcano_data$neg_log10_p <- -log10(volcano_data$specific_pvalue)
-volcano_data$hit <- volcano_data$specific_padj_global < 0.05
+volcano_data <- res_tc[is.finite(res_tc$relative_pvalue) & res_tc$relative_pvalue > 0, ]
+volcano_data$neg_log10_p <- -log10(volcano_data$relative_pvalue)
+volcano_data$hit <- volcano_data$relative_padj_global < 0.05
 label_volcano <- head(volcano_data[volcano_data$model == "rank 1", ][
-  order(volcano_data$specific_pvalue[volcano_data$model == "rank 1"],
-        -abs(volcano_data$specific_effect[volcano_data$model == "rank 1"])),
+  order(volcano_data$relative_pvalue[volcano_data$model == "rank 1"],
+        -abs(volcano_data$relative_effect[volcano_data$model == "rank 1"])),
 ], 18)
 label_name <- if ("reporter_label" %in% names(label_volcano)) label_volcano$reporter_label else label_volcano$reporter
 label_volcano$label <- paste(label_name, label_volcano$perturbation, sep = " / ")
 
 p_tc_volcano <- ggplot2::ggplot(
   volcano_data,
-  ggplot2::aes(specific_effect, neg_log10_p)
+  ggplot2::aes(relative_effect, neg_log10_p)
 ) +
   ggplot2::geom_point(
     ggplot2::aes(color = hit),
@@ -1522,7 +1522,7 @@ p_tc_volcano <- ggplot2::ggplot(
   ggplot2::scale_color_manual(values = c("FALSE" = "#BDBDBD", "TRUE" = "#D55E00"), guide = "none") +
   ggplot2::facet_grid(model ~ perturbation) +
   ggplot2::labs(
-    x = expression("Specific condition effect " * hat(delta)[aj]^spec),
+    x = expression("Reporter-relative condition effect " * hat(delta)[aj]^spec),
     y = expression(-log[10] * " raw p-value")
   ) +
   plot_theme(8)

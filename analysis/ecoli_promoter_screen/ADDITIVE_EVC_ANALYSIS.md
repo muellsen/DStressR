@@ -37,10 +37,10 @@ assumption.
 ## Outputs
 
 - `additive_evc_fit.rds`: reusable fit, separated from result extraction.
-- `additive_evc_full_results.tsv`: total and specific effects, standard errors,
+- `additive_evc_full_results.tsv`: total and reporter-relative effects, standard errors,
   p-values, adjusted p-values, and hit indicators.
 - `additive_evc_significant_total_pairs.tsv`: primary significant total effects.
-- `additive_evc_significant_specific_pairs.tsv`: significant specific effects.
+- `additive_evc_significant_specific_pairs.tsv`: significant reporter-relative effects.
 - `three_method_pair_comparison.tsv`: aligned results for all three approaches.
 - `hit_counts.tsv`, `total_hit_overlaps.tsv`, `matching_checks.tsv`: numerical
   comparison and matching audit.

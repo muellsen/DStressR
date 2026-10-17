@@ -57,8 +57,8 @@ fit_interaction <- function(use_ev = FALSE) {
   hit_class <- call_hits(
     res,
     fdr = 0.05,
-    effect = "specific_effect",
-    padj = "specific_padj_by_reporter"
+    effect = "relative_effect",
+    padj = "relative_padj_by_reporter"
   )$hit
   res$hit_class <- hit_class
   res$hit <- hit_class != "Not DE"
@@ -79,8 +79,8 @@ write_pair_results <- function(x, prefix) {
   out <- res[, c(
     "promoter", "compound",
     "total_effect", "global_effect", "low_rank_effect",
-    "specific_effect", "specific_se", "specific_statistic", "specific_pvalue",
-    "specific_padj_by_reporter", "hit", "hit_class"
+    "relative_effect", "relative_se", "relative_statistic", "relative_pvalue",
+    "relative_padj_by_reporter", "hit", "hit_class"
   )]
   utils::write.table(
     out,
@@ -115,14 +115,14 @@ comparison_path <- file.path(ev_dir, "evc_huber_comparison_to_binsfeld_and_defau
 if (!file.exists(comparison_path)) {
   stop("Run analysis/ecoli_promoter_screen/run_evc_calibrated_analysis.R before this script.", call. = FALSE)
 }
-comparison <- utils::read.delim(comparison_path, check.names = FALSE)
+comparison <- read_analysis_delim(comparison_path, check.names = FALSE)
 comparison$binsfeld_hit <- as.logical(comparison$binsfeld_hit)
 comparison$estimated_exponent_hit <- as.logical(comparison$estimated_exponent_hit)
 comparison$evc_huber_hit <- as.logical(comparison$evc_huber_hit)
 
 no_ev_small <- no_ev$results[, c(
-  "promoter", "compound", "specific_effect", "specific_pvalue",
-  "specific_padj_by_reporter", "hit", "hit_class"
+  "promoter", "compound", "relative_effect", "relative_pvalue",
+  "relative_padj_by_reporter", "hit", "hit_class"
 )]
 names(no_ev_small) <- c(
   "promoter", "compound", "interaction_without_ev_effect",
@@ -131,8 +131,8 @@ names(no_ev_small) <- c(
 )
 
 with_ev_small <- with_ev$results[, c(
-  "promoter", "compound", "specific_effect", "specific_pvalue",
-  "specific_padj_by_reporter", "hit", "hit_class"
+  "promoter", "compound", "relative_effect", "relative_pvalue",
+  "relative_padj_by_reporter", "hit", "hit_class"
 )]
 names(with_ev_small) <- c(
   "promoter", "compound", "interaction_with_ev_effect",

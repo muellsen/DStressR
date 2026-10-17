@@ -32,8 +32,8 @@ git commit -m "Correct contrast uncertainty and default to total-effect inferenc
 ## 2. Examples and Paper Reproducibility
 
 Includes the two new total-effect preparers required by the canonical builder.
-Specific-effect supplementary figures remain explicit and reproducible;
-historical full-interaction specific-effect artifacts require regeneration
+Reporter-relative effect supplementary figures remain explicit and reproducible;
+historical full-interaction reporter-relative-effect artifacts require regeneration
 before reuse.
 
 ```sh

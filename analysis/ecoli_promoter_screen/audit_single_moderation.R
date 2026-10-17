@@ -23,7 +23,7 @@ wt <- binsfeld_reporter_auc[
   binsfeld_reporter_auc$strain == "WT" & binsfeld_reporter_auc$removed == "No", ]
 fits_path <- file.path(out_dir, "baseline_fits.rds")
 if (file.exists(fits_path)) {
-  fits <- readRDS(fits_path)
+  fits <- read_analysis_rds(fits_path)
 } else {
   fits <- lapply(c("without_EVC", "with_EVC"), function(workflow) {
     d <- if (workflow == "without_EVC") wt[wt$promoter != "EVC", ] else wt
@@ -65,31 +65,31 @@ for (workflow in names(fits)) {
     x <- runs[[method]]
     x$key <- paste(x$reporter, x$perturbation, sep = "::")
     x <- x[match(baseline$key, x$key), ]
-    stopifnot(!anyNA(x$key), identical(x$specific_effect, baseline$specific_effect))
+    stopifnot(!anyNA(x$key), identical(x$relative_effect, baseline$relative_effect))
     if (!"residual_df" %in% names(x)) {
       raw_key <- paste(fit$reporter_effects$reporter, fit$reporter_effects$perturbation, sep = "::")
       x$residual_df <- fit$reporter_effects$residual_df[match(x$key, raw_key)]
     }
-    x$hit <- x$specific_padj_by_reporter < 0.05
-    baseline_hit <- baseline$specific_padj_by_reporter < 0.05
+    x$hit <- x$relative_padj_by_reporter < 0.05
+    baseline_hit <- baseline$relative_padj_by_reporter < 0.05
     x$workflow <- workflow
     x$method <- method
-    x$baseline_pvalue <- baseline$specific_pvalue
-    x$baseline_padj <- baseline$specific_padj_by_reporter
+    x$baseline_pvalue <- baseline$relative_pvalue
+    x$baseline_padj <- baseline$relative_padj_by_reporter
     x$baseline_hit <- baseline_hit
     x$change <- ifelse(x$hit & !baseline_hit, "Gained",
                        ifelse(!x$hit & baseline_hit, "Lost", "Unchanged"))
     tables[[paste(workflow, method)]] <- x
     if (method == "single_WS") changes[[workflow]] <- x[x$change != "Unchanged", ]
-    raw_df <- if ("specific_df_raw" %in% names(x)) x$specific_df_raw else x$residual_df
-    fit_df <- if ("specific_df_for_test" %in% names(x)) x$specific_df_for_test else NA_real_
-    prior <- if (grepl("single", method)) candidate$eb_moderate_se(sqrt(x$specific_var), raw_df) else NULL
+    raw_df <- if ("relative_df_raw" %in% names(x)) x$relative_df_raw else x$residual_df
+    fit_df <- if ("relative_df_for_test" %in% names(x)) x$relative_df_for_test else NA_real_
+    prior <- if (grepl("single", method)) candidate$eb_moderate_se(sqrt(x$relative_var), raw_df) else NULL
     summary_rows[[paste(workflow, method)]] <- data.frame(
       workflow = workflow, method = method, n_pairs = nrow(x), hits = sum(x$hit),
       gained = sum(x$hit & !baseline_hit), lost = sum(!x$hit & baseline_hit),
-      max_abs_effect_difference = max(abs(x$specific_effect - baseline$specific_effect)),
-      median_abs_log10_p_change = median(abs(log10(pmax(x$specific_pvalue, 1e-300)) -
-                                              log10(pmax(baseline$specific_pvalue, 1e-300)))),
+      max_abs_effect_difference = max(abs(x$relative_effect - baseline$relative_effect)),
+      median_abs_log10_p_change = median(abs(log10(pmax(x$relative_pvalue, 1e-300)) -
+                                              log10(pmax(baseline$relative_pvalue, 1e-300)))),
       raw_df_min = min(raw_df), raw_df_median = median(raw_df), raw_df_max = max(raw_df),
       prior_df = if (is.null(prior)) NA_real_ else prior$prior_df,
       prior_variance = if (is.null(prior)) NA_real_ else prior$prior_var,
@@ -111,7 +111,7 @@ published_path <- file.path("analysis", "outputs", "binsfeld_evc_calibrated",
 verification_dir <- tempfile("dstressr-frozen-check-")
 dir.create(verification_dir)
 utils::untar(archive, files = published_path, exdir = verification_dir)
-published <- read.delim(file.path(verification_dir, published_path))
+published <- read_analysis_delim(file.path(verification_dir, published_path))
 checks <- lapply(names(fits), function(workflow) {
   x <- tables[[paste(workflow, "submission_baseline")]]
   ix <- match(x$key, paste(published$promoter, published$compound, sep = "::"))
@@ -119,8 +119,8 @@ checks <- lapply(names(fits), function(workflow) {
   p <- published[[paste0(prefix, "_pvalue")]][ix]
   q <- published[[paste0(prefix, "_padj_by_reporter")]][ix]
   data.frame(workflow = workflow, matched = sum(!is.na(ix)),
-             max_abs_p_difference = max(abs(x$specific_pvalue - p), na.rm = TRUE),
-             max_abs_q_difference = max(abs(x$specific_padj_by_reporter - q), na.rm = TRUE),
+             max_abs_p_difference = max(abs(x$relative_pvalue - p), na.rm = TRUE),
+             max_abs_q_difference = max(abs(x$relative_padj_by_reporter - q), na.rm = TRUE),
              hit_mismatches = sum(x$hit != (q < 0.05), na.rm = TRUE))
 })
 checks <- do.call(rbind, checks)
@@ -140,8 +140,8 @@ ix <- match(paste(historical_no_evc$reporter, historical_no_evc$perturbation, se
             paste(published$promoter, published$compound, sep = "::"))
 historical_check <- data.frame(
   convention = "Minimum residual df used throughout moderation and testing",
-  max_abs_p_difference = max(abs(historical_no_evc$specific_pvalue - published$modeled_pvalue[ix])),
-  max_abs_q_difference = max(abs(historical_no_evc$specific_padj_by_reporter - published$modeled_padj_by_reporter[ix]))
+  max_abs_p_difference = max(abs(historical_no_evc$relative_pvalue - published$modeled_pvalue[ix])),
+  max_abs_q_difference = max(abs(historical_no_evc$relative_padj_by_reporter - published$modeled_padj_by_reporter[ix]))
 )
 write_tsv(historical_check, "historical_no_evc_reproduction.tsv")
 stopifnot(historical_check$max_abs_p_difference < 1e-10)
@@ -160,7 +160,7 @@ stopifnot(!anyNA(preservation$archived_md5))
 
 if (requireNamespace("ggplot2", quietly = TRUE)) {
   selected <- tables[grepl("submission_baseline|single_WS", names(tables))]
-  fields <- c("workflow", "method", "specific_pvalue", "baseline_pvalue", "hit", "change")
+  fields <- c("workflow", "method", "relative_pvalue", "baseline_pvalue", "hit", "change")
   plot_data <- do.call(rbind, lapply(selected, function(x) x[, fields]))
   plot_data$method <- factor(plot_data$method, levels = c("submission_baseline", "single_WS"),
                              labels = c("Prechange code", "Single moderation + effective df"))
@@ -169,7 +169,7 @@ if (requireNamespace("ggplot2", quietly = TRUE)) {
   plot_theme <- ggplot2::theme_bw(base_size = 11) + ggplot2::theme(
     panel.grid = ggplot2::element_blank(), strip.background = ggplot2::element_blank(),
     strip.text = ggplot2::element_text(face = "bold"), legend.position = "bottom")
-  hist_plot <- ggplot2::ggplot(plot_data, ggplot2::aes(specific_pvalue)) +
+  hist_plot <- ggplot2::ggplot(plot_data, ggplot2::aes(relative_pvalue)) +
     ggplot2::geom_histogram(binwidth = 0.05, boundary = 0, fill = "#BFC3C7", colour = "white") +
     ggplot2::geom_histogram(data = plot_data[plot_data$hit, ], binwidth = 0.05,
                             boundary = 0, fill = "#0072B2", colour = "white") +
@@ -177,7 +177,7 @@ if (requireNamespace("ggplot2", quietly = TRUE)) {
     ggplot2::labs(x = "Raw p-value", y = "Number of reporter-compound pairs") + plot_theme
   scatter_data <- plot_data[plot_data$method == "Single moderation + effective df", ]
   scatter_plot <- ggplot2::ggplot(scatter_data, ggplot2::aes(
-    -log10(pmax(baseline_pvalue, 1e-300)), -log10(pmax(specific_pvalue, 1e-300)), colour = change)) +
+    -log10(pmax(baseline_pvalue, 1e-300)), -log10(pmax(relative_pvalue, 1e-300)), colour = change)) +
     ggplot2::geom_abline(slope = 1, intercept = 0, linetype = "dashed", colour = "grey50") +
     ggplot2::geom_point(size = 1.3, alpha = 0.75) + ggplot2::facet_wrap(~workflow) +
     ggplot2::scale_colour_manual(values = c(Unchanged = "#9B9FA3", Gained = "#0072B2", Lost = "#D55E00")) +

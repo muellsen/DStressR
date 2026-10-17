@@ -5,8 +5,8 @@ set.seed(1) # Reproducible label placement only.
 ggplot2 <- asNamespace("ggplot2")
 target_arg <- grep("^--target=", commandArgs(trailingOnly = TRUE), value = TRUE)
 target <- if (length(target_arg)) sub("^--target=", "", target_arg) else "total"
-if (length(target) != 1L || !target %in% c("total", "specific")) {
-  stop("Use --target=total or --target=specific.", call. = FALSE)
+if (length(target) != 1L || !target %in% c("total", "relative")) {
+  stop("Use --target=total or --target=relative.", call. = FALSE)
 }
 out_dir <- analysis_output_dir(if (target == "total") {
   "ecoli_interaction_total_effects"

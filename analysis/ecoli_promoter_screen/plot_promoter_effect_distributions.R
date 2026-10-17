@@ -16,40 +16,40 @@ if (!file.exists(result_file)) {
 
 res <- read_tsv_base(result_file)
 required <- c(
-  "promoter", "compound", "specific_effect", "specific_pvalue",
-  "specific_padj_by_reporter", "evc_huber_hit_class"
+  "promoter", "compound", "relative_effect", "relative_pvalue",
+  "relative_padj_by_reporter", "evc_huber_hit_class"
 )
 missing_cols <- setdiff(required, names(res))
 if (length(missing_cols) > 0) {
   stop("Missing required columns: ", paste(missing_cols, collapse = ", "), call. = FALSE)
 }
 
-res$specific_effect <- as.numeric(res$specific_effect)
-res$specific_pvalue <- as.numeric(res$specific_pvalue)
-res$specific_padj_by_reporter <- as.numeric(res$specific_padj_by_reporter)
-res <- res[is.finite(res$specific_effect), , drop = FALSE]
-res$hit <- is.finite(res$specific_padj_by_reporter) & res$specific_padj_by_reporter <= 0.05
+res$relative_effect <- as.numeric(res$relative_effect)
+res$relative_pvalue <- as.numeric(res$relative_pvalue)
+res$relative_padj_by_reporter <- as.numeric(res$relative_padj_by_reporter)
+res <- res[is.finite(res$relative_effect), , drop = FALSE]
+res$hit <- is.finite(res$relative_padj_by_reporter) & res$relative_padj_by_reporter <= 0.05
 res$effect_class <- ifelse(
-  res$hit & res$specific_effect > 0,
+  res$hit & res$relative_effect > 0,
   "Positive hit",
-  ifelse(res$hit & res$specific_effect < 0, "Negative hit", "Not significant")
+  ifelse(res$hit & res$relative_effect < 0, "Negative hit", "Not significant")
 )
 
 promoter_summary <- do.call(rbind, lapply(split(res, res$promoter), function(tab) {
   data.frame(
     promoter = tab$promoter[1],
     n_perturbations = length(unique(tab$compound)),
-    median_effect = stats::median(tab$specific_effect, na.rm = TRUE),
-    mean_effect = mean(tab$specific_effect, na.rm = TRUE),
-    median_abs_effect = stats::median(abs(tab$specific_effect), na.rm = TRUE),
-    mean_abs_effect = mean(abs(tab$specific_effect), na.rm = TRUE),
-    effect_iqr = stats::IQR(tab$specific_effect, na.rm = TRUE),
-    effect_sd = stats::sd(tab$specific_effect, na.rm = TRUE),
+    median_effect = stats::median(tab$relative_effect, na.rm = TRUE),
+    mean_effect = mean(tab$relative_effect, na.rm = TRUE),
+    median_abs_effect = stats::median(abs(tab$relative_effect), na.rm = TRUE),
+    mean_abs_effect = mean(abs(tab$relative_effect), na.rm = TRUE),
+    effect_iqr = stats::IQR(tab$relative_effect, na.rm = TRUE),
+    effect_sd = stats::sd(tab$relative_effect, na.rm = TRUE),
     n_hits = sum(tab$hit, na.rm = TRUE),
-    n_positive_hits = sum(tab$hit & tab$specific_effect > 0, na.rm = TRUE),
-    n_negative_hits = sum(tab$hit & tab$specific_effect < 0, na.rm = TRUE),
-    min_pvalue = min(tab$specific_pvalue, na.rm = TRUE),
-    min_padj_by_reporter = min(tab$specific_padj_by_reporter, na.rm = TRUE),
+    n_positive_hits = sum(tab$hit & tab$relative_effect > 0, na.rm = TRUE),
+    n_negative_hits = sum(tab$hit & tab$relative_effect < 0, na.rm = TRUE),
+    min_pvalue = min(tab$relative_pvalue, na.rm = TRUE),
+    min_padj_by_reporter = min(tab$relative_padj_by_reporter, na.rm = TRUE),
     stringsAsFactors = FALSE
   )
 }))
@@ -80,11 +80,11 @@ res$effect_class <- factor(
   levels = c("Negative hit", "Not significant", "Positive hit")
 )
 
-effect_limit <- stats::quantile(abs(res$specific_effect), 0.995, na.rm = TRUE)
-effect_limit <- max(effect_limit, max(abs(res$specific_effect[res$hit]), na.rm = TRUE))
+effect_limit <- stats::quantile(abs(res$relative_effect), 0.995, na.rm = TRUE)
+effect_limit <- max(effect_limit, max(abs(res$relative_effect[res$hit]), na.rm = TRUE))
 effect_limit <- ceiling(effect_limit * 10) / 10
 
-distribution_plot <- ggplot2$ggplot(res, ggplot2$aes(specific_effect, promoter)) +
+distribution_plot <- ggplot2$ggplot(res, ggplot2$aes(relative_effect, promoter)) +
   ggplot2$geom_violin(
     ggplot2$aes(group = promoter),
     fill = "#E5E7EB",
@@ -138,7 +138,7 @@ distribution_plot <- ggplot2$ggplot(res, ggplot2$aes(specific_effect, promoter))
     legend.margin = ggplot2$margin(3, 5, 3, 5)
   ) +
   ggplot2$labs(
-    x = expression(hat(Delta * y)[a * "\u00b7"]^"spec"),
+    x = expression(hat(Delta * y)[a * "\u00b7"]^"rel"),
     y = NULL
   )
 

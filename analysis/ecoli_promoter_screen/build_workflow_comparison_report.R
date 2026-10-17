@@ -81,21 +81,21 @@ run_destress <- function(growth_exponent, label) {
   hit_class <- call_hits(
     out,
     fdr = 0.05,
-    effect = "specific_effect",
-    padj = "specific_padj_by_reporter"
+    effect = "relative_effect",
+    padj = "relative_padj_by_reporter"
   )$hit
   out[[paste0(label, "_hit_class")]] <- hit_class
   out[[paste0(label, "_hit")]] <- hit_class != "Not DE"
   out$pair_id <- hit_key(out)
   keep <- c(
-    "promoter", "compound", "pair_id", "specific_effect",
-    "specific_pvalue", "specific_padj_by_reporter",
+    "promoter", "compound", "pair_id", "relative_effect",
+    "relative_pvalue", "relative_padj_by_reporter",
     paste0(label, "_hit"), paste0(label, "_hit_class")
   )
   out <- out[, keep]
-  names(out)[names(out) == "specific_effect"] <- paste0(label, "_effect")
-  names(out)[names(out) == "specific_pvalue"] <- paste0(label, "_pvalue")
-  names(out)[names(out) == "specific_padj_by_reporter"] <- paste0(label, "_padj_by_reporter")
+  names(out)[names(out) == "relative_effect"] <- paste0(label, "_effect")
+  names(out)[names(out) == "relative_pvalue"] <- paste0(label, "_pvalue")
+  names(out)[names(out) == "relative_padj_by_reporter"] <- paste0(label, "_padj_by_reporter")
 
   list(results = out, parameters = model_parameters(fit))
 }
@@ -431,13 +431,13 @@ effect_long <- rbind(
     stringsAsFactors = FALSE
   ),
   data.frame(
-    method = "DStressR without EV control specific effect",
+    method = "DStressR without EV control reporter-relative effect",
     value = comparison$estimated_exponent_effect,
     hit = comparison$estimated_exponent_hit,
     stringsAsFactors = FALSE
   ),
   data.frame(
-    method = "DStressR fixed alpha=1 specific effect",
+    method = "DStressR fixed alpha=1 reporter-relative effect",
     value = comparison$fixed_exponent_effect,
     hit = comparison$fixed_exponent_hit,
     stringsAsFactors = FALSE
@@ -445,8 +445,8 @@ effect_long <- rbind(
 )
 effect_long$method <- factor(effect_long$method, levels = c(
   "Binsfeld mean Z-score",
-  "DStressR without EV control specific effect",
-  "DStressR fixed alpha=1 specific effect"
+  "DStressR without EV control reporter-relative effect",
+  "DStressR fixed alpha=1 reporter-relative effect"
 ))
 effect_hist <- ggplot2$ggplot(effect_long, ggplot2$aes(value)) +
   ggplot2$geom_histogram(
@@ -467,8 +467,8 @@ effect_hist <- ggplot2$ggplot(effect_long, ggplot2$aes(value)) +
   ggplot2$facet_wrap(ggplot2$vars(method), scales = "free_x", ncol = 1) +
   ggplot2$scale_fill_manual(values = c(
     "Binsfeld mean Z-score" = "#2563eb",
-    "DStressR without EV control specific effect" = "#dc2626",
-    "DStressR fixed alpha=1 specific effect" = "#059669"
+    "DStressR without EV control reporter-relative effect" = "#dc2626",
+    "DStressR fixed alpha=1 reporter-relative effect" = "#059669"
   )) +
   ggplot2$theme_light(base_size = 10) +
   ggplot2$theme(
@@ -603,7 +603,7 @@ response_scatter <- ggplot2$ggplot(
     title = "Binsfeld-referenced effect comparison",
     subtitle = "Each panel compares the Binsfeld-style mean Z-score with one DStressR workflow or sensitivity response",
     x = "Binsfeld-style mean Z-score",
-    y = "DStressR specific effect",
+    y = "DStressR reporter-relative effect",
     color = "Hit class"
   )
 
@@ -889,10 +889,10 @@ html_table(
 '<h2>Figures</h2>
 <div class="figure"><img alt="Three-method hit overlap Venn diagram" src="', img_uri(file.path(out_dir, "three_method_hit_overlap_venn.png")), '"><div class="caption">Figure 1. Exact promoter-compound hit overlap across the three hit sets.</div></div>
 <div class="figure"><img alt="Three-method p-value histograms" src="', img_uri(file.path(out_dir, "three_method_pvalue_histograms.png")), '"><div class="caption">Figure 2. Raw and promoter-wise BH-adjusted p-value distributions. Colored bars are method-specific hits.</div></div>
-<div class="figure"><img alt="Three-method effect histograms" src="', img_uri(file.path(out_dir, "three_method_effect_histograms.png")), '"><div class="caption">Figure 3. Effect-score distributions for the Binsfeld-style mean Z-score and the two DStressR specific-effect estimates.</div></div>
+<div class="figure"><img alt="Three-method effect histograms" src="', img_uri(file.path(out_dir, "three_method_effect_histograms.png")), '"><div class="caption">Figure 3. Effect-score distributions for the Binsfeld-style mean Z-score and the two DStressR reporter-relative-effect estimates.</div></div>
 <div class="figure"><img alt="Binsfeld and DStressR without EV control volcano plots" src="', img_uri(file.path(out_dir, "binsfeld_estimated_exponent_volcano_plots.png")), '"><div class="caption">Figure 4. Volcano plots for the Binsfeld-style analysis and DStressR without EV control.</div></div>
 <div class="grid">
-<div class="figure"><img alt="Binsfeld-referenced DStressR effect scatter" src="', img_uri(file.path(out_dir, "binsfeld_reference_effect_scatter.png")), '"><div class="caption">Figure 5. Binsfeld-style mean Z-score as reference, with DStressR without EV control and fixed alpha=1 specific effects shown in separate panels.</div></div>
+<div class="figure"><img alt="Binsfeld-referenced DStressR effect scatter" src="', img_uri(file.path(out_dir, "binsfeld_reference_effect_scatter.png")), '"><div class="caption">Figure 5. Binsfeld-style mean Z-score as reference, with DStressR without EV control and fixed alpha=1 reporter-relative effects shown in separate panels.</div></div>
 <div class="figure"><img alt="Binsfeld-referenced DStressR p-value scatter" src="', img_uri(file.path(out_dir, "binsfeld_reference_pvalue_scatter.png")), '"><div class="caption">Figure 6. Binsfeld-style raw Wilcoxon p-value as reference, with DStressR without EV control and fixed alpha=1 raw p-values shown in separate panels.</div></div>
 </div>
 

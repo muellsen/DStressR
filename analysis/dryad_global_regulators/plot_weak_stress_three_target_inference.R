@@ -22,8 +22,8 @@ if (!file.exists(default_path) || !file.exists(rank1_path)) {
   )
 }
 
-default <- utils::read.delim(default_path, check.names = FALSE)
-rank1 <- utils::read.delim(rank1_path, check.names = FALSE)
+default <- read_analysis_delim(default_path, check.names = FALSE)
+rank1 <- read_analysis_delim(rank1_path, check.names = FALSE)
 
 make_target <- function(d, target, effect, pvalue, padj) {
   out <- d[, c("promoter", "compound", "base_promoter", "window", effect, pvalue, padj), drop = FALSE]
@@ -43,10 +43,10 @@ targets <- rbind(
   ),
   make_target(
     default,
-    "Specific effect",
-    "specific_effect",
-    "specific_pvalue",
-    "specific_padj_by_reporter"
+    "Reporter-relative effect",
+    "relative_effect",
+    "relative_pvalue",
+    "relative_padj_by_reporter"
   ),
   make_target(
     rank1,
@@ -58,7 +58,7 @@ targets <- rbind(
 )
 targets$target <- factor(
   targets$target,
-  levels = c("Total effect", "Specific effect", "Rank-adjusted total effect")
+  levels = c("Total effect", "Reporter-relative effect", "Rank-adjusted total effect")
 )
 targets$compound <- factor(targets$compound, levels = c("Iron", "Tetracycline", "H2O2", "Kanamycin"))
 targets$promoter_label <- paste(targets$base_promoter, targets$window, sep = " | ")
@@ -105,7 +105,7 @@ p_hist <- ggplot2::ggplot(targets, ggplot2::aes(x = pvalue, fill = target)) +
   ggplot2::scale_fill_manual(
     values = c(
       "Total effect" = "#D55E00",
-      "Specific effect" = "#009E73",
+      "Reporter-relative effect" = "#009E73",
       "Rank-adjusted total effect" = "#0072B2"
     ),
     guide = "none"
@@ -145,7 +145,7 @@ make_label_df <- function(d) {
   ]
   top_by_target <- c(
     "Total effect" = 8,
-    "Specific effect" = 13,
+    "Reporter-relative effect" = 13,
     "Rank-adjusted total effect" = 14
   )
   candidates <- do.call(rbind, lapply(split(candidates, candidates$target), function(x) {
