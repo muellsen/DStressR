@@ -110,7 +110,7 @@ perturbation-wide effects, technical variation, and background signal.
 and identifying reporter-perturbation responses that stand out from the broader
 behaviour of the screen. Applications to public *E. coli* luminescence and
 fluorescence assays compare model-based analysis with published hit-calling
-workflows and decompose global and reporter-specific response structure.
+workflows and decompose global and reporter-relative response structure.
 
 ## Introduction
 
@@ -221,12 +221,12 @@ measurements are available.
 The model estimates reference-relative reporter-perturbation effects while
 accounting for technical covariates. These total effects are the default
 inferential target. Centering them across reporters within each perturbation
-gives reporter-specific deviations from the panel average.
+gives reporter-relative deviations from the panel average.
 Optional low-rank adjustment acts on the fitted total-effect matrix
 when latent structured background is analyzed. Uncertainty is quantified with
 ordinary or moderated $t$-statistics and false-discovery-rate control.
 
-![Statistical workflow implemented by DStressR. Reporter and growth summaries are first mapped to a response scale; optional background-reporter calibration acts on this response before model fitting. The downstream layers estimate reference-relative reporter-perturbation effects, center them into reporter-specific contrasts, optionally remove latent structured background, moderate uncertainty, control false discovery rates, and return directional hit calls.](../figures/Figure2-cropped.pdf){#fig-statistical-workflow width="95%" fig-align="center" fig-pos="htbp"}
+![Statistical workflow implemented by DStressR. Reporter and growth summaries are first mapped to a response scale; optional background-reporter calibration acts on this response before model fitting. The downstream layers estimate reference-relative reporter-perturbation effects, center them into reporter-relative contrasts, optionally remove latent structured background, moderate uncertainty, control false discovery rates, and return directional hit calls.](../figures/Figure2-cropped.pdf){#fig-statistical-workflow width="95%" fig-align="center" fig-pos="htbp"}
 
 ### Experimental Design and Dimensions
 
@@ -521,15 +521,9 @@ and the background reporter is removed from the tested reporter set. This
 calibration estimates reporter-specific background coupling through
 $\gamma_{1a}$.
 
-Direct background subtraction is the special case
-$\gamma_{0a}=0$ and $\gamma_{1a}=1$, yielding
-$\widehat y_i^{\mathrm{bg}}=\widehat y_i-b_i$ in
-Eq.\eqref{eq:background-reporter-residual}. This correction follows the
-response-level subtraction used by @Amstalden2026SalmonellaStressScreen,
-who subtract the mean empty-vector response for each compound from
-median-centered log reporter-to-growth ratios.
-Response-level calibration and fitted-effect background adjustment
-(Section 2.5.3) are alternative uses of the background reporter.
+Following @Amstalden2026SalmonellaStressScreen, baseline background subtraction
+is the special case $\gamma_{0a}=0$ and $\gamma_{1a}=1$, yielding
+$\widehat y_i^{\mathrm{bg}}=\widehat y_i-b_i$.
 
 The response vector passed to differential analysis is therefore
 $\mathbf y^\star=(y_1^\star,\ldots,y_M^\star)^\top\in\mathbb R^M$, with
@@ -540,7 +534,7 @@ response.
 
 ### Estimands
 
-#### Total and Specific Effects
+#### Total and Reporter-relative Effects
 
 We next define the estimands on the constructed (or supplied) response scale
 $y_i^\star$. Let $\mathcal A^\star$ be the tested reporter set, with size
@@ -584,7 +578,7 @@ total effect, our default target of inference, is
 \end{equation}
 
 To identify responses that depart from the reporter-panel average, we
-decompose total effects into a perturbation-wide mean and reporter-specific
+decompose total effects into a perturbation-wide mean and reporter-relative
 deviations. For perturbation $j$, the library-wide average response is
 
 \begin{equation}
@@ -598,13 +592,14 @@ deviations. For perturbation $j$, the library-wide average response is
 \end{aligned}
 \end{equation}
 
-The specific effect is defined by subtracting the library-wide component in
+The reporter-relative effect quantifies a deviation from the mean total effect
+across the tested reporters for the same perturbation. We subtract the library-wide component in
 Eq.\eqref{eq:compound-wide-effect}:
 
 \begin{equation}
-\label{eq:specific-effect}
+\label{eq:reporter-relative-effect}
 \begin{aligned}
-\Delta y_{aj}^{\mathrm{spec}}
+\Delta y_{aj}^{\mathrm{rel}}
   &=
   \Delta y_{aj}^{\mathrm{tot}}
   -
@@ -656,13 +651,13 @@ The rank-adjusted total-effect estimand is then
 \end{aligned}
 \end{equation}
 
-If a centered reporter-specific residual is desired after rank adjustment, it
+If a reporter-relative effect is desired after rank adjustment, it
 is obtained by centering the rank-adjusted total effects within perturbation:
 
 \begin{equation}
-\label{eq:rank-adjusted-specific-effect}
+\label{eq:rank-adjusted-reporter-relative-effect}
 \begin{aligned}
-\Delta y_{aj}^{\mathrm{spec},k}
+\Delta y_{aj}^{\mathrm{rel},k}
   &=
   \Delta y_{aj}^{\mathrm{tot},k}
   -
@@ -673,8 +668,8 @@ is obtained by centering the rank-adjusted total effects within perturbation:
 \end{equation}
 
 The default analysis uses $k=0$, for which $B^{(0)}=0$ and
-Eq.\eqref{eq:rank-adjusted-specific-effect} reduces to
-Eq.\eqref{eq:specific-effect}. Positive ranks, typically $k=1$ or $k=2$, are
+Eq.\eqref{eq:rank-adjusted-reporter-relative-effect} reduces to
+Eq.\eqref{eq:reporter-relative-effect}. Positive ranks, typically $k=1$ or $k=2$, are
 used when the fitted total-effect matrix shows structured background
 variation. We diagnose this structure by permutation parallel analysis: the
 observed singular values of $T$ are compared with singular values obtained
@@ -778,7 +773,7 @@ $\beta_{\mathrm{int}}\in\mathbb R^{d_{\mathrm{int}}}$, this model is
 where $X_{\mathrm{int}}$ contains reporter, perturbation, reporter-perturbation
 interaction, and technical-covariate terms.
 
-#### Estimation of Total and Specific Effects
+#### Estimation of Total and Reporter-relative Effects
 
 For estimation from Eq.\eqref{eq:promoter-specific-matrix-model}, we write
 $m_a(j,x^\star)\in\mathbb R^{d_a}$ for the row of
@@ -833,10 +828,10 @@ s_{aj}^{\mathrm{tot}}
 
 For perturbation $j$, let $\mathcal A_j$ be the set of tested reporters with an
 estimated total effect and let $n_j=|\mathcal A_j|$. The perturbation-wide and
-reporter-specific estimates are then computed as
+reporter-relative estimates are then computed as
 
 \begin{equation}
-\label{eq:implemented-global-specific-estimates}
+\label{eq:implemented-global-relative-estimates}
 \begin{aligned}
 \widehat{\overline{\Delta y}}_{j}^{\mathrm{tot}}
   &=
@@ -844,7 +839,7 @@ reporter-specific estimates are then computed as
   \sum_{a\in\mathcal A_j}
   \widehat{\Delta y}_{aj}^{\mathrm{tot}},
   \\
-\widehat{\Delta y}_{aj}^{\mathrm{spec}}
+\widehat{\Delta y}_{aj}^{\mathrm{rel}}
   &=
   \widehat{\Delta y}_{aj}^{\mathrm{tot}}
   -
@@ -860,18 +855,18 @@ estimate
 $\widehat{\Delta y}_{aj}^{\mathrm{tot},k}
 =\widehat{\Delta y}_{aj}^{\mathrm{tot}}-\widehat B^{(k)}_{aj}$.
 
-The corresponding rank-adjusted specific estimate is obtained by centering
+The corresponding rank-adjusted reporter-relative estimate is obtained by centering
 $\widehat{\Delta y}_{aj}^{\mathrm{tot},k}$ across reporters within perturbation.
 With $k=0$, $\widehat B^{(0)}_{aj}=0$ and both estimates reduce to their
 unadjusted counterparts.
 
-Under the reporter-specific fitting decomposition, the variance of the centered
-specific-effect estimate is
+Under the reporter-wise fitting decomposition, the variance of the
+reporter-relative effect estimate is
 
 \begin{equation}
-\label{eq:specific-effect-variance}
+\label{eq:reporter-relative-effect-variance}
 \begin{aligned}
-v_{aj}^{\mathrm{spec}}
+v_{aj}^{\mathrm{rel}}
   &=
   \left(\frac{n_j-1}{n_j}\right)^2
   v_{aj}^{\mathrm{tot}}
@@ -880,21 +875,19 @@ v_{aj}^{\mathrm{spec}}
   \sum_{a'\in\mathcal A_j,\ a'\ne a}
   v_{a'j}^{\mathrm{tot}},
   \\
-s_{aj}^{\mathrm{spec}}
+s_{aj}^{\mathrm{rel}}
   &=
-  \sqrt{v_{aj}^{\mathrm{spec}}}.
+  \sqrt{v_{aj}^{\mathrm{rel}}}.
 \end{aligned}
 \end{equation}
 
 #### Additive Empty-Vector Adjustment
 
-@Amstalden2026SalmonellaStressScreen account for perturbation-dependent
-reporter background by subtracting the mean empty-vector response from
-median-centered log reporter-to-growth ratios. We extend this additive
-correction to fitted reference-relative effects, using the empty-vector
-contrast to define background-adjusted total responses and perturbation-level
-summaries. Here we retain the empty-vector observations in the effect model
-and use responses without response-level background calibration. Let $e$
+We formulate a model-based analogue of the background subtraction used by
+@Amstalden2026SalmonellaStressScreen by subtracting fitted empty-vector
+contrasts from reporter total effects. We retain the empty-vector observations
+in the effect model and use responses without response-level background
+calibration. Let $e$
 denote the empty-vector reporter; the tested reporter set is
 $\mathcal A^\star$, excluding $e$. For each perturbation, the fitted
 empty-vector response is the reference-relative contrast
@@ -948,7 +941,7 @@ $\nu_{aj}^{\mathrm{adj}}=(v_{aj}^{\mathrm{adj}})^2/
 where $\nu_a$ and $\nu_e$ are the residual degrees of freedom of the reporter
 and empty-vector fits [@Satterthwaite1946; @Welch1947].
 
-For reporter-specific effects, we additionally center over the tested
+For reporter-relative effects, we additionally center over the tested
 reporters. Let $\mathcal A_j$ be the set of tested reporters with a fitted
 effect for perturbation $j$, and let $n_j=|\mathcal A_j|$. Their
 background-adjusted mean is
@@ -967,9 +960,9 @@ background-adjusted mean is
 Because the additive background shift $\Delta y_{ej}^{\mathrm{evc}}$ enters
 every adjusted reporter response for perturbation $j$, it cancels during the
 centering in Eq.\eqref{eq:model-empty-vector-centering}. The resulting
-reporter-specific contrast equals Eq.\eqref{eq:specific-effect} in a complete
+reporter-relative contrast equals Eq.\eqref{eq:reporter-relative-effect} in a complete
 design; an incomplete design uses the corresponding $n_j$-reporter mean.
-The centered-effect variance remains Eq.\eqref{eq:specific-effect-variance}.
+The centered-effect variance remains Eq.\eqref{eq:reporter-relative-effect-variance}.
 
 #### Standard Hypothesis Testing
 
@@ -1000,16 +993,16 @@ standard error is $\sqrt{v_{aj}^{\mathrm{adj}}}$ from
 Eq.\eqref{eq:model-empty-vector-adjusted-variance}, with
 $\nu_{aj}^{\mathrm{adj}}$ degrees of freedom.
 
-For specific-effect inference, we test
-$H_{0,aj}:\Delta y_{aj}^{\mathrm{spec},k}=0$.
+For reporter-relative effect inference, we test
+$H_{0,aj}:\Delta y_{aj}^{\mathrm{rel},k}=0$.
 Under the working independence assumption across reporter fits, the effective
 degrees of freedom of the centered variance in
-Eq.\eqref{eq:specific-effect-variance} are
+Eq.\eqref{eq:reporter-relative-effect-variance} are
 
 \begin{equation}
-\label{eq:specific-effect-df}
-\nu_{aj}^{\mathrm{spec}}
- = \frac{(v_{aj}^{\mathrm{spec}})^2}
+\label{eq:reporter-relative-effect-df}
+\nu_{aj}^{\mathrm{rel}}
+ = \frac{(v_{aj}^{\mathrm{rel}})^2}
  {\left(\frac{n_j-1}{n_j}\right)^4
      (v_{aj}^{\mathrm{tot}})^2/\nu_a
   + n_j^{-4}\sum_{a'\in\mathcal A_j,\ a'\ne a}
@@ -1019,7 +1012,7 @@ Eq.\eqref{eq:specific-effect-variance} are
 This approximation matches the first two moments of the sum of variance
 components [@Satterthwaite1946; @Welch1947]. Effective-degree-of-freedom
 approximations also support differential-expression analysis with mixed
-models, including `dream` [@Hoffman2021dream]. The ordinary specific-effect
+models, including `dream` [@Hoffman2021dream]. The ordinary reporter-relative effect
 statistic is
 
 \begin{equation}
@@ -1027,12 +1020,12 @@ statistic is
 \begin{aligned}
 t_{aj}
   &=
-  \frac{\widehat{\Delta y}_{aj}^{\mathrm{spec},k}}
-       {s_{aj}^{\mathrm{spec}}},
+  \frac{\widehat{\Delta y}_{aj}^{\mathrm{rel},k}}
+       {s_{aj}^{\mathrm{rel}}},
   \qquad
 t_{aj}
   \overset{\mathrm{approx}}{\sim}
-  \operatorname{t}_{\nu_{aj}^{\mathrm{spec}}}
+  \operatorname{t}_{\nu_{aj}^{\mathrm{rel}}}
   \quad\text{under }H_{0,aj}.
 \end{aligned}
 \end{equation}
@@ -1072,10 +1065,10 @@ s_\omega
 \end{equation}
 
 Eq.\eqref{eq:contrast-variance-index} is written for total effects, with
-$k=0$ by default. For a specific-effect analysis,
+$k=0$ by default. For a reporter-relative effect analysis,
 $\widehat\Delta_\omega=
-\widehat{\Delta y}_{aj}^{\mathrm{spec},k}$ and
-$v_\omega=(s_{aj}^{\mathrm{spec}})^2$. For background-adjusted total effects,
+\widehat{\Delta y}_{aj}^{\mathrm{rel},k}$ and
+$v_\omega=(s_{aj}^{\mathrm{rel}})^2$. For background-adjusted total effects,
 we use $\widehat\Delta_\omega=\widehat{\Delta y}_{aj}^{\mathrm{adj}}$ from
 Eq.\eqref{eq:model-empty-vector-adjusted-total} and
 $v_\omega=v_{aj}^{\mathrm{adj}}$ from
@@ -1083,11 +1076,11 @@ Eq.\eqref{eq:model-empty-vector-adjusted-variance}. When $k>0$, inference is con
 the estimated low-rank background.
 
 For reporter-wise fits, total-effect tests use $\nu_\omega=\nu_a$ and
-specific-effect tests use $\nu_\omega=\nu_{aj}^{\mathrm{spec}}$ from
-Eq.\eqref{eq:specific-effect-df}. Background-adjusted total-effect tests use
+reporter-relative effect tests use $\nu_\omega=\nu_{aj}^{\mathrm{rel}}$ from
+Eq.\eqref{eq:reporter-relative-effect-df}. Background-adjusted total-effect tests use
 $\nu_\omega=\nu_{aj}^{\mathrm{adj}}$; we combine their raw variance components
 before moderation. Contrasts from the full interaction model use its common
-residual degrees of freedom. We construct the specific-effect variance from
+residual degrees of freedom. We construct the reporter-relative effect variance from
 the raw total-effect variances and moderate it once; total-effect moderation
 is performed separately.
 
@@ -1165,7 +1158,7 @@ transcriptional regulation by MarA, SoxS, and Rob (`marRABp`, `soxSp`,
 `robp`), and outer-membrane permeability regulation through the MicF/OmpF axis
 (`micFp`, `ompFp`). We estimate reference-relative total effects to characterize
 changes in this connected regulatory panel, including coordinated responses
-across several promoters. Centered specific effects describe each promoter's
+across several promoters. Reporter-relative effects describe each promoter's
 departure from the panel average and are examined in Supplementary Note G.
 
 The data comprise $M=5{,}894$ retained well summaries after quality-control filtering [@Binsfeld2025PLoSBiol],
@@ -1352,7 +1345,7 @@ that DStressR changes the response geometry through promoter-specific growth
 scaling and EVC calibration. The corresponding response distributions are shown
 in Suppl. Figure 1.
 
-![Response construction in the *E. coli* WT screen. Panel a shows raw reporter-specific water-control slopes and the shrunken growth-response exponents $\widehat\alpha_a$ defined in Eq.\eqref{eq:shrunk-growth-exponent}; these are estimated for all reporters, including the EVC reporter, because response scaling precedes EVC calibration. The dashed vertical line marks $\alpha_a=1$ and the dotted vertical line marks the global water-control slope $\widehat\alpha_0$. Panel b shows reporter-specific EVC calibration slopes $\widehat\gamma_{1a}$ from the Huber calibration model in Eq.\eqref{eq:background-reporter-calibration}--Eq.\eqref{eq:background-reporter-huber-objective}; the EVC row is empty because the EVC reporter serves as the calibration reference. Panels c and d compare promoter-compound responses after DStressR response construction with the original response $\bar{s}_{aj}$ from Eq.\eqref{eq:binsfeld-mean-score}, shown on a pseudo log-scale, without and with EVC, respectively.](../../analysis/outputs/binsfeld_modeling_steps/binsfeld_response_modeling_combined.png){#fig-binsfeld-response-construction width="70%" fig-align="center" fig-pos="htbp"}
+![Response construction in the *E. coli* WT screen. Panel a shows raw reporter-specific water-control slopes and the shrunken growth-response exponents $\widehat\alpha_a$ defined in Eq.\eqref{eq:shrunk-growth-exponent}; these are estimated for all reporters, including the EVC reporter, because response scaling precedes EVC calibration. The dashed vertical line marks $\alpha_a=1$ and the dotted vertical line marks the global water-control slope $\widehat\alpha_0$. Panel b shows reporter-specific EVC calibration slopes $\widehat\gamma_{1a}$ from the Huber calibration model in Eq.\eqref{eq:background-reporter-calibration}--Eq.\eqref{eq:background-reporter-huber-objective}; the EVC row is empty because the EVC reporter serves as the calibration reference. Panels c and d compare promoter-compound responses after DStressR response construction with the original response $\bar{s}_{aj}$ from Eq.\eqref{eq:binsfeld-mean-score}, shown on a pseudo log-scale, without and with EVC, respectively.](../../analysis/outputs/binsfeld_modeling_steps/binsfeld_response_modeling_combined.png){#fig-binsfeld-response-construction width="50%" fig-align="center" fig-pos="H"}
 
 \Needspace{3\baselineskip}
 
@@ -1375,7 +1368,7 @@ promoter-wise variance. PMS, Clarithromycin, Azithromycin, Procaine, and
 Paraquat show stronger promoter heterogeneity on top of their fitted
 compound-level responses.
 
-![DStressR effect-matrix estimation and diagnostics for the *E. coli* WT screen. Panels a and b show total promoter-compound effects estimated by Eq.\eqref{eq:total-contrast-estimate}, without EVC and with EVC, respectively. Rows are promoters and columns are compounds. Panels c and d summarize the same total-effect matrices by ranking compounds according to $|\widehat{\overline{\Delta y}}_{j}^{\mathrm{tot}}|$ from Eq.\eqref{eq:implemented-global-specific-estimates} and plotting the variance of $\widehat{\Delta y}_{aj}^{\mathrm{tot}}$ across promoters. The green curve is a non-parametric trend.](../../analysis/outputs/binsfeld_effect_matrix_views/binsfeld_dstressr_effect_matrix_and_variance_diagnostic.png){#fig-binsfeld-effect-matrix-diagnostic width="100%" fig-align="center" fig-pos="htbp"}
+![DStressR effect-matrix estimation and diagnostics for the *E. coli* WT screen. Panels a and b show total promoter-compound effects estimated by Eq.\eqref{eq:total-contrast-estimate}, without EVC and with EVC, respectively. Rows are promoters and columns are compounds. Panels c and d summarize the same total-effect matrices by ranking compounds according to $|\widehat{\overline{\Delta y}}_{j}^{\mathrm{tot}}|$ from Eq.\eqref{eq:implemented-global-relative-estimates} and plotting the variance of $\widehat{\Delta y}_{aj}^{\mathrm{tot}}$ across promoters. The green curve is a non-parametric trend.](../../analysis/outputs/binsfeld_effect_matrix_views/binsfeld_dstressr_effect_matrix_and_variance_diagnostic.png){#fig-binsfeld-effect-matrix-diagnostic width="100%" fig-align="center" fig-pos="htbp"}
 
 \Needspace{3\baselineskip}
 
@@ -1391,6 +1384,10 @@ rule also requires $|\overline Z_{aj}|>1$. The p-value distributions show an
 enrichment near zero across the three workflows
 (@fig-binsfeld-discovery-summary a--c).
 
+![Discovery comparison for the Binsfeld reference rule and the two DStressR total-effect analyses. Panels a--c show pooled raw p-value histograms, with model-based p-values computed by Eq.\eqref{eq:moderated-pvalue} for the total effects in Eq.\eqref{eq:total-contrast-estimate}. Panels d--f show the original mean Z-score or the fitted DStressR total effect against raw p-values, with the 35 three-way intersection calls annotated and colored by promoter. Panel g shows the three-method hit overlap. Panels h--i compare Binsfeld reference raw p-values with DStressR raw p-values; grey points are all tested pairs, triangles mark pairs called only by the Binsfeld reference rule, and circles mark calls unique to the corresponding DStressR workflow. Original-workflow calls require within-promoter BH-adjusted p-values below 0.05 and an absolute mean Z-score above 1; DStressR calls require within-promoter BH-adjusted p-values below 0.05.](../../analysis/outputs/binsfeld_total_effect_discovery/evc_huber_discovery_summary_figure.png){#fig-binsfeld-discovery-summary width="90%" fig-align="center" fig-pos="H"}
+
+\Needspace{3\baselineskip}
+
 We identified 145 significant promoter-compound pairs without EVC calibration
 and 119 with EVC calibration, compared with 53 under the published rule.
 Thirty-five pairs were shared by all three analyses. The two DStressR
@@ -1403,8 +1400,6 @@ reporter-model residual degrees of freedom ranging from 626 to 652 and
 625 to 646, respectively. Moderation reduced the call counts from 147 to 145
 and from 120 to 119. Promoter-wise p-value distributions and complete hit
 lists are provided in Suppl. Figure 2 and Suppl. Tables 2--3.
-
-![Discovery comparison for the Binsfeld reference rule and the two DStressR total-effect analyses. Panels a--c show pooled raw p-value histograms, with model-based p-values computed by Eq.\eqref{eq:moderated-pvalue} for the total effects in Eq.\eqref{eq:total-contrast-estimate}. Panels d--f show the original mean Z-score or the fitted DStressR total effect against raw p-values, with the 35 three-way intersection calls annotated and colored by promoter. Panel g shows the three-method hit overlap. Panels h--i compare Binsfeld reference raw p-values with DStressR raw p-values; grey points are all tested pairs, triangles mark pairs called only by the Binsfeld reference rule, and circles mark calls unique to the corresponding DStressR workflow. Original-workflow calls require within-promoter BH-adjusted p-values below 0.05 and an absolute mean Z-score above 1; DStressR calls require within-promoter BH-adjusted p-values below 0.05.](../../analysis/outputs/binsfeld_total_effect_discovery/evc_huber_discovery_summary_figure.png){#fig-binsfeld-discovery-summary width="100%"}
 
 We recovered responses across the redox, permeability, and efflux pathways
 represented in the reporter panel.
@@ -1445,7 +1440,7 @@ The compact screen also allowed us to fit the full promoter-by-compound interact
 in Eq.\eqref{eq:optional-interaction-model} and compare the resulting total
 effects (Suppl. Note F; Suppl. Tables 4--5; Suppl. Figures 3--4).
 We further examined deviations from the seven-promoter average using the
-centered specific effects in Eq.\eqref{eq:implemented-global-specific-estimates}
+reporter-relative effects in Eq.\eqref{eq:implemented-global-relative-estimates}
 (Suppl. Note G; Suppl. Figures 5--7; Suppl. Tables 6--7).
 
 
@@ -1453,8 +1448,8 @@ centered specific effects in Eq.\eqref{eq:implemented-global-specific-estimates}
 
 ### Screen Design and Promoter-Activity Response Construction
 
-We next considered the PFIbox promoter-reporter study of French et al.
-[@French2018PFIbox], which measured the Zaslaver *E. coli*
+We next considered the PFIbox promoter-reporter study of
+@French2018PFIbox, which measured the Zaslaver *E. coli*
 promoter-GFP library [@Zaslaver2006ReporterLibrary] in high-density colony
 arrays under a panel of antibiotic perturbations. The primary signal is a
 fluorescence time series acquired from colonies on solid agar. The published
@@ -1466,7 +1461,8 @@ For colony observation $i$, let $a_i$ denote the promoter reporter, $j_i$ the
 antibiotic-dose treatment level, $k_i$ the repeated colony-position index
 within promoter $a_i$, and $t$ time. We write $\Phi_i(t)$ for the measured GFP
 fluorescence trace, $B_i(t)$ for the matched promoterless-background trace, and
-$C_i(t)$ for the matched constitutive-reporter biomass proxy. French et al.
+$C_i(t)$ for the matched constitutive-reporter biomass proxy, after fluorescence
+preprocessing. French et al.
 define promoter activity by first forming biomass-normalized fluorescence and
 then taking a temporal derivative. In our notation, the normalized fluorescence
 curve is
@@ -1475,10 +1471,11 @@ curve is
 \label{eq:pfibox-normalized-fluorescence}
 q_i(t)
   =
-  \frac{\Phi_i(t)-B_i(t)}{C_i(t)+\epsilon},
+  \max\left\{\frac{\Phi_i(t)-B_i(t)}{C_i(t)},0\right\},
 \end{equation}
 
-where $\epsilon>0$ is a small numerical offset when needed. The corresponding
+for positive $C_i(t)$. We used the deposited biomass-normalized fluorescence
+traces and reconstructed their unscaled smoothed derivatives. The corresponding
 promoter-activity curve is
 
 \begin{equation}
@@ -1489,26 +1486,31 @@ PA_i(t)
   =
   \frac{d}{dt}
   \left\{
-  \frac{\Phi_i(t)-B_i(t)}{C_i(t)+\epsilon}
+  \max\left[\frac{\Phi_i(t)-B_i(t)}{C_i(t)},0\right]
   \right\}.
 \end{equation}
 
 Biomass correction enters through
 Eq.\eqref{eq:pfibox-normalized-fluorescence}. For a user-defined time window
-$\mathcal T\subseteq[0,T_{\max}]$, the scalar response supplied to DStressR is
+$\mathcal T=[t_0,T]\subseteq[0,T_{\max}]$, the scalar response supplied to DStressR is
 
 \begin{equation}
 \label{eq:pfibox-pa-summary}
 y_i^{PA}(\mathcal T)
   =
-  \frac{1}{|\mathcal T|}
   \int_{\mathcal T} PA_i(t)\,dt.
 \end{equation}
 
-The window $\mathcal T$ is an analysis parameter. French et al. state that
-their clustering analysis starts after the earliest timepoints because division
-by extremely low biomass creates an expression spike, following the Zaslaver
-pipeline [@French2018PFIbox; @Zaslaver2006ReporterLibrary].
+The endpoint $T$ is an analysis parameter. We reconstructed activity on the
+197-sample grid retained in the deposited data by trimming the first 19
+fluorescence differences before quadratic LOESS smoothing with span 0.5
+(Suppl. Note H). With the five-minute acquisition interval, the retained
+right-endpoint grid runs from $t_0=100$ minutes to $T=18$ hours. We integrated
+these signed, unscaled activity curves by the trapezoidal rule, preserving
+between-colony amplitude differences. French et al. use per-curve min--max
+scaling to examine temporal expression profiles and exclude early timepoints
+from clustering because low biomass can produce spikes
+[@French2018PFIbox; @Zaslaver2006ReporterLibrary].
 
 ### DStressR Effect Estimation from Supplied Promoter-Activity Responses
 
@@ -1547,19 +1549,19 @@ colony-position-adjusted coefficient
 $\Delta y_{aj}^{\mathrm{tot}}(\mathcal T)=\theta_{aj}$ from
 Eq.\eqref{eq:pfibox-linear-model}. We test changes relative to the untreated
 control through $H_{0,aj}:\theta_{aj}=0$. We also examine the corresponding
-centered specific effects
-$\Delta y_{aj}^{\mathrm{spec}}(\mathcal T)=\Delta y_{aj}^{\mathrm{tot}}(\mathcal T)-\overline{\Delta y}_{\cdot j}^{\mathrm{tot}}(\mathcal T)$
-in Suppl. Note H.2, using Eq.\eqref{eq:specific-effect} on the
+reporter-relative effects
+$\Delta y_{aj}^{\mathrm{rel}}(\mathcal T)=\Delta y_{aj}^{\mathrm{tot}}(\mathcal T)-\overline{\Delta y}_{\cdot j}^{\mathrm{tot}}(\mathcal T)$
+in Suppl. Note H.2, using Eq.\eqref{eq:reporter-relative-effect} on the
 promoter-activity response scale.
 
-We fitted Eq.\eqref{eq:pfibox-linear-model} to responses from
-$\mathcal T=[2,18]$ hours. The analyzed subset contained $M=228{,}977$
-colony-level observations and $n=1{,}797$ promoters after filtering. The
+We fitted Eq.\eqref{eq:pfibox-linear-model} to the integrated responses in
+Eq.\eqref{eq:pfibox-pa-summary}. The analysis contained $M=273{,}792$
+colony-level observations and $n=1{,}797$ promoters. The
 perturbation set contained $p=33$ non-reference antibiotic-dose treatment
-levels, corresponding to 15 antibiotic identities. Because filtering makes the
-design mildly incomplete, the fitted hypothesis family contained
-$|\Omega|=54{,}351$ promoter-treatment effects within the
-$np=59{,}301$ grid. Thus, this application has an $n\gg p$ design, with a
+levels, corresponding to 15 antibiotic identities. Untreated observations
+from 13 source arrays form the reference condition. The fitted hypothesis
+family contained $|\Omega|=np=59{,}301$ promoter-treatment effects.
+Thus, this application has an $n\gg p$ design, with a
 large reporter library measured against a smaller set of treatment levels.
 
 ### Results
@@ -1571,41 +1573,53 @@ structure by clustering the fitted total-effect
 matrix $\widehat{\Delta y}_{aj}^{\mathrm{tot}}(\mathcal T)=\widehat\theta_{aj}$ from
 Eq.\eqref{eq:pfibox-linear-model} (@fig-pfibox-clustering-discovery a). Rows
 group promoters with similar antibiotic-response profiles across the analyzed
-treatment levels. The corresponding cluster map to the 12 French et al.
-time-course clusters is shown in @fig-pfibox-clustering-discovery b.
+treatment levels. We used correlation distances and complete linkage on both
+axes, retaining unscaled effect sizes for display. Eight descriptive reporter
+groups summarize the row hierarchy; one constant profile was excluded from
+correlation clustering. Four illustrated pairs are marked in the heatmap and
+shown as colony-level activity trajectories in @fig-pfibox-clustering-discovery b.
 
 **Total-effect inference.** We next tested which antibiotic-dose treatments
 changed promoter activity relative to the untreated control, using the total
 effects $\widehat{\Delta y}_{aj}^{\mathrm{tot}}(\mathcal T)$ from
 Eq.\eqref{eq:pfibox-linear-model} and the moderated statistic in
 Eq.\eqref{eq:moderated-pvalue}. We observed an enrichment of small p-values
-(@fig-pfibox-clustering-discovery c), with 6,044 significant promoter-treatment
-pairs at reporter-wise FDR 0.05 and 4,974 under a single BH correction across
-all pairs. Moderation reduced the reporter-wise call count from 6,101 to 6,044
-(Suppl. Note H.1; Suppl. Figure 8). Among the strongest responses, `wrbA`
-and `serA` activity increased under trimethoprim-sulfamethoxazole, and `ompC`
-activity increased under chloramphenicol. We also observed reduced `wrbA`
-activity under ciprofloxacin (@fig-pfibox-clustering-discovery d).
-The centered specific-effect analysis identified 5,184 pairs, including
-3,837 shared with the total-effect analysis (Suppl. Note H.2; Suppl. Figure 9).
+(@fig-pfibox-clustering-discovery c), with 5,101 significant promoter-treatment
+pairs under a single BH correction across all 59,301 tests at FDR 0.05.
+Ordinary tests identified 5,090 pairs (Suppl. Note H.1; Suppl. Figure 8).
+The reporter-relative effect analysis identified 8,785 pairs, including
+3,923 shared with the total-effect analysis (Suppl. Note H.2; Suppl. Figure 9).
 
-\clearpage
+We illustrate two positive and two negative total effects using four manually
+selected pairs from a 20-pair panel combining effect magnitude, statistical
+evidence, and reporter and antibiotic diversity (Suppl. Note H).
+The positive `recN-Ciprofloxacin-18` effect reflects increased early activity
+and agrees with the SOS and DNA-damage response reported by French et al.,
+who explicitly identify `recN` among ciprofloxacin-induced promoters
+[@French2018PFIbox]. We also observed increased integrated activity of the
+ribosome-modulation-factor reporter `rmf` under `NalidixicAcid-18`.
+Earlier promoter-reporter experiments found increased `rmf` expression during
+trimethoprim-induced DNA-synthesis stress [@Bollenbach2009Cell].
 
-![DStressR clustering and total-effect inference for the PFIbox promoter-activity screen. Panel a shows the colony-position-adjusted total-effect matrix $\widehat{\Delta y}_{aj}^{\mathrm{tot}}(\mathcal T)=\widehat\theta_{aj}$ from Eq.\eqref{eq:pfibox-linear-model}, with rows and columns ordered by Ward.D2 clustering using Euclidean distances (Suppl. Note H). Panel b maps the DStressR reporter clusters from panel a to the 12 French et al. time-course clusters for the matched promoters. Panel c shows raw moderated p-values testing these total effects relative to the untreated control; blue bars mark within-reporter BH-adjusted p-values below 0.05. Panel d shows the corresponding volcano plot, with colors denoting antibiotic identities shared across dose levels. The y-axis is capped at $-\log_{10}(p)=50$; labels at the cap report the true uncapped value.](../../analysis/outputs/french_pfibox/promoter_activity_analysis/total_effect_discovery/pfibox_clustering_and_inference.png){#fig-pfibox-clustering-discovery width="100%" fig-align="center" fig-pos="H"}
+![DStressR analysis of integrated promoter activity in the PFIbox screen. Panel a shows the colony-position-adjusted total-effect matrix $\widehat{\Delta y}_{aj}^{\mathrm{tot}}(\mathcal T)=\widehat\theta_{aj}$ from Eq.\eqref{eq:pfibox-linear-model}, with 1,796 reporter profiles and 33 treatment levels ordered by correlation distance and complete linkage. The symmetric color scale saturates at the 98.5th percentile of absolute effects; black circles and callouts mark the four illustrated pairs. Panel b shows reconstructed, unscaled activity curves for two negative effects (left) and two positive effects (right). Orange curves represent treated colonies, gray curves untreated references, and the darker summary curves pointwise medians. Annotations give fitted total effects and raw moderated p-values; inference concerns the integral in Eq.\eqref{eq:pfibox-pa-summary}. The four pairs were manually selected from the 10 positive and 10 negative examples described in Suppl. Note H. Panel c shows raw moderated total-effect p-values; blue bars mark pairs significant under global BH correction at FDR 0.05. Panel d shows the corresponding volcano plot, with antibiotic-specific colors shared across dose levels and the same four pairs outlined and labeled. The y-axis is capped at $-\log_{10}(p)=50$.](../../analysis/outputs/french_pfibox/temporal_unscaled_integral_analysis/selected_four_figure6/pfibox_clustering_and_inference.png){#fig-pfibox-clustering-discovery width="90%" fig-align="center" fig-pos="H"}
 
-**Comparison with the published time-course clusters.** French et al. clustered
-scaled promoter-activity time courses and reported 12 temporal
-expression-profile clusters. We clustered covariate-adjusted total effects
-across antibiotic-dose levels. The mapping in
-@fig-pfibox-clustering-discovery b shows partial agreement between these
-views. For example, DStressR cluster R3 is enriched for French clusters F2 and
-F10, R6 is enriched for F11 and F4, and R8 is enriched for F6 and F11.
+\Needspace{3\baselineskip}
 
-Several highlighted reporters also agree at the level of individual genes.
-The `serB` promoter, discussed by French et al. among reproducible promoter
-responses, maps to French cluster F2 with high membership and appears in
-DStressR cluster R3. Its largest absolute total effect was a decrease under
-`PolymyxinB-18`, with a within-reporter adjusted p-value of 0.013.
+We observed a negative total effect for `ompC-Ampicillin-18`, with lower
+activity over the early part of the retained interval. Ampicillin-associated
+decreases in `ompC` transcripts have also been reported in wild-type
+uropathogenic *E. coli* [@Choi2024PorinResponse]. The negative
+`msrB-Sulfamethoxazole-18` effect combines an attenuated early response with
+a later decline. MsrB repairs oxidized methionine residues in proteins
+[@Grimaud2001MsrB]. These four trajectories and their fitted integral
+differences are shown in @fig-pfibox-clustering-discovery b; their positions
+in the effect matrix and volcano plot are highlighted in panels a and d.
+
+We also compared the eight effect-profile groups with the 12 untreated
+temporal-profile clusters reported by French et al. Exact identifiers matched
+1,478 promoters, with an adjusted Rand index of 0.033 (Suppl. Note H).
+This comparison relates the temporal organization of untreated activity to
+the organization of antibiotic-induced integral changes.
 
 ## Discussion
 
@@ -1636,8 +1650,8 @@ chemical or stress conditions affect growth,
 metabolism, reporter maturation, fluorescence or luminescence chemistry, and
 global regulatory state. In such cases, the total-effect matrix and the
 rank-variance diagnostic provide a screen-level view before individual hit
-calls are interpreted. Centered specific effects are appropriate when the
-scientific target is a reporter-specific response beyond the average effect of
+calls are interpreted. Reporter-relative effects are appropriate when the
+scientific target is a reporter-relative response beyond the average effect of
 the perturbation. Rank-adjusted total effects provide a complementary target
 when a dominant structured mode is present and one asks which
 reference-relative responses remain after removing that mode. These estimands
@@ -1665,8 +1679,8 @@ Subsequent steps include annotation of significant reporter-perturbation pairs,
 comparison with known regulatory modules, pathway or network visualization, and
 selection of candidates for validation.
 
-Several limitations remain. First, reporter-wise linear models make the
-specific-effect variance use a cross-reporter independence approximation.
+Several limitations remain. First, variance estimation for reporter-relative
+effects relies on a cross-reporter independence approximation.
 Technical covariates absorb broad plate-level shifts, and unmodeled spatial or
 batch-level correlations may still influence variance estimates in extremely
 dense layouts. Second, uncertainty from upstream growth-curve fitting is
@@ -2112,8 +2126,8 @@ v_\omega \mid \sigma_\omega^2
   s_0^2 \frac{\nu_0}{\chi^2_{\nu_0}}.
 \end{equation}
 
-For specific effects, $\nu_\omega$ is the effective degree of freedom in
-Eq.\eqref{eq:specific-effect-df}, obtained by matching the first two moments
+For reporter-relative effects, $\nu_\omega$ is the effective degree of freedom in
+Eq.\eqref{eq:reporter-relative-effect-df}, obtained by matching the first two moments
 of a weighted sum of variance estimates to a scaled $\chi^2$ distribution
 [@Satterthwaite1946; @Welch1947]. Following @Smyth2004limmaEB
 (Section 6.2), we account for unequal degrees of freedom using the corrected
@@ -2245,8 +2259,8 @@ scale_tbl <- data.frame(
   Geometry = c("$p>n$", "$n\\gg p$", "$n>p$", "$n>p$", "$p\\gg n$", "$p\\gg n$"),
   n = c("7", "1,797", "64", "12", "27", "28"),
   p = c("94", "33", "25", "4", "2,249", "2,316"),
-  M = c("5,894", "228,977", "1,664 summaries", "180", "121,198", "135,777"),
-  Omega = c("658", "54,351", "1,600", "48", "57,349", "64,710"),
+  M = c("5,894", "273,792", "1,664 summaries", "180", "121,198", "135,777"),
+  Omega = c("658", "59,301", "1,600", "48", "57,349", "64,710"),
   check.names = FALSE
 )
 names(scale_tbl)[7] <- "$|\\Omega|$"
@@ -2587,17 +2601,17 @@ if (knitr::is_latex_output()) {
 
 \clearpage
 
-### Supplementary Note G: E. coli Centered Specific-Effect Analysis {.unnumbered}
+### Supplementary Note G: E. coli Centered Reporter-relative-Effect Analysis {.unnumbered}
 
-![Promoter-compound matrices for the *E. coli* WT screen. The panels show the original workflow score, the DStressR centered specific effect from Eq.\eqref{eq:implemented-global-specific-estimates} without EVC, and the corresponding centered specific effect with EVC. Rows are promoters and columns are compounds. Colors are clipped at the 98th percentile of the absolute matrix values for display.](../../analysis/outputs/binsfeld_effect_matrix_views/binsfeld_three_specific_effect_matrices.png){#fig-appendix-ecoli-specific-effect-matrix width="100%" fig-align="center" fig-pos="htbp"}
+![Promoter-compound matrices for the *E. coli* WT screen. The panels show the original workflow score, the DStressR reporter-relative effect from Eq.\eqref{eq:implemented-global-relative-estimates} without EVC, and the corresponding reporter-relative effect with EVC. Rows are promoters and columns are compounds. Colors are clipped at the 98th percentile of the absolute matrix values for display.](../../analysis/outputs/binsfeld_effect_matrix_views/binsfeld_three_specific_effect_matrices.png){#fig-appendix-ecoli-reporter-relative-effect-matrix width="100%" fig-align="center" fig-pos="htbp"}
 
 ![Promoter-specific raw p-value distributions for the Binsfeld reference rule, DStressR without EVC, and DStressR with EVC. Each row corresponds to one tested promoter and each column to one analysis workflow. The DStressR histograms show raw moderated p-values from Eq.\eqref{eq:moderated-pvalue}; significance calls are made after the method-specific adjustment and hit-calling rules described in the main text.](../../analysis/outputs/binsfeld_evc_calibrated/evc_huber_pvalue_histograms_by_promoter.png){#fig-appendix-ecoli-promoter-pvalue-histograms width="100%"}
 
 \Needspace{3\baselineskip}
 
-**Hit-calling comparison.** We tested the centered specific effects
-$\widehat{\Delta y}_{aj}^{\mathrm{spec}}$ from
-Eq.\eqref{eq:implemented-global-specific-estimates} using the moderated
+**Hit-calling comparison.** We tested the reporter-relative effects
+$\widehat{\Delta y}_{aj}^{\mathrm{rel}}$ from
+Eq.\eqref{eq:implemented-global-relative-estimates} using the moderated
 p-values in Eq.\eqref{eq:moderated-pvalue} (Suppl. Figure 7). These effects
 describe departures from the seven-promoter average (Suppl. Figure 5).
 At within-promoter FDR 0.05, we identified 80 pairs without EVC calibration
@@ -2613,19 +2627,19 @@ In the moderation step, the estimated prior degrees of freedom were
 $\widehat{\nu}_0=11.45$ without EVC and $\widehat{\nu}_0=16.38$ with EVC.
 The reporter-model residual degrees of freedom ranged from 626 to 652 and
 625 to 646, respectively; the centered contrasts had median effective degrees
-of freedom 899.8 and 906.3 from Eq.\eqref{eq:specific-effect-df}.
+of freedom 899.8 and 906.3 from Eq.\eqref{eq:reporter-relative-effect-df}.
 Ordinary and moderated tests yielded identical hit sets. The volcano plots
 show the shared responses, and the p-value scatter plots identify
 method-specific calls (Suppl. Figure 7 d--i). Promoter-specific raw p-value
 histograms are shown in Suppl. Figure 6.
 
-![Discovery comparison for the Binsfeld reference rule and the two DStressR specific-effect workflows. Panels a--c show pooled raw p-value histograms, with model-based p-values computed by Eq.\eqref{eq:moderated-pvalue}. Panels d--f show volcano plots of centered specific effects from Eq.\eqref{eq:implemented-global-specific-estimates} against raw p-values, with the 35 three-way intersection calls annotated and colored by promoter. Panel g shows the three-method hit overlap. Panels h--i compare Binsfeld reference raw p-values with DStressR raw p-values; grey points are all tested pairs, triangles mark pairs called only by the Binsfeld reference rule, and circles mark calls unique to the corresponding DStressR workflow.](../../analysis/outputs/binsfeld_evc_calibrated/evc_huber_discovery_summary_figure.png){#fig-appendix-ecoli-specific-discovery-summary width="100%"}
+![Discovery comparison for the Binsfeld reference rule and the two DStressR reporter-relative effect workflows. Panels a--c show pooled raw p-value histograms, with model-based p-values computed by Eq.\eqref{eq:moderated-pvalue}. Panels d--f show volcano plots of reporter-relative effects from Eq.\eqref{eq:implemented-global-relative-estimates} against raw p-values, with the 35 three-way intersection calls annotated and colored by promoter. Panel g shows the three-method hit overlap. Panels h--i compare Binsfeld reference raw p-values with DStressR raw p-values; grey points are all tested pairs, triangles mark pairs called only by the Binsfeld reference rule, and circles mark calls unique to the corresponding DStressR workflow.](../../analysis/outputs/binsfeld_evc_calibrated/evc_huber_discovery_summary_figure.png){#fig-appendix-ecoli-relative-discovery-summary width="100%"}
 
 We recovered responses across the regulatory pathways represented in the
 reporter panel.
 
 For SoxS, `soxSp-Paraquat` was a prominent shared call, in agreement with the
-canonical SoxRS oxidative-stress response. Additional specific-effect calls
+canonical SoxRS oxidative-stress response. Additional reporter-relative effect calls
 included `soxSp-Quercetin`, `soxSp-2-2-Bipyridyl`, `soxSp-Phleomycin`,
 `soxSp-Tobramycin`, and `soxSp-Tunicamycin`.
 
@@ -2659,7 +2673,7 @@ stress-regulon support in Suppl. Table 7, indicating that
 many additional calls fall within the biological modules targeted by the
 screen.
 
-EVC calibration additionally yielded a `soxSp-Caffeine` specific-effect call.
+EVC calibration additionally yielded a `soxSp-Caffeine` reporter-relative effect call.
 This pair had a small published mean Z-score and a non-significant reference
 p-value. The original study's experimental validation of caffeine responses
 focused on MicF, OmpF, and Rob [@Binsfeld2025PLoSBiol].
@@ -2668,7 +2682,7 @@ focused on MicF, OmpF, and Rob [@Binsfeld2025PLoSBiol].
 
 ```{r}
 #| label: tbl-ecoli-significant-union
-#| tbl-cap: "Union of significant promoter-compound pairs for the centered specific-effect analysis of the E. coli WT screen. Ref denotes the reproduced Binsfeld calls; No-EVC and EVC denote DStressR specific-effect calls without and with EVC calibration. DStressR effect columns contain centered specific effects; q-values are BH-adjusted within promoter."
+#| tbl-cap: "Union of significant promoter-compound pairs for the reporter-relative effect analysis of the E. coli WT screen. Ref denotes the reproduced Binsfeld calls; No-EVC and EVC denote DStressR reporter-relative effect calls without and with EVC calibration. DStressR effect columns contain reporter-relative effects; q-values are BH-adjusted within promoter."
 #| echo: false
 #| results: asis
 appendix_dir <- file.path("..", "..", "analysis", "outputs", "binsfeld_evc_calibrated")
@@ -2707,7 +2721,7 @@ print_compact_kable(
 
 ```{r}
 #| label: tbl-ecoli-dstressr-only-support
-#| tbl-cap: "Literature-support annotations for additional promoter-compound pairs identified by the DStressR centered specific-effect analyses. Effect columns contain centered specific effects; q-values are BH-adjusted within promoter. Source codes are defined in the preceding text."
+#| tbl-cap: "Literature-support annotations for additional promoter-compound pairs identified by the DStressR reporter-relative effect analyses. Effect columns contain reporter-relative effects; q-values are BH-adjusted within promoter. Source codes are defined in the preceding text."
 #| echo: false
 #| results: asis
 support_tbl <- read.delim(
@@ -2764,33 +2778,62 @@ print_compact_kable(
 
 ### Supplementary Note H: Additional Analysis Details and Results for the PFIbox Reanalysis {.unnumbered}
 
-For the clustering in @fig-pfibox-clustering-discovery a, we used Euclidean
-distances and Ward.D2 linkage on unscaled total effects. The retained response
-table contained 1,797 reporters; 1,792 had finite fitted total effects, and
-1,789 had at least five fitted treatment effects and entered the clustering.
-Missing entries were replaced by treatment-column means for distance
-calculations; the heatmap retains missing values. We cut the reporter tree
-into eight groups for the comparison with the published time-course clusters.
+We reconstructed the unscaled promoter activity from the deposited
+`constit.normalized` fluorescence matrices. For each colony, we formed the
+216 consecutive differences of its 217-sample trace, retained differences
+20--216, and applied quadratic LOESS with span 0.5 on the retained grid.
+Dividing by the five-minute sampling interval expresses activity per hour.
+For 940 complete colony trajectories from 24 promoters selected by published
+cluster membership, min--max scaling of the reconstructed activity reproduced
+the deposited `promoter.activity` curves to floating-point precision
+(maximum curve RMSE $1.41\times10^{-15}$). The integral in
+Eq.\eqref{eq:pfibox-pa-summary} uses the unscaled reconstructed activity.
+Finite constant traces contribute zero integrals and remain in the response
+table.
+
+For @fig-pfibox-clustering-discovery a, we used correlation distances and
+complete linkage on both axes of the total-effect matrix. All 1,797 reporters
+had fitted effects for the 33 treatment levels. One constant reporter profile
+was excluded from correlation clustering, leaving 1,796 rows. We cut the
+reporter tree into eight descriptive groups; labels R1--R8 follow the
+top-to-bottom heatmap order. Exact promoter identifiers matched 1,478 rows to
+the major-cluster assignments in French et al.'s Table S3, leaving 318
+unmatched reporters. The adjusted Rand index between the two hard partitions
+was 0.0325. The published assignments summarize untreated temporal profiles;
+our groups summarize treatment--reference integral effects.
+
+For the illustrative time courses, we first selected 10 positive and 10
+negative pairs among globally significant total effects. Within each direction,
+we ranked pairs by the geometric mean of their percentile ranks for absolute
+effect size and $-\log_{10}(p)$. We selected pairs in decreasing score order,
+retaining at most one pair per reporter and two per antibiotic in each
+direction. We then manually chose `ompC-Ampicillin-18`,
+`msrB-Sulfamethoxazole-18`, `recN-Ciprofloxacin-18`, and
+`rmf-NalidixicAcid-18` from this panel for
+@fig-pfibox-clustering-discovery b. Each pair has three or four retained
+treated colony trajectories. Gray curves show the untreated reference
+observations used by the model; summary curves are pointwise medians.
 
 #### H.1 Total-Effect Variance Moderation {.unnumbered}
 
 We compared ordinary and moderated tests of the total effects
 $\Delta y_{aj}^{\mathrm{tot}}(\mathcal T)=\theta_{aj}$ from
 Eq.\eqref{eq:pfibox-linear-model}, holding the fitted coefficients and
-response construction fixed. The ordinary tests yielded 6,101 reporter-wise
-FDR calls, compared with 6,044 under variance moderation. The corresponding
+response construction fixed. Ordinary tests yielded 5,090 globally
+BH-significant pairs at FDR 0.05, compared with 5,101 under variance moderation.
+The corresponding
 p-value distributions are shown in Suppl. Figure 8.
 
-![Moderation diagnostic for total effects in the PFIbox promoter-activity screen. The panels compare ordinary and empirical-Bayes moderated p-values for the total-effect coefficients in Eq.\eqref{eq:pfibox-linear-model}. Dark blue marks within-reporter BH-adjusted p-values below 0.05.](../../analysis/outputs/french_pfibox/promoter_activity_analysis/total_effect_discovery/pfibox_pa_moderation_diagnostic_pvalue_histograms.pdf){#fig-appendix-pfibox-moderation-diagnostic width="85%" fig-align="center" fig-pos="htbp"}
+![Moderation diagnostic for total effects in the PFIbox promoter-activity screen. The panels compare ordinary and empirical-Bayes moderated p-values for the total-effect coefficients in Eq.\eqref{eq:pfibox-linear-model}, using integrated unscaled activity responses. Dark blue marks globally BH-adjusted p-values below 0.05.](../../analysis/outputs/french_pfibox/temporal_unscaled_integral_analysis/total_effect_discovery/pfibox_pa_moderation_diagnostic_pvalue_histograms.png){#fig-appendix-pfibox-moderation-diagnostic width="85%" fig-align="center" fig-pos="htbp"}
 
-#### H.2 Centered Specific-Effect Analysis {.unnumbered}
+#### H.2 Centered Reporter-relative-Effect Analysis {.unnumbered}
 
-We also tested departures from the treatment-wide average using the centered
-specific effects
+We also tested departures from the treatment-wide average using the
+reporter-relative effects
 
 \begin{equation}
-\label{eq:pfibox-specific-effect}
-\Delta y_{aj}^{\mathrm{spec}}(\mathcal T)
+\label{eq:pfibox-reporter-relative-effect}
+\Delta y_{aj}^{\mathrm{rel}}(\mathcal T)
   =
   \Delta y_{aj}^{\mathrm{tot}}(\mathcal T)
   -
@@ -2798,14 +2841,13 @@ specific effects
 \end{equation}
 
 The moderated tests
-identified 5,184 pairs at within-reporter FDR 0.05 and 4,123 under a single BH
-correction across all pairs. Ordinary tests yielded 5,285 reporter-wise calls.
-The total- and specific-effect analyses shared 3,837 pairs; 2,207 pairs were
-called only by the total-effect tests and 1,347 only by the specific-effect
-tests. The strongest specific-effect responses included `wrbA`, `serA`,
-`ompC`, `tonB`, and `rpsQ` under several antibiotic treatments.
+identified 8,785 pairs under a single BH correction across all pairs at
+FDR 0.05. Ordinary tests identified 8,862 pairs. The total- and
+reporter-relative effect analyses shared 3,923 pairs; 1,178 pairs were called
+only by the total-effect tests and 4,862 only by the reporter-relative effect
+tests.
 
-![Centered specific-effect inference for the PFIbox promoter-activity screen. Panel a shows moderated p-values for the centered effects in Eq.\eqref{eq:pfibox-specific-effect}; blue bars mark within-reporter BH-adjusted p-values below 0.05. Panel b shows the corresponding volcano plot, with colors denoting antibiotic identities shared across dose levels. The y-axis is capped at $-\log_{10}(p)=50$; labels at the cap report the true uncapped value.](../../analysis/outputs/french_pfibox/promoter_activity_analysis/pfibox_pa_binsfeld_style_discovery_reporters2000_perturbations100_T2-18h_treatment_replicate_scalable.png){#fig-appendix-pfibox-specific-discovery width="100%" fig-align="center" fig-pos="htbp"}
+![Reporter-relative effect inference for the PFIbox promoter-activity screen. Panel a shows moderated p-values for the centered effects in Eq.\eqref{eq:pfibox-reporter-relative-effect}, using integrated unscaled activity responses; blue bars mark globally BH-adjusted p-values below 0.05. Panel b shows the corresponding volcano plot, with colors denoting antibiotic identities shared across dose levels. The y-axis is capped at $-\log_{10}(p)=50$; labels for capped points report the true uncapped value.](../../analysis/outputs/french_pfibox/temporal_unscaled_integral_analysis/relative_effect_discovery/pfibox_pa_binsfeld_style_discovery_reporters2000_perturbations100_Tall_available_treatment_replicate_scalable_temporal_unscaled_integral.png){#fig-appendix-pfibox-relative-discovery width="100%" fig-align="center" fig-pos="htbp"}
 
 \clearpage
 
@@ -2847,9 +2889,9 @@ effect for condition $j$ is the glucose-relative promoter activity change,
 
 The resulting total-effect matrix $T=\{\widehat{\Delta y}_{aj}^{\mathrm{tot}}\}\in\mathbb R^{64\times25}$ from Eq.\eqref{eq:kochanowski-total-effect} contains one row per promoter and one non-reference condition per column, giving $np=1{,}600$ contrasts.
 
-##### Total, Specific, and Rank-1 Adjusted Effect Estimation {.unnumbered}
+##### Total, Reporter-relative, and Rank-1 Adjusted Effect Estimation {.unnumbered}
 
-In this summary-level analysis, we compute centered specific effects using an
+In this summary-level analysis, we compute reporter-relative effects using an
 inverse-variance-weighted condition-wide mean. Let
 $V_{aj}^{\mathrm{tot}}=v_{aj}+v_{a0}$ be the working total-effect variance,
 assuming independent condition summaries, and define normalized weights
@@ -2857,8 +2899,8 @@ $w_{aj}=(V_{aj}^{\mathrm{tot}})^{-1}/\sum_{a'=1}^{64}(V_{a'j}^{\mathrm{tot}})^{-
 The centered effect is
 
 \begin{equation}
-\label{eq:kochanowski-specific-effect}
-\widehat{\Delta y}_{aj}^{\mathrm{spec}}
+\label{eq:kochanowski-reporter-relative-effect}
+\widehat{\Delta y}_{aj}^{\mathrm{rel}}
   =
   \widehat{\Delta y}_{aj}^{\mathrm{tot}}
   -
@@ -2911,13 +2953,13 @@ Z_{aj}^{\star}
 
 These normal-reference tail probabilities are conditional on the working
 variance interpretation; their calibration as tests of mean effects cannot be
-established from the supplied standard deviations alone. We use the approximate p-values from Eq.\eqref{eq:kochanowski-approx-test} as an exploratory ranking of reporter-condition pairs under three targets: total effects from Eq.\eqref{eq:kochanowski-total-effect}, centered specific effects from Eq.\eqref{eq:kochanowski-specific-effect}, and rank-adjusted total effects $\widehat{\Delta y}_{aj}^{\mathrm{tot},1}$ (Suppl. Figure 11). The volcano
+established from the supplied standard deviations alone. We use the approximate p-values from Eq.\eqref{eq:kochanowski-approx-test} as an exploratory ranking of reporter-condition pairs under three targets: total effects from Eq.\eqref{eq:kochanowski-total-effect}, reporter-relative effects from Eq.\eqref{eq:kochanowski-reporter-relative-effect}, and rank-adjusted total effects $\widehat{\Delta y}_{aj}^{\mathrm{tot},1}$ (Suppl. Figure 11). The volcano
 plots summarize the processed compendium with variance-aware scores. Total and
-specific effects produce many small approximate p-values because the matrix is
+reporter-relative effects produce many small approximate p-values because the matrix is
 strongly structured; rank adjustment yields a more focused set of residual
 condition-specific promoter responses.
 
-![Approximate summary-level volcano diagnostics for the Kochanowski promoter-activity compendium. The panels show total effects from Eq.\eqref{eq:kochanowski-total-effect}, centered specific effects from Eq.\eqref{eq:kochanowski-specific-effect}, and rank-adjusted total effects $\widehat{\Delta y}_{aj}^{\mathrm{tot},1}$. P-values are approximate calculations from Eq.\eqref{eq:kochanowski-approx-test} and are used here for exploratory ranking of processed reporter-condition summaries.](../../analysis/outputs/kochanowski_promoter_scaling/kochanowski_approx_volcano_three_targets.png){#fig-kochanowski-approx-volcano width="100%" fig-align="center" fig-pos="htbp"}
+![Approximate summary-level volcano diagnostics for the Kochanowski promoter-activity compendium. The panels show total effects from Eq.\eqref{eq:kochanowski-total-effect}, reporter-relative effects from Eq.\eqref{eq:kochanowski-reporter-relative-effect}, and rank-adjusted total effects $\widehat{\Delta y}_{aj}^{\mathrm{tot},1}$. P-values are approximate calculations from Eq.\eqref{eq:kochanowski-approx-test} and are used here for exploratory ranking of processed reporter-condition summaries.](../../analysis/outputs/kochanowski_promoter_scaling/kochanowski_approx_volcano_three_targets.png){#fig-kochanowski-approx-volcano width="100%" fig-align="center" fig-pos="htbp"}
 
 #### I.2 Analysis of an E. coli Fluorescence/OD Regulator-Stress Experiment {.unnumbered}
 
@@ -2969,7 +3011,7 @@ $\widehat\alpha_{\mathrm{MarA}}=0.994$,
 $\widehat\alpha_{\mathrm{SoxS}}=0.251$, and
 $\widehat\alpha_{\mathrm{LexA}}=0.644$.
 
-##### Total, Specific, and Rank-1 Adjusted Effect Estimation {.unnumbered}
+##### Total, Reporter-relative, and Rank-1 Adjusted Effect Estimation {.unnumbered}
 
 The total effect for reporter-window unit $\tilde a=(a,w)$ and stress condition $j$
 is the reference-relative effect from Eq.\eqref{eq:total-effect}, evaluated
@@ -2988,9 +3030,9 @@ canonical regulator-stress combinations also have positive total effects, but
 they are weaker: MarA responds to tetracycline, SoxS to hydrogen peroxide, and
 LexA to kanamycin.
 
-![Effect decomposition in the *E. coli* fluorescence data. Rows are reporter-window units ordered by biological reporter and time window; columns are weak-stress conditions. The panels show the reference-relative total effect from Eq.\eqref{eq:total-effect} on the calibrated response in Eq.\eqref{eq:dryad-calibrated-response} (a), the centered specific effect $\widehat{\Delta y}_{\tilde a j}^{\mathrm{spec}}$ (b), the estimated rank-1 component from Eq.\eqref{eq:low-rank-background-estimand} (c), and the rank-adjusted total effect $\widehat{\Delta y}_{\tilde a j}^{\mathrm{tot},1}$ (d). Black boxes mark the expected reporter-stress pairs across the three time windows in panels a, b, and d.](../../analysis/outputs/dryad_global_regulators/dryad_weak_stress_windows_calibrated_alpha_rank1_effect_decomposition.png){#fig-dryad-effect-decomposition width="100%" fig-align="center" fig-pos="htbp"}
+![Effect decomposition in the *E. coli* fluorescence data. Rows are reporter-window units ordered by biological reporter and time window; columns are weak-stress conditions. The panels show the reference-relative total effect from Eq.\eqref{eq:total-effect} on the calibrated response in Eq.\eqref{eq:dryad-calibrated-response} (a), the reporter-relative effect $\widehat{\Delta y}_{\tilde a j}^{\mathrm{rel}}$ (b), the estimated rank-1 component from Eq.\eqref{eq:low-rank-background-estimand} (c), and the rank-adjusted total effect $\widehat{\Delta y}_{\tilde a j}^{\mathrm{tot},1}$ (d). Black boxes mark the expected reporter-stress pairs across the three time windows in panels a, b, and d.](../../analysis/outputs/dryad_global_regulators/dryad_weak_stress_windows_calibrated_alpha_rank1_effect_decomposition.png){#fig-dryad-effect-decomposition width="100%" fig-align="center" fig-pos="htbp"}
 
-We then computed specific effects using Eq.\eqref{eq:specific-effect},
+We then computed reporter-relative effects using Eq.\eqref{eq:reporter-relative-effect},
 centering the total effects across the 12 tested reporter-window units within
 each stress condition (Suppl. Figure 12, panel b). These effects quantify
 departures from the stress-wide average response.
@@ -3020,9 +3062,9 @@ of the Fur/iron signal.
 
 ##### Inference Results {.unnumbered}
 
-We next attach uncertainty to the three effect targets shown in Suppl. Figure 12: total effects from Eq.\eqref{eq:total-effect}, specific effects $\widehat{\Delta y}_{\tilde a j}^{\mathrm{spec}}$, and rank-adjusted total effects $\widehat{\Delta y}_{\tilde a j}^{\mathrm{tot},1}$ (Suppl. Figure 13). Across the 48 reporter-window/stress
+We next attach uncertainty to the three effect targets shown in Suppl. Figure 12: total effects from Eq.\eqref{eq:total-effect}, reporter-relative effects $\widehat{\Delta y}_{\tilde a j}^{\mathrm{rel}}$, and rank-adjusted total effects $\widehat{\Delta y}_{\tilde a j}^{\mathrm{tot},1}$ (Suppl. Figure 13). Across the 48 reporter-window/stress
 contrasts, 36 total effects are significant after within-reporter
-Benjamini-Hochberg adjustment. The specific-effect analysis calls 42 of
+Benjamini-Hochberg adjustment. The reporter-relative effect analysis calls 42 of
 48 contrasts. We interpret the many small p-values as evidence for a highly
 structured effect matrix with broad shared signal across the tested
 reporter-window units.
@@ -3034,4 +3076,4 @@ structured Fur mode reduces broad stress-associated signal while retaining
 several expected reporter-stress responses, especially later-window
 MarA/tetracycline and LexA/kanamycin effects.
 
-![P-value and volcano diagnostics for the three inferential targets in the *E. coli* fluorescence data. The top row shows raw p-value histograms and the bottom row shows the corresponding volcano plots for the same 48 reporter-window/stress tests. Total effects are the reference-relative responses from Eq.\eqref{eq:total-effect}; specific effects are the centered contrasts $\widehat{\Delta y}_{\tilde a j}^{\mathrm{spec}}$; rank-adjusted total effects are the residual reference-relative responses $\widehat{\Delta y}_{\tilde a j}^{\mathrm{tot},1}$.](../../analysis/outputs/dryad_global_regulators/dryad_weak_stress_windows_calibrated_alpha_three_target_inference_combined.png){#fig-dryad-three-target-inference width="68%" fig-align="center" fig-pos="H"}
+![P-value and volcano diagnostics for the three inferential targets in the *E. coli* fluorescence data. The top row shows raw p-value histograms and the bottom row shows the corresponding volcano plots for the same 48 reporter-window/stress tests. Total effects are the reference-relative responses from Eq.\eqref{eq:total-effect}; reporter-relative effects are the centered contrasts $\widehat{\Delta y}_{\tilde a j}^{\mathrm{rel}}$; rank-adjusted total effects are the residual reference-relative responses $\widehat{\Delta y}_{\tilde a j}^{\mathrm{tot},1}$.](../../analysis/outputs/dryad_global_regulators/dryad_weak_stress_windows_calibrated_alpha_three_target_inference_combined.png){#fig-dryad-three-target-inference width="68%" fig-align="center" fig-pos="H"}

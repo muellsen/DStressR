@@ -14,7 +14,7 @@ The current application section uses two public examples:
 - the French et al. PFIbox fluorescence screen, reproduced by
   `analysis/french_pfibox/`.
 
-Supplementary Note G contains the Kochanowski promoter-activity compendium
+Supplementary Note I contains the Kochanowski promoter-activity compendium
 (`analysis/kochanowski_promoter_scaling/`) and the Dash et al. fluorescence/OD
 regulator-stress experiment (`analysis/dryad_global_regulators/`).
 
@@ -62,10 +62,12 @@ documented in `analysis/PAPER_FIGURES.md`.
 Generated outputs under `analysis/outputs/` are intentionally ignored by Git.
 They can be regenerated from the scripts above when the package code changes.
 
-The data provenance and download instructions live in each analysis directory.
-PFIbox model-only reruns can use `PFIBOX_RESPONSE_TABLE` with a response TSV
-already produced for the same subset and window. The model drivers save fit
-objects separately from inference tables so `results()` can be rerun directly.
+The data provenance and download instructions live in each data/analysis
+directory. The retained PFIbox workflow reconstructs and integrates unscaled
+activity; its annotated commands are in `analysis/french_pfibox/README.md`.
+The model drivers save fit objects separately from inference tables so
+`results()` can be rerun directly. PFIbox's ordinary/moderated comparison reads
+the saved integral fit without reconstructing responses or refitting.
 
 The October 2026 inference revision and protected pre-change submission are
 documented in `analysis/ecoli_promoter_screen/INFERENCE_REVISION_STAGES.md`
