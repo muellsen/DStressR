@@ -115,18 +115,19 @@ test_that("growth exponent estimation adjusts technical covariates", {
   expect_equal(adjusted$alpha_covariates, "plate")
 })
 
-test_that("fit_destress detects simulated specific effects", {
+test_that("fit_destress detects simulated reporter-relative effects", {
   dat <- simulate_screen(seed = 1, n_reporters = 8, n_perturbations = 12, n_replicates = 3)
   assay <- prepare_assay(dat, reporter = "reporter", perturbation = "perturbation",
                          lux = "LUX.AUC_16", growth = "od_16h.measured",
                          batch = "batch", replicate = "replicate")
   fit <- fit_destress(assay, technical = c("batch", "replicate"))
   res <- results(fit)
-  expect_true(all(c("specific_effect", "global_effect", "total_effect") %in% names(res)))
+  expect_true(all(c("relative_effect", "global_effect", "total_effect") %in% names(res)))
+  expect_false(any(grepl("^specific_", names(res))))
   truth <- unique(dat[dat$perturbation != "DMSO", c("reporter", "perturbation", "truth_specific")])
   joined <- merge(res, truth, by = c("reporter", "perturbation"))
   active <- abs(joined$truth_specific) > 0
-  expect_gt(stats::cor(joined$specific_effect[active], joined$truth_specific[active]), 0.7)
+  expect_gt(stats::cor(joined$relative_effect[active], joined$truth_specific[active]), 0.7)
 })
 
 test_that("fit_destress can report progress messages", {
@@ -292,7 +293,7 @@ test_that("Binsfeld reporter data support DStressR model analysis", {
   res <- results(fit)
 
   expect_s3_class(fit, "destress_fit")
-  expect_true(all(c("empty_vector_effect", "specific_effect", "specific_padj") %in% names(res)))
+  expect_true(all(c("empty_vector_effect", "relative_effect", "relative_padj") %in% names(res)))
   expect_false(is.null(fit$growth_exponents))
   expect_true(nrow(res) > 0)
 })
@@ -326,14 +327,14 @@ test_that("fit_destress exposes staged model options", {
     adjustment = "by_reporter"
   )
   res <- results(fit)
-  expected <- adjust_pvalues(res, pvalue = "specific_pvalue", output = "expected_specific_padj")
+  expected <- adjust_pvalues(res, pvalue = "relative_pvalue", output = "expected_relative_padj")
 
   expect_s3_class(fit, "destress_fit")
   expect_false(fit$empirical_bayes)
   expect_equal(fit$stages$normalization, "linear_model")
   expect_equal(fit$stages$testing, "student_t")
   expect_equal(fit$stages$adjustment, "by_reporter")
-  expect_equal(res$specific_padj, expected$expected_specific_padj, tolerance = 1e-12)
+  expect_equal(res$relative_padj, expected$expected_relative_padj, tolerance = 1e-12)
 })
 
 test_that("empirical-Bayes moderation estimates prior degrees of freedom", {
@@ -366,17 +367,17 @@ test_that("fit_destress can fit scalable reporter-specific models", {
   expect_null(fit$full_fit)
   expect_equal(length(unique(fit$reporter_effects$reporter)), length(unique(dat$reporter)))
   expect_equal(nrow(res), length(unique(dat$reporter)) * length(setdiff(unique(dat$perturbation), "DMSO")))
-  expect_true(all(c("specific_effect", "specific_pvalue", "specific_padj") %in% names(res)))
+  expect_true(all(c("relative_effect", "relative_pvalue", "relative_padj") %in% names(res)))
   expect_true(all(c("total_effect", "total_pvalue", "total_padj") %in% names(res)))
   expect_true(all(is.finite(res$total_pvalue)))
-  expect_gt(sum(abs(res$specific_effect) > 1e-8), 0)
-  expect_true(all(is.finite(res$specific_pvalue)))
-  expect_true(all(res$specific_padj >= 0 & res$specific_padj <= 1))
+  expect_gt(sum(abs(res$relative_effect) > 1e-8), 0)
+  expect_true(all(is.finite(res$relative_pvalue)))
+  expect_true(all(res$relative_padj >= 0 & res$relative_padj <= 1))
 
   truth <- unique(dat[dat$perturbation != "DMSO", c("reporter", "perturbation", "truth_specific")])
   joined <- merge(res, truth, by = c("reporter", "perturbation"))
   active <- abs(joined$truth_specific) > 0
-  expect_gt(stats::cor(joined$specific_effect[active], joined$truth_specific[active]), 0.7)
+  expect_gt(stats::cor(joined$relative_effect[active], joined$truth_specific[active]), 0.7)
 })
 
 test_that("fit_destress interaction model supports numeric technical covariates", {
@@ -406,9 +407,9 @@ test_that("fit_destress interaction model supports numeric technical covariates"
 
   expect_true(fit$interaction)
   expect_equal(nrow(res), 4 * 5)
-  expect_true(all(is.finite(res$specific_effect)))
-  expect_true(all(is.finite(res$specific_pvalue)))
-  expect_true(all(res$specific_padj_by_reporter >= 0 & res$specific_padj_by_reporter <= 1))
+  expect_true(all(is.finite(res$relative_effect)))
+  expect_true(all(is.finite(res$relative_pvalue)))
+  expect_true(all(res$relative_padj_by_reporter >= 0 & res$relative_padj_by_reporter <= 1))
 })
 
 test_that("fit_destress scalable path handles reporter-specific dose trends", {
@@ -454,17 +455,17 @@ test_that("fit_destress scalable path handles reporter-specific dose trends", {
   expect_true(all(is.finite(res$total_pvalue)))
 })
 
-test_that("fit_destress separates global perturbation effects from reporter-specific effects", {
+test_that("fit_destress separates global perturbation effects from reporter-relative effects", {
   dat <- expand.grid(
     reporter = paste0("P", seq_len(6)),
-    perturbation = c("DMSO", "C_global", "C_specific"),
+    perturbation = c("DMSO", "C_global", "C_relative"),
     replicate = paste0("r", seq_len(6)),
     stringsAsFactors = FALSE
   )
   baseline <- stats::setNames(seq(9.5, 10.5, length.out = 6), paste0("P", seq_len(6)))
   dat$value <- baseline[dat$reporter] +
     ifelse(dat$perturbation == "C_global", 1.5, 0) +
-    ifelse(dat$perturbation == "C_specific" & dat$reporter == "P3", 1.5, 0)
+    ifelse(dat$perturbation == "C_relative" & dat$reporter == "P3", 1.5, 0)
 
   assay <- prepare_assay(
     dat,
@@ -480,18 +481,18 @@ test_that("fit_destress separates global perturbation effects from reporter-spec
   global_rows <- res[res$perturbation == "C_global", ]
   expect_equal(global_rows$total_effect, rep(1.5, nrow(global_rows)), tolerance = 1e-8)
   expect_equal(unique(global_rows$global_effect), 1.5, tolerance = 1e-8)
-  expect_equal(global_rows$specific_effect, rep(0, nrow(global_rows)), tolerance = 1e-8)
-  expect_true(all(global_rows$specific_pvalue > 0.9))
+  expect_equal(global_rows$relative_effect, rep(0, nrow(global_rows)), tolerance = 1e-8)
+  expect_true(all(global_rows$relative_pvalue > 0.9))
   expect_true(all(global_rows$global_pvalue < 1e-8))
 
-  specific_row <- res[res$perturbation == "C_specific" & res$reporter == "P3", ]
-  expect_gt(specific_row$specific_effect, 1)
-  expect_lt(specific_row$specific_pvalue, 1e-8)
+  relative_row <- res[res$perturbation == "C_relative" & res$reporter == "P3", ]
+  expect_gt(relative_row$relative_effect, 1)
+  expect_lt(relative_row$relative_pvalue, 1e-8)
 })
 
 test_that("fit_destress can remove a low-rank perturbation background", {
   reporters <- paste0("P", seq_len(6))
-  perturbations <- c("DMSO", "C_factor1", "C_factor2", "C_specific")
+  perturbations <- c("DMSO", "C_factor1", "C_factor2", "C_relative")
   dat <- expand.grid(
     reporter = reporters,
     perturbation = perturbations,
@@ -501,11 +502,11 @@ test_that("fit_destress can remove a low-rank perturbation background", {
 
   baseline <- stats::setNames(seq(9.5, 10.5, length.out = length(reporters)), reporters)
   loading <- stats::setNames(c(-2, -1, 0, 0, 1, 2), reporters)
-  score <- c(DMSO = 0, C_factor1 = 1.2, C_factor2 = -0.8, C_specific = 0)
-  sparse_specific <- stats::setNames(c(1, -2, 1, 1, -2, 1), reporters)
+  score <- c(DMSO = 0, C_factor1 = 1.2, C_factor2 = -0.8, C_relative = 0)
+  sparse_relative <- stats::setNames(c(1, -2, 1, 1, -2, 1), reporters)
   dat$value <- baseline[dat$reporter] +
     loading[dat$reporter] * score[dat$perturbation] +
-    ifelse(dat$perturbation == "C_specific", sparse_specific[dat$reporter], 0)
+    ifelse(dat$perturbation == "C_relative", sparse_relative[dat$reporter], 0)
 
   assay <- prepare_assay(
     dat,
@@ -525,14 +526,14 @@ test_that("fit_destress can remove a low-rank perturbation background", {
 
   factor0 <- rank0[rank0$perturbation %in% c("C_factor1", "C_factor2"), ]
   factor1 <- rank1[rank1$perturbation %in% c("C_factor1", "C_factor2"), ]
-  expect_gt(stats::sd(factor0$specific_effect), 0.5)
+  expect_gt(stats::sd(factor0$relative_effect), 0.5)
   expect_lt(max(abs(factor1$rank_adjusted_total_effect)), 1e-8)
-  expect_lt(max(abs(factor1$specific_effect)), 1e-8)
+  expect_lt(max(abs(factor1$relative_effect)), 1e-8)
   expect_gt(max(abs(factor1$low_rank_effect)), 0.5)
 
-  sparse1 <- rank1[rank1$perturbation == "C_specific", ]
-  expected_sparse <- sparse_specific[sparse1$reporter]
-  expect_equal(sparse1$specific_effect, unname(expected_sparse), tolerance = 1e-8)
+  sparse1 <- rank1[rank1$perturbation == "C_relative", ]
+  expected_sparse <- sparse_relative[sparse1$reporter]
+  expect_equal(sparse1$relative_effect, unname(expected_sparse), tolerance = 1e-8)
 })
 
 test_that("fit_destress_summary uses supplied response variances", {
@@ -556,13 +557,13 @@ test_that("fit_destress_summary uses supplied response variances", {
   expect_s3_class(fit, "destress_summary_fit")
   expect_equal(nrow(out), 3)
   expect_true(all(c(
-    "total_effect", "total_variance", "specific_effect", "specific_variance",
-    "rank_adjusted_total_effect", "rank_adjusted_specific_effect"
+    "total_effect", "total_variance", "relative_effect", "relative_variance",
+    "rank_adjusted_total_effect", "rank_adjusted_relative_effect"
   ) %in% names(out)))
   expect_equal(out$total_variance, rep(0.08, 3))
   expect_equal(unique(out$global_effect), 0)
-  expect_equal(out$specific_effect, out$total_effect)
-  expect_equal(out$specific_variance, rep(0.08 * 2 / 3, 3), tolerance = 1e-12)
+  expect_equal(out$relative_effect, out$total_effect)
+  expect_equal(out$relative_variance, rep(0.08 * 2 / 3, 3), tolerance = 1e-12)
   expect_equal(out$rank_adjusted_total_effect, out$total_effect)
 })
 
@@ -660,14 +661,14 @@ test_that("low-rank diagnostics use explicit missing-value imputation", {
 test_that("fit_destress subtracts model-based empty-vector background before centering", {
   dat <- expand.grid(
     reporter = c("EVC", "P1", "P2"),
-    perturbation = c("DMSO", "C_background", "C_specific"),
+    perturbation = c("DMSO", "C_background", "C_relative"),
     replicate = paste0("r", seq_len(5)),
     stringsAsFactors = FALSE
   )
   baseline <- c(EVC = 8, P1 = 10, P2 = 12)
-  background <- c(DMSO = 0, C_background = 1, C_specific = 0)
+  background <- c(DMSO = 0, C_background = 1, C_relative = 0)
   dat$value <- baseline[dat$reporter] + background[dat$perturbation] +
-    ifelse(dat$reporter == "P2" & dat$perturbation == "C_specific", 2, 0)
+    ifelse(dat$reporter == "P2" & dat$perturbation == "C_relative", 2, 0)
 
   assay <- prepare_assay(
     dat,
@@ -695,24 +696,24 @@ test_that("fit_destress subtracts model-based empty-vector background before cen
   bg <- res[res$perturbation == "C_background", ]
   expect_equal(bg$empty_vector_effect, rep(1, nrow(bg)), tolerance = 1e-8)
   expect_equal(bg$background_adjusted_effect, rep(0, nrow(bg)), tolerance = 1e-8)
-  expect_equal(bg$specific_effect, rep(0, nrow(bg)), tolerance = 1e-8)
+  expect_equal(bg$relative_effect, rep(0, nrow(bg)), tolerance = 1e-8)
 
-  sig <- res[res$perturbation == "C_specific", ]
+  sig <- res[res$perturbation == "C_relative", ]
   expect_equal(sig$background_adjusted_effect[match(c("P1", "P2"), sig$reporter)], c(0, 2), tolerance = 1e-8)
-  expect_equal(sig$specific_effect[match(c("P1", "P2"), sig$reporter)], c(-1, 1), tolerance = 1e-8)
+  expect_equal(sig$relative_effect[match(c("P1", "P2"), sig$reporter)], c(-1, 1), tolerance = 1e-8)
 
   merged <- merge(
-    res[, c("reporter", "perturbation", "specific_effect", "specific_se")],
-    res_no_evc[, c("reporter", "perturbation", "specific_effect", "specific_se")],
+    res[, c("reporter", "perturbation", "relative_effect", "relative_se")],
+    res_no_evc[, c("reporter", "perturbation", "relative_effect", "relative_se")],
     by = c("reporter", "perturbation"),
     suffixes = c("_evc", "_no_evc")
   )
-  expect_equal(merged$specific_effect_evc, merged$specific_effect_no_evc, tolerance = 1e-8)
-  expect_equal(merged$specific_se_evc, merged$specific_se_no_evc, tolerance = 1e-8)
+  expect_equal(merged$relative_effect_evc, merged$relative_effect_no_evc, tolerance = 1e-8)
+  expect_equal(merged$relative_se_evc, merged$relative_se_no_evc, tolerance = 1e-8)
 })
 
 test_that("prepare_assay can calibrate responses against a background reporter", {
-  perturbations <- c("DMSO", paste0("C_bg", seq_len(6)), "C_specific")
+  perturbations <- c("DMSO", paste0("C_bg", seq_len(6)), "C_relative")
   dat <- expand.grid(
     reporter = c("EVC", "P1", "P2"),
     perturbation = perturbations,
@@ -725,7 +726,7 @@ test_that("prepare_assay can calibrate responses against a background reporter",
     5 + background_score[dat$perturbation],
     ifelse(dat$reporter == "P1", 10 + 2 * background_score[dat$perturbation], 12 - background_score[dat$perturbation])
   )
-  dat$value <- dat$value + ifelse(dat$reporter == "P2" & dat$perturbation == "C_specific", 2, 0)
+  dat$value <- dat$value + ifelse(dat$reporter == "P2" & dat$perturbation == "C_relative", 2, 0)
 
   plain <- prepare_assay(
     dat,
@@ -756,12 +757,12 @@ test_that("prepare_assay can calibrate responses against a background reporter",
   expect_false("EVC" %in% res_calibrated$reporter)
   expect_true(all(c(".background_response", ".response_uncalibrated") %in% names(calibrated)))
   expect_true(all(c("P1", "P2") %in% params$background_calibration$reporter))
-  expect_gt(max(abs(res_plain$specific_effect[res_plain$perturbation %in% paste0("C_bg", seq_len(6))])), 0.5)
-  expect_lt(max(abs(res_calibrated$specific_effect[res_calibrated$perturbation %in% paste0("C_bg", seq_len(6))])), 0.25)
+  expect_gt(max(abs(res_plain$relative_effect[res_plain$perturbation %in% paste0("C_bg", seq_len(6))])), 0.5)
+  expect_lt(max(abs(res_calibrated$relative_effect[res_calibrated$perturbation %in% paste0("C_bg", seq_len(6))])), 0.25)
 
-  specific <- res_calibrated[res_calibrated$perturbation == "C_specific", ]
-  expect_gt(specific$specific_effect[match("P2", specific$reporter)], 0.8)
-  expect_lt(specific$specific_effect[match("P1", specific$reporter)], -0.8)
+  specific <- res_calibrated[res_calibrated$perturbation == "C_relative", ]
+  expect_gt(specific$relative_effect[match("P2", specific$reporter)], 0.8)
+  expect_lt(specific$relative_effect[match("P1", specific$reporter)], -0.8)
 })
 
 test_that("prepare_assay defaults to Huber calibration when a background reporter is supplied", {
@@ -899,13 +900,13 @@ test_that("fit_effect_mixture separates three effect classes", {
     truth = rep(c("repressed", "null", "activated"), c(35, 110, 35)),
     stringsAsFactors = FALSE
   )
-  tab$specific_effect <- c(
+  tab$relative_effect <- c(
     stats::rt(35, df = 5) * 0.08 - 0.75,
     stats::rt(110, df = 5) * 0.08,
     stats::rt(35, df = 5) * 0.08 + 0.75
   )
 
-  out <- fit_effect_mixture(tab, value = "specific_effect", df = 5)
+  out <- fit_effect_mixture(tab, value = "relative_effect", df = 5)
   summary <- attr(out, "mixture_summary")
 
   expect_true(all(c(

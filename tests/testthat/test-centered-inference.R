@@ -1,20 +1,20 @@
-test_that("total effects are the default target and specific effects remain selectable", {
+test_that("total effects are the default target and reporter-relative effects remain selectable", {
   tab <- data.frame(
     reporter = c("P1", "P1"), perturbation = c("C1", "C2"),
     total_effect = c(2, -1), total_pvalue = c(0.001, 0.8),
     total_padj = c(0.002, 0.8),
-    specific_effect = c(-2, 1), specific_pvalue = c(0.8, 0.001),
-    specific_padj = c(0.8, 0.002)
+    relative_effect = c(-2, 1), relative_pvalue = c(0.8, 0.001),
+    relative_padj = c(0.8, 0.002)
   )
   expect_equal(call_hits(tab)$hit, c("Upregulated", "Not DE"))
-  expect_equal(call_hits(tab, effect = "specific_effect")$hit,
+  expect_equal(call_hits(tab, effect = "relative_effect")$hit,
     c("Not DE", "Upregulated"))
-  expect_error(call_hits(tab[c("specific_effect", "specific_padj")]),
+  expect_error(call_hits(tab[c("relative_effect", "relative_padj")]),
     "Missing required columns: total_effect, total_padj")
   expect_equal(adjust_pvalues(tab)$total_padj_by_reporter,
     p.adjust(tab$total_pvalue, "BH"))
-  expect_equal(adjust_pvalues(tab, pvalue = "specific_pvalue")$specific_padj_by_reporter,
-    p.adjust(tab$specific_pvalue, "BH"))
+  expect_equal(adjust_pvalues(tab, pvalue = "relative_pvalue")$relative_padj_by_reporter,
+    p.adjust(tab$relative_pvalue, "BH"))
   expect_identical(formals(plot_response_heatmap)$value, "total_effect")
   expect_identical(formals(plot_effect_histogram)$value, "total_effect")
   expect_identical(formals(plot_volcano)$effect, "total_effect")
@@ -60,7 +60,7 @@ test_that("unequal-df empirical Bayes moments correct each sampling distribution
   expect_error(estimate_eb_prior_variance(v, c(4, 8)), "same length")
 })
 
-test_that("specific uncertainty is constructed from raw variances and moderated once", {
+test_that("reporter-relative uncertainty is constructed from raw variances and moderated once", {
   dat <- simulate_screen(seed = 73, n_reporters = 5, n_perturbations = 8, n_replicates = 4)
   assay <- prepare_assay(dat, reporter = "reporter", perturbation = "perturbation",
                          lux = "LUX.AUC_16", growth = "od_16h.measured",
@@ -71,14 +71,14 @@ test_that("specific uncertainty is constructed from raw variances and moderated 
   moderated <- results(fit)
   key <- paste(plain$reporter, plain$perturbation)
   moderated <- moderated[match(key, paste(moderated$reporter, moderated$perturbation)), ]
-  expect_equal(moderated$specific_effect, plain$specific_effect)
-  expect_equal(moderated$specific_var, plain$specific_se^2)
+  expect_equal(moderated$relative_effect, plain$relative_effect)
+  expect_equal(moderated$relative_var, plain$relative_se^2)
   expect_equal(moderated$total_var_raw, plain$total_se^2)
-  expected <- eb_moderate_se(plain$specific_se, plain$specific_df_raw)
-  expect_equal(moderated$specific_se, expected$se)
-  expect_equal(moderated$specific_df_for_test, expected$df)
-  expected_p <- 2 * pt(abs(plain$specific_effect / expected$se), expected$df, lower.tail = FALSE)
-  expect_equal(moderated$specific_pvalue, expected_p)
+  expected <- eb_moderate_se(plain$relative_se, plain$relative_df_raw)
+  expect_equal(moderated$relative_se, expected$se)
+  expect_equal(moderated$relative_df_for_test, expected$df)
+  expected_p <- 2 * pt(abs(plain$relative_effect / expected$se), expected$df, lower.tail = FALSE)
+  expect_equal(moderated$relative_pvalue, expected_p)
 })
 test_that("scientific preset names preserve the default model", {
   expect_identical(destress_presets()[1], "model")
@@ -88,7 +88,7 @@ test_that("scientific preset names preserve the default model", {
   expect_identical(destress_preset_stages("model")$normalization, "linear_model")
 })
 
-test_that("interaction specific tests use the centered joint contrast covariance", {
+test_that("interaction reporter-relative tests use the centered joint contrast covariance", {
   set.seed(101)
   dat <- expand.grid(
     reporter = paste0("R", 1:4), perturbation = c("Control", "P1", "P2"),
@@ -125,32 +125,32 @@ test_that("interaction specific tests use the centered joint contrast covariance
   vc <- safe_vcov(fit$full_fit)
   contrast <- contrast[, colnames(vc), drop = FALSE]
   expected_var <- unname(rowSums((contrast %*% vc) * contrast))
-  expect_equal(raw$specific_var, expected_var)
-  expect_equal(raw$specific_se, sqrt(expected_var))
-  expect_equal(raw$specific_effect, as.numeric(contrast %*% fit_coef(fit$full_fit)))
-  expect_false(isTRUE(all.equal(raw$specific_var, raw$total_var_raw)))
-  expected_test <- wald_t_test(raw$specific_effect, sqrt(expected_var), raw$residual_df)
-  expect_equal(raw$specific_pvalue, expected_test$pvalue)
+  expect_equal(raw$relative_var, expected_var)
+  expect_equal(raw$relative_se, sqrt(expected_var))
+  expect_equal(raw$relative_effect, as.numeric(contrast %*% fit_coef(fit$full_fit)))
+  expect_false(isTRUE(all.equal(raw$relative_var, raw$total_var_raw)))
+  expected_test <- wald_t_test(raw$relative_effect, sqrt(expected_var), raw$residual_df)
+  expect_equal(raw$relative_pvalue, expected_test$pvalue)
   fit$empirical_bayes <- TRUE
   moderated <- results(fit)
   expected <- eb_moderate_se(sqrt(expected_var), raw$residual_df)
-  expect_equal(moderated$specific_var, expected_var)
-  expect_equal(moderated$specific_se, expected$se)
-  expect_equal(moderated$specific_df_for_test, expected$df)
-  expect_equal(moderated$specific_pvalue,
-    wald_t_test(raw$specific_effect, expected$se, expected$df)$pvalue)
+  expect_equal(moderated$relative_var, expected_var)
+  expect_equal(moderated$relative_se, expected$se)
+  expect_equal(moderated$relative_df_for_test, expected$df)
+  expect_equal(moderated$relative_pvalue,
+    wald_t_test(raw$relative_effect, expected$se, expected$df)$pvalue)
   fit$background_rank <- 1L
   rank_adjusted <- results(fit)
-  expect_equal(rank_adjusted$specific_var, moderated$specific_var)
-  expect_equal(rank_adjusted$specific_se, moderated$specific_se)
-  expect_equal(rank_adjusted$specific_pvalue,
-    wald_t_test(rank_adjusted$specific_effect, expected$se, expected$df)$pvalue)
+  expect_equal(rank_adjusted$relative_var, moderated$relative_var)
+  expect_equal(rank_adjusted$relative_se, moderated$relative_se)
+  expect_equal(rank_adjusted$relative_pvalue,
+    wald_t_test(rank_adjusted$relative_effect, expected$se, expected$df)$pvalue)
   single <- results(fit, reporters = "R1")
-  expect_equal(single$specific_effect, rep(0, nrow(single)), tolerance = 1e-12)
-  expect_true(all(is.na(single$specific_pvalue)))
+  expect_equal(single$relative_effect, rep(0, nrow(single)), tolerance = 1e-12)
+  expect_true(all(is.na(single$relative_pvalue)))
 })
 
-test_that("interaction total-effect tests honor moderation independently of specific tests", {
+test_that("interaction total-effect tests honor moderation independently of relative tests", {
   dat <- simulate_screen(seed = 91, n_reporters = 4, n_perturbations = 6, n_replicates = 4)
   assay <- prepare_assay(dat, reporter = "reporter", perturbation = "perturbation",
                          lux = "LUX.AUC_16", growth = "od_16h.measured",
@@ -161,7 +161,7 @@ test_that("interaction total-effect tests honor moderation independently of spec
   fit$empirical_bayes <- TRUE
   mod <- results(fit)
   expect_equal(mod$total_effect, raw$total_effect)
-  expect_equal(mod$specific_effect, raw$specific_effect)
+  expect_equal(mod$relative_effect, raw$relative_effect)
   expect_equal(mod$total_var_raw, raw$total_se^2)
   expected <- eb_moderate_se(raw$total_se, raw$residual_df)
   expect_equal(mod$total_se, expected$se)
@@ -171,8 +171,8 @@ test_that("interaction total-effect tests honor moderation independently of spec
   expect_equal(mod$total_padj_by_reporter,
     adjust_destress_pvalues(expected_test$pvalue, mod$reporter, "by_reporter"))
   expect_equal(mod$rank_adjusted_total_pvalue, mod$total_pvalue)
-  expected_specific <- eb_moderate_se(raw$specific_se, raw$residual_df)
-  expect_equal(mod$specific_se, expected_specific$se)
+  expected_relative <- eb_moderate_se(raw$relative_se, raw$residual_df)
+  expect_equal(mod$relative_se, expected_relative$se)
   expect_equal(raw$total_pvalue,
     wald_t_test(raw$total_effect, raw$total_se, raw$residual_df)$pvalue)
   fit$background_rank <- 1L

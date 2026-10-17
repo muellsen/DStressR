@@ -860,35 +860,35 @@ reporter_effect_results <- function(fit, perturbations = NULL, reporters = NULL)
   rank_adjusted_global <- stats::aggregate(rank_adjusted_total_effect ~ perturbation, out, mean, na.rm = TRUE)
   names(rank_adjusted_global)[2] <- "rank_adjusted_global_effect"
   out <- merge(out, rank_adjusted_global, by = "perturbation", all.x = TRUE, sort = FALSE)
-  out$specific_effect <- out$rank_adjusted_total_effect - out$rank_adjusted_global_effect
-  out$specific_var <- ((m - 1) / m)^2 * out$total_var_raw +
+  out$relative_effect <- out$rank_adjusted_total_effect - out$rank_adjusted_global_effect
+  out$relative_var <- ((m - 1) / m)^2 * out$total_var_raw +
     (out$sum_total_var_raw - out$total_var_raw) / m^2
-  out$specific_se <- sqrt(out$specific_var)
-  out$specific_se[!is.finite(out$specific_se) | m <= 1] <- NA_real_
-  specific_df <- rep(NA_real_, nrow(out))
+  out$relative_se <- sqrt(out$relative_var)
+  out$relative_se[!is.finite(out$relative_se) | m <= 1] <- NA_real_
+  relative_df <- rep(NA_real_, nrow(out))
   for (idx in split(seq_len(nrow(out)), out$perturbation)) {
-    specific_df[idx] <- centered_contrast_df(out$total_var_raw[idx], row_df[idx])
+    relative_df[idx] <- centered_contrast_df(out$total_var_raw[idx], row_df[idx])
   }
-  out$specific_df_raw <- specific_df
+  out$relative_df_raw <- relative_df
   if (isTRUE(fit$empirical_bayes)) {
-    moderated <- eb_moderate_se(out$specific_se, specific_df)
-    out$specific_se <- moderated$se
-    specific_df <- moderated$df
+    moderated <- eb_moderate_se(out$relative_se, relative_df)
+    out$relative_se <- moderated$se
+    relative_df <- moderated$df
   }
-  out$specific_df_for_test <- specific_df
-  specific_test <- wald_t_test(out$specific_effect, out$specific_se, specific_df)
-  out$specific_statistic <- specific_test$statistic
-  out$specific_pvalue <- specific_test$pvalue
+  out$relative_df_for_test <- relative_df
+  relative_test <- wald_t_test(out$relative_effect, out$relative_se, relative_df)
+  out$relative_statistic <- relative_test$statistic
+  out$relative_pvalue <- relative_test$pvalue
 
   out$total_padj_global <- adjust_destress_pvalues(out$total_pvalue, out$reporter, "global")
   out$total_padj_by_reporter <- adjust_destress_pvalues(out$total_pvalue, out$reporter, "by_reporter")
   out$rank_adjusted_total_padj_global <- adjust_destress_pvalues(out$rank_adjusted_total_pvalue, out$reporter, "global")
   out$rank_adjusted_total_padj_by_reporter <- adjust_destress_pvalues(out$rank_adjusted_total_pvalue, out$reporter, "by_reporter")
-  out$specific_padj_global <- adjust_destress_pvalues(out$specific_pvalue, out$reporter, "global")
-  out$specific_padj_by_reporter <- adjust_destress_pvalues(out$specific_pvalue, out$reporter, "by_reporter")
+  out$relative_padj_global <- adjust_destress_pvalues(out$relative_pvalue, out$reporter, "global")
+  out$relative_padj_by_reporter <- adjust_destress_pvalues(out$relative_pvalue, out$reporter, "by_reporter")
   adjustment <- if (is.null(fit$adjustment)) "global" else fit$adjustment
   out$total_padj <- if (adjustment == "by_reporter") out$total_padj_by_reporter else if (adjustment == "none") out$total_pvalue else out$total_padj_global
-  out$specific_padj <- if (adjustment == "by_reporter") out$specific_padj_by_reporter else if (adjustment == "none") out$specific_pvalue else out$specific_padj_global
+  out$relative_padj <- if (adjustment == "by_reporter") out$relative_padj_by_reporter else if (adjustment == "none") out$relative_pvalue else out$relative_padj_global
 
   out <- out[, c(
     "reporter", "perturbation",
@@ -902,13 +902,13 @@ reporter_effect_results <- function(fit, perturbations = NULL, reporters = NULL)
     "rank_adjusted_total_statistic", "rank_adjusted_total_pvalue",
     "rank_adjusted_total_df_for_test",
     "rank_adjusted_global_effect",
-    "specific_effect", "specific_se", "specific_statistic", "specific_pvalue",
-    "total_var_raw", "specific_var", "residual_df",
-    "specific_df_raw", "specific_df_for_test",
+    "relative_effect", "relative_se", "relative_statistic", "relative_pvalue",
+    "total_var_raw", "relative_var", "residual_df",
+    "relative_df_raw", "relative_df_for_test",
     "total_padj_global", "total_padj_by_reporter",
     "rank_adjusted_total_padj_global", "rank_adjusted_total_padj_by_reporter",
-    "specific_padj_global",
-    "specific_padj_by_reporter", "total_padj", "specific_padj"
+    "relative_padj_global",
+    "relative_padj_by_reporter", "total_padj", "relative_padj"
   ), drop = FALSE]
   out[order(out$reporter, out$perturbation), ]
 }
@@ -1004,31 +1004,31 @@ reporter_lm_results <- function(fit, perturbations = NULL, reporters = NULL) {
   rank_adjusted_global <- stats::aggregate(rank_adjusted_total_effect ~ perturbation, out, mean, na.rm = TRUE)
   names(rank_adjusted_global)[2] <- "rank_adjusted_global_effect"
   out <- merge(out, rank_adjusted_global, by = "perturbation", all.x = TRUE, sort = FALSE)
-  out$specific_effect <- out$rank_adjusted_total_effect - out$rank_adjusted_global_effect
-  out$specific_var <- ((m - 1) / m)^2 * out$total_var +
+  out$relative_effect <- out$rank_adjusted_total_effect - out$rank_adjusted_global_effect
+  out$relative_var <- ((m - 1) / m)^2 * out$total_var +
     (out$sum_total_var - out$total_var) / m^2
-  out$specific_se <- sqrt(out$specific_var)
-  out$specific_se[!is.finite(out$specific_se) | m <= 1] <- NA_real_
+  out$relative_se <- sqrt(out$relative_var)
+  out$relative_se[!is.finite(out$relative_se) | m <= 1] <- NA_real_
 
-  specific_df <- df
+  relative_df <- df
   if (isTRUE(fit$empirical_bayes)) {
-    moderated <- eb_moderate_se(out$specific_se, df)
-    out$specific_se <- moderated$se
-    specific_df <- moderated$df
+    moderated <- eb_moderate_se(out$relative_se, df)
+    out$relative_se <- moderated$se
+    relative_df <- moderated$df
   }
-  specific_test <- wald_t_test(out$specific_effect, out$specific_se, specific_df)
-  out$specific_statistic <- specific_test$statistic
-  out$specific_pvalue <- specific_test$pvalue
+  relative_test <- wald_t_test(out$relative_effect, out$relative_se, relative_df)
+  out$relative_statistic <- relative_test$statistic
+  out$relative_pvalue <- relative_test$pvalue
 
   out$total_padj_global <- adjust_destress_pvalues(out$total_pvalue, out$reporter, "global")
   out$total_padj_by_reporter <- adjust_destress_pvalues(out$total_pvalue, out$reporter, "by_reporter")
   out$rank_adjusted_total_padj_global <- adjust_destress_pvalues(out$rank_adjusted_total_pvalue, out$reporter, "global")
   out$rank_adjusted_total_padj_by_reporter <- adjust_destress_pvalues(out$rank_adjusted_total_pvalue, out$reporter, "by_reporter")
-  out$specific_padj_global <- adjust_destress_pvalues(out$specific_pvalue, out$reporter, "global")
-  out$specific_padj_by_reporter <- adjust_destress_pvalues(out$specific_pvalue, out$reporter, "by_reporter")
+  out$relative_padj_global <- adjust_destress_pvalues(out$relative_pvalue, out$reporter, "global")
+  out$relative_padj_by_reporter <- adjust_destress_pvalues(out$relative_pvalue, out$reporter, "by_reporter")
   adjustment <- if (is.null(fit$adjustment)) "global" else fit$adjustment
   out$total_padj <- if (adjustment == "by_reporter") out$total_padj_by_reporter else if (adjustment == "none") out$total_pvalue else out$total_padj_global
-  out$specific_padj <- if (adjustment == "by_reporter") out$specific_padj_by_reporter else if (adjustment == "none") out$specific_pvalue else out$specific_padj_global
+  out$relative_padj <- if (adjustment == "by_reporter") out$relative_padj_by_reporter else if (adjustment == "none") out$relative_pvalue else out$relative_padj_global
 
   out <- out[, c(
     "reporter", "perturbation",
@@ -1039,11 +1039,11 @@ reporter_lm_results <- function(fit, perturbations = NULL, reporters = NULL) {
     "rank_adjusted_total_effect", "rank_adjusted_total_se",
     "rank_adjusted_total_statistic", "rank_adjusted_total_pvalue",
     "rank_adjusted_global_effect",
-    "specific_effect", "specific_se", "specific_statistic", "specific_pvalue",
+    "relative_effect", "relative_se", "relative_statistic", "relative_pvalue",
     "total_padj_global", "total_padj_by_reporter",
     "rank_adjusted_total_padj_global", "rank_adjusted_total_padj_by_reporter",
-    "specific_padj_global",
-    "specific_padj_by_reporter", "total_padj", "specific_padj"
+    "relative_padj_global",
+    "relative_padj_by_reporter", "total_padj", "relative_padj"
   ), drop = FALSE]
   out[order(out$reporter, out$perturbation), ]
 }
@@ -1133,21 +1133,21 @@ observed_mean_results <- function(fit, perturbations = NULL, reporters = NULL) {
   rank_adjusted_global <- stats::aggregate(rank_adjusted_total_effect ~ perturbation, out, mean, na.rm = TRUE)
   names(rank_adjusted_global)[2] <- "rank_adjusted_global_effect"
   out <- merge(out, rank_adjusted_global, by = "perturbation", all.x = TRUE, sort = FALSE)
-  out$specific_effect <- out$rank_adjusted_total_effect - out$rank_adjusted_global_effect
-  out$specific_var <- ((m - 1) / m)^2 * out$total_var +
+  out$relative_effect <- out$rank_adjusted_total_effect - out$rank_adjusted_global_effect
+  out$relative_var <- ((m - 1) / m)^2 * out$total_var +
     (out$sum_total_var - out$total_var) / m^2
-  out$specific_se <- sqrt(out$specific_var)
-  out$specific_se[!is.finite(out$specific_se) | m <= 1] <- NA_real_
-  specific_df <- residual_df
+  out$relative_se <- sqrt(out$relative_var)
+  out$relative_se[!is.finite(out$relative_se) | m <= 1] <- NA_real_
+  relative_df <- residual_df
   if (isTRUE(fit$empirical_bayes)) {
-    moderated <- eb_moderate_se(out$specific_se, residual_df)
-    out$specific_se <- moderated$se
-    specific_df <- moderated$df
+    moderated <- eb_moderate_se(out$relative_se, residual_df)
+    out$relative_se <- moderated$se
+    relative_df <- moderated$df
   }
-  out$specific_statistic <- out$specific_effect / out$specific_se
-  out$specific_pvalue <- 2 * stats::pt(
-    abs(out$specific_statistic),
-    df = specific_df,
+  out$relative_statistic <- out$relative_effect / out$relative_se
+  out$relative_pvalue <- 2 * stats::pt(
+    abs(out$relative_statistic),
+    df = relative_df,
     lower.tail = FALSE
   )
   out$total_statistic <- out$total_effect / out$total_se
@@ -1163,11 +1163,11 @@ observed_mean_results <- function(fit, perturbations = NULL, reporters = NULL) {
   out$total_padj_by_reporter <- adjust_destress_pvalues(out$total_pvalue, out$reporter, "by_reporter")
   out$rank_adjusted_total_padj_global <- adjust_destress_pvalues(out$rank_adjusted_total_pvalue, out$reporter, "global")
   out$rank_adjusted_total_padj_by_reporter <- adjust_destress_pvalues(out$rank_adjusted_total_pvalue, out$reporter, "by_reporter")
-  out$specific_padj_global <- adjust_destress_pvalues(out$specific_pvalue, out$reporter, "global")
-  out$specific_padj_by_reporter <- adjust_destress_pvalues(out$specific_pvalue, out$reporter, "by_reporter")
+  out$relative_padj_global <- adjust_destress_pvalues(out$relative_pvalue, out$reporter, "global")
+  out$relative_padj_by_reporter <- adjust_destress_pvalues(out$relative_pvalue, out$reporter, "by_reporter")
   adjustment <- if (is.null(fit$adjustment)) "global" else fit$adjustment
   out$total_padj <- if (adjustment == "by_reporter") out$total_padj_by_reporter else if (adjustment == "none") out$total_pvalue else out$total_padj_global
-  out$specific_padj <- if (adjustment == "by_reporter") out$specific_padj_by_reporter else if (adjustment == "none") out$specific_pvalue else out$specific_padj_global
+  out$relative_padj <- if (adjustment == "by_reporter") out$relative_padj_by_reporter else if (adjustment == "none") out$relative_pvalue else out$relative_padj_global
 
   out <- out[, c(
     "reporter", "perturbation",
@@ -1177,12 +1177,12 @@ observed_mean_results <- function(fit, perturbations = NULL, reporters = NULL) {
     "rank_adjusted_total_effect", "rank_adjusted_total_se",
     "rank_adjusted_total_statistic", "rank_adjusted_total_pvalue",
     "rank_adjusted_global_effect",
-    "specific_effect", "specific_se", "specific_statistic",
-    "specific_pvalue",
+    "relative_effect", "relative_se", "relative_statistic",
+    "relative_pvalue",
     "total_padj_global", "total_padj_by_reporter",
     "rank_adjusted_total_padj_global", "rank_adjusted_total_padj_by_reporter",
-    "specific_padj_global",
-    "specific_padj_by_reporter", "total_padj", "specific_padj"
+    "relative_padj_global",
+    "relative_padj_by_reporter", "total_padj", "relative_padj"
   ), drop = FALSE]
   out[order(out$reporter, out$perturbation), ]
 }
@@ -1363,7 +1363,7 @@ resolve_destress_stages <- function(preset,
 #' @param empirical_bayes If `TRUE`, moderates standard errors toward an
 #'   empirical prior variance with prior degrees of freedom estimated from the
 #'   observed variance distribution, using each contrast's degrees of freedom.
-#'   Reporter-wise specific effects combine raw total-effect variances with
+#'   Reporter-wise reporter-relative effects combine raw total-effect variances with
 #'   Welch-Satterthwaite degrees of freedom and are moderated once. This maps to `testing = "moderated_t"` for
 #'   the model path; `FALSE` maps to `testing = "student_t"`.
 #' @param empty_vector_reporter Optional reporter/control strain used as an
@@ -1378,7 +1378,7 @@ resolve_destress_stages <- function(preset,
 #' @param background_rank Non-negative integer. The default `0` removes no
 #'   latent background. Values `1` or `2` additionally subtract a low-rank
 #'   background term from the reference-relative total-effect matrix before
-#'   testing rank-adjusted total and reporter-specific residual effects. Use
+#'   testing rank-adjusted total and reporter-relative residual effects. Use
 #'   `"auto"` to choose the rank by permutation parallel analysis.
 #' @param background_rank_max Maximum rank considered when
 #'   `background_rank = "auto"`.
@@ -1756,21 +1756,21 @@ summary_level_effects <- function(d,
   out$global_effect <- NA_real_
   out$global_variance <- NA_real_
   out$global_weight <- NA_real_
-  out$specific_effect <- NA_real_
-  out$specific_variance <- NA_real_
+  out$relative_effect <- NA_real_
+  out$relative_variance <- NA_real_
   for (idx in split_idx) {
     center <- compute_center(out$total_effect[idx], out$total_variance[idx])
     out$global_effect[idx] <- center$center
     out$global_variance[idx] <- center$center_variance
     out$global_weight[idx] <- center$weights
-    out$specific_effect[idx] <- out$total_effect[idx] - center$center
-    out$specific_variance[idx] <-
+    out$relative_effect[idx] <- out$total_effect[idx] - center$center
+    out$relative_variance[idx] <-
       out$total_variance[idx] - 2 * center$weights * out$total_variance[idx] +
       center$center_variance
   }
-  out$specific_se <- sqrt(out$specific_variance)
-  out$specific_statistic <- out$specific_effect / out$specific_se
-  out$specific_pvalue <- 2 * stats::pnorm(-abs(out$specific_statistic))
+  out$relative_se <- sqrt(out$relative_variance)
+  out$relative_statistic <- out$relative_effect / out$relative_se
+  out$relative_pvalue <- 2 * stats::pnorm(-abs(out$relative_statistic))
 
   out$low_rank_effect <- low_rank_background_effect(
     out,
@@ -1789,37 +1789,37 @@ summary_level_effects <- function(d,
   out$rank_adjusted_global_effect <- NA_real_
   out$rank_adjusted_global_variance <- NA_real_
   out$rank_adjusted_global_weight <- NA_real_
-  out$rank_adjusted_specific_effect <- NA_real_
-  out$rank_adjusted_specific_variance <- NA_real_
+  out$rank_adjusted_relative_effect <- NA_real_
+  out$rank_adjusted_relative_variance <- NA_real_
   for (idx in split_idx) {
     center <- compute_center(out$rank_adjusted_total_effect[idx], out$total_variance[idx])
     out$rank_adjusted_global_effect[idx] <- center$center
     out$rank_adjusted_global_variance[idx] <- center$center_variance
     out$rank_adjusted_global_weight[idx] <- center$weights
-    out$rank_adjusted_specific_effect[idx] <-
+    out$rank_adjusted_relative_effect[idx] <-
       out$rank_adjusted_total_effect[idx] - center$center
-    out$rank_adjusted_specific_variance[idx] <-
+    out$rank_adjusted_relative_variance[idx] <-
       out$total_variance[idx] - 2 * center$weights * out$total_variance[idx] +
       center$center_variance
   }
-  out$rank_adjusted_specific_se <- sqrt(out$rank_adjusted_specific_variance)
-  out$rank_adjusted_specific_statistic <-
-    out$rank_adjusted_specific_effect / out$rank_adjusted_specific_se
-  out$rank_adjusted_specific_pvalue <-
-    2 * stats::pnorm(-abs(out$rank_adjusted_specific_statistic))
+  out$rank_adjusted_relative_se <- sqrt(out$rank_adjusted_relative_variance)
+  out$rank_adjusted_relative_statistic <-
+    out$rank_adjusted_relative_effect / out$rank_adjusted_relative_se
+  out$rank_adjusted_relative_pvalue <-
+    2 * stats::pnorm(-abs(out$rank_adjusted_relative_statistic))
 
   out$total_padj_global <- adjust_destress_pvalues(out$total_pvalue, out$reporter, "global")
   out$total_padj_by_reporter <- adjust_destress_pvalues(out$total_pvalue, out$reporter, "by_reporter")
-  out$specific_padj_global <- adjust_destress_pvalues(out$specific_pvalue, out$reporter, "global")
-  out$specific_padj_by_reporter <- adjust_destress_pvalues(out$specific_pvalue, out$reporter, "by_reporter")
+  out$relative_padj_global <- adjust_destress_pvalues(out$relative_pvalue, out$reporter, "global")
+  out$relative_padj_by_reporter <- adjust_destress_pvalues(out$relative_pvalue, out$reporter, "by_reporter")
   out$rank_adjusted_total_padj_global <-
     adjust_destress_pvalues(out$rank_adjusted_total_pvalue, out$reporter, "global")
   out$rank_adjusted_total_padj_by_reporter <-
     adjust_destress_pvalues(out$rank_adjusted_total_pvalue, out$reporter, "by_reporter")
-  out$rank_adjusted_specific_padj_global <-
-    adjust_destress_pvalues(out$rank_adjusted_specific_pvalue, out$reporter, "global")
-  out$rank_adjusted_specific_padj_by_reporter <-
-    adjust_destress_pvalues(out$rank_adjusted_specific_pvalue, out$reporter, "by_reporter")
+  out$rank_adjusted_relative_padj_global <-
+    adjust_destress_pvalues(out$rank_adjusted_relative_pvalue, out$reporter, "global")
+  out$rank_adjusted_relative_padj_by_reporter <-
+    adjust_destress_pvalues(out$rank_adjusted_relative_pvalue, out$reporter, "by_reporter")
 
   out$total_padj <- if (adjustment == "by_reporter") {
     out$total_padj_by_reporter
@@ -1828,12 +1828,12 @@ summary_level_effects <- function(d,
   } else {
     out$total_padj_global
   }
-  out$specific_padj <- if (adjustment == "by_reporter") {
-    out$specific_padj_by_reporter
+  out$relative_padj <- if (adjustment == "by_reporter") {
+    out$relative_padj_by_reporter
   } else if (adjustment == "none") {
-    out$specific_pvalue
+    out$relative_pvalue
   } else {
-    out$specific_padj_global
+    out$relative_padj_global
   }
   out$rank_adjusted_total_padj <- if (adjustment == "by_reporter") {
     out$rank_adjusted_total_padj_by_reporter
@@ -1842,12 +1842,12 @@ summary_level_effects <- function(d,
   } else {
     out$rank_adjusted_total_padj_global
   }
-  out$rank_adjusted_specific_padj <- if (adjustment == "by_reporter") {
-    out$rank_adjusted_specific_padj_by_reporter
+  out$rank_adjusted_relative_padj <- if (adjustment == "by_reporter") {
+    out$rank_adjusted_relative_padj_by_reporter
   } else if (adjustment == "none") {
-    out$rank_adjusted_specific_pvalue
+    out$rank_adjusted_relative_pvalue
   } else {
-    out$rank_adjusted_specific_padj_global
+    out$rank_adjusted_relative_padj_global
   }
   out[order(out$reporter, out$perturbation), , drop = FALSE]
 }
@@ -2003,14 +2003,14 @@ fit_destress_summary <- function(data,
 #' @param reporters Optional reporter subset.
 #' @param verbose If `TRUE`, print stage-level progress messages while
 #'   extracting model results.
-#' @return A data frame with total and reporter-specific effects. Reporter-wise
-#'   results also include `total_var_raw` and `specific_var` (before moderation),
-#'   `residual_df`, `specific_df_raw` (Welch-Satterthwaite effective degrees of
-#'   freedom), and `specific_df_for_test` (including prior degrees of freedom
+#' @return A data frame with total and reporter-relative effects. Reporter-wise
+#'   results also include `total_var_raw` and `relative_var` (before moderation),
+#'   `residual_df`, `relative_df_raw` (Welch-Satterthwaite effective degrees of
+#'   freedom), and `relative_df_for_test` (including prior degrees of freedom
 #'   when moderation is enabled). Full interaction-model results include
 #'   `total_var_raw`, `residual_df`, and `total_df_for_test`. Their
-#'   `specific_var` uses the centered contrast and full coefficient covariance;
-#'   `specific_df_raw` and `specific_df_for_test` record its ordinary and
+#'   `relative_var` uses the centered contrast and full coefficient covariance;
+#'   `relative_df_raw` and `relative_df_for_test` record its ordinary and
 #'   moderated degrees of freedom. Both targets honor `empirical_bayes`.
 #' @export
 results <- function(fit, perturbations = NULL, reporters = NULL, verbose = FALSE) {
@@ -2085,7 +2085,7 @@ results <- function(fit, perturbations = NULL, reporters = NULL, verbose = FALSE
 
   destress_progress(verbose, "DStressR: extracting full interaction contrasts.")
   full_total <- contrast_estimates(fit$full_fit, comp, base)
-  full_specific <- contrast_estimates(fit$full_fit, comp, base,
+  full_relative <- contrast_estimates(fit$full_fit, comp, base,
                                       center_by = grid$perturbation)
 
   destress_progress(verbose, "DStressR: estimating perturbation-level global effects.")
@@ -2104,7 +2104,7 @@ results <- function(fit, perturbations = NULL, reporters = NULL, verbose = FALSE
     total_se = full_total[, "std_error"],
     total_statistic = full_total[, "statistic"],
     total_pvalue = full_total[, "pvalue"],
-    specific_var = full_specific[, "std_error"]^2,
+    relative_var = full_relative[, "std_error"]^2,
     additive_total_effect = total[, "estimate"],
     additive_total_se = total[, "std_error"],
     stringsAsFactors = FALSE
@@ -2137,45 +2137,45 @@ results <- function(fit, perturbations = NULL, reporters = NULL, verbose = FALSE
   rank_adjusted_global <- stats::aggregate(rank_adjusted_total_effect ~ perturbation, out, mean, na.rm = TRUE)
   names(rank_adjusted_global)[2] <- "rank_adjusted_global_effect"
   out <- merge(out, rank_adjusted_global, by = "perturbation", all.x = TRUE, sort = FALSE)
-  out$specific_effect <- out$rank_adjusted_total_effect - out$rank_adjusted_global_effect
-  out$specific_se <- sqrt(out$specific_var)
-  out$specific_se[out$specific_var <= 0] <- NA_real_
-  specific_df <- fit_df_residual(fit$full_fit)
-  out$specific_df_raw <- rep(specific_df, nrow(out))
+  out$relative_effect <- out$rank_adjusted_total_effect - out$rank_adjusted_global_effect
+  out$relative_se <- sqrt(out$relative_var)
+  out$relative_se[out$relative_var <= 0] <- NA_real_
+  relative_df <- fit_df_residual(fit$full_fit)
+  out$relative_df_raw <- rep(relative_df, nrow(out))
   if (isTRUE(fit$empirical_bayes)) {
-    moderated <- eb_moderate_se(out$specific_se, specific_df)
-    out$specific_se <- moderated$se
-    specific_df <- moderated$df
+    moderated <- eb_moderate_se(out$relative_se, relative_df)
+    out$relative_se <- moderated$se
+    relative_df <- moderated$df
   }
-  out$specific_df_for_test <- rep_len(specific_df, nrow(out))
-  out$specific_statistic <- out$specific_effect / out$specific_se
-  out$specific_pvalue <- 2 * stats::pt(abs(out$specific_statistic),
-                                       df = specific_df,
+  out$relative_df_for_test <- rep_len(relative_df, nrow(out))
+  out$relative_statistic <- out$relative_effect / out$relative_se
+  out$relative_pvalue <- 2 * stats::pt(abs(out$relative_statistic),
+                                       df = relative_df,
                                        lower.tail = FALSE)
   out$total_padj_global <- adjust_destress_pvalues(out$total_pvalue, out$reporter, "global")
   out$total_padj_by_reporter <- adjust_destress_pvalues(out$total_pvalue, out$reporter, "by_reporter")
   out$rank_adjusted_total_padj_global <- adjust_destress_pvalues(out$rank_adjusted_total_pvalue, out$reporter, "global")
   out$rank_adjusted_total_padj_by_reporter <- adjust_destress_pvalues(out$rank_adjusted_total_pvalue, out$reporter, "by_reporter")
-  out$specific_padj_global <- adjust_destress_pvalues(out$specific_pvalue, out$reporter, "global")
-  out$specific_padj_by_reporter <- adjust_destress_pvalues(out$specific_pvalue, out$reporter, "by_reporter")
+  out$relative_padj_global <- adjust_destress_pvalues(out$relative_pvalue, out$reporter, "global")
+  out$relative_padj_by_reporter <- adjust_destress_pvalues(out$relative_pvalue, out$reporter, "by_reporter")
   adjustment <- if (is.null(fit$adjustment)) "global" else fit$adjustment
   out$total_padj <- if (adjustment == "by_reporter") out$total_padj_by_reporter else if (adjustment == "none") out$total_pvalue else out$total_padj_global
-  out$specific_padj <- if (adjustment == "by_reporter") out$specific_padj_by_reporter else if (adjustment == "none") out$specific_pvalue else out$specific_padj_global
+  out$relative_padj <- if (adjustment == "by_reporter") out$relative_padj_by_reporter else if (adjustment == "none") out$relative_pvalue else out$relative_padj_global
   out <- out[, c(
     "reporter", "perturbation",
     "total_effect", "total_se", "total_statistic", "total_pvalue",
     "additive_total_effect", "additive_total_se",
     "total_var_raw", "residual_df", "total_df_for_test",
-    "specific_var", "specific_df_raw", "specific_df_for_test",
+    "relative_var", "relative_df_raw", "relative_df_for_test",
     "global_effect", "low_rank_effect",
     "rank_adjusted_total_effect", "rank_adjusted_total_se",
     "rank_adjusted_total_statistic", "rank_adjusted_total_pvalue",
     "rank_adjusted_global_effect",
-    "specific_effect", "specific_se", "specific_statistic", "specific_pvalue",
+    "relative_effect", "relative_se", "relative_statistic", "relative_pvalue",
     "total_padj_global", "total_padj_by_reporter",
     "rank_adjusted_total_padj_global", "rank_adjusted_total_padj_by_reporter",
-    "specific_padj_global",
-    "specific_padj_by_reporter", "total_padj", "specific_padj"
+    "relative_padj_global",
+    "relative_padj_by_reporter", "total_padj", "relative_padj"
   ), drop = FALSE]
   destress_progress(verbose, "DStressR: finished extracting model results.")
   out[order(out$reporter, out$perturbation), ]
@@ -2205,7 +2205,7 @@ adjust_pvalues <- function(table, pvalue = "total_pvalue",
 #' @param fdr FDR threshold.
 #' @param lfc Minimum absolute effect size.
 #' @param effect Effect column. Defaults to `total_effect`; use
-#'   `specific_effect` for deviations from the reporter-panel average.
+#'   `relative_effect` for deviations from the reporter-panel average.
 #' @param padj Adjusted p-value column.
 #' @export
 call_hits <- function(table, fdr = 0.05, lfc = 0, effect = "total_effect",

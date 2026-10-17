@@ -94,6 +94,6 @@ A \code{ggplot} object. The plotted matrix is available as
 }
 \description{
 Creates a standard heatmap for normalized reporter-perturbation responses. The
-default \code{value} is \code{total_effect}; \code{\link[=results]{results()}} also provides specific effects. Workflow
+default \code{value} is \code{total_effect}; \code{\link[=results]{results()}} also provides reporter-relative effects. Workflow
 tables can use columns such as \code{destress_eb_effect_centered}.
 }

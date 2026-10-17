@@ -20,7 +20,7 @@ call_hits(
 \item{lfc}{Minimum absolute effect size.}
 
 \item{effect}{Effect column. Defaults to \code{total_effect}; use
-\code{specific_effect} for deviations from the reporter-panel average.}
+\code{relative_effect} for deviations from the reporter-panel average.}
 
 \item{padj}{Adjusted p-value column.}
 }

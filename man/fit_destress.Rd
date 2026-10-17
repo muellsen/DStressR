@@ -36,7 +36,7 @@ technical-factor columns to include.}
 \item{empirical_bayes}{If \code{TRUE}, moderates standard errors toward an
 empirical prior variance with prior degrees of freedom estimated from the
 observed variance distribution, using each contrast's degrees of freedom.
-Reporter-wise specific effects combine raw total-effect variances with
+Reporter-wise reporter-relative effects combine raw total-effect variances with
 Welch-Satterthwaite degrees of freedom and are moderated once. This maps to \code{testing = "moderated_t"} for
 the model path; \code{FALSE} maps to \code{testing = "student_t"}.}
 
@@ -53,7 +53,7 @@ The two routes cannot be combined. Supported for \code{interaction = FALSE}.}
 \item{background_rank}{Non-negative integer. The default \code{0} removes no
 latent background. Values \code{1} or \code{2} additionally subtract a low-rank
 background term from the reference-relative total-effect matrix before
-testing rank-adjusted total and reporter-specific residual effects. Use
+testing rank-adjusted total and reporter-relative residual effects. Use
 \code{"auto"} to choose the rank by permutation parallel analysis.}
 
 \item{background_rank_max}{Maximum rank considered when

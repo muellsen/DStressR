@@ -17,14 +17,14 @@ results(fit, perturbations = NULL, reporters = NULL, verbose = FALSE)
 extracting model results.}
 }
 \value{
-A data frame with total and reporter-specific effects. Reporter-wise
-results also include \code{total_var_raw} and \code{specific_var} (before moderation),
-\code{residual_df}, \code{specific_df_raw} (Welch-Satterthwaite effective degrees of
-freedom), and \code{specific_df_for_test} (including prior degrees of freedom
+A data frame with total and reporter-relative effects. Reporter-wise
+results also include \code{total_var_raw} and \code{relative_var} (before moderation),
+\code{residual_df}, \code{relative_df_raw} (Welch-Satterthwaite effective degrees of
+freedom), and \code{relative_df_for_test} (including prior degrees of freedom
 when moderation is enabled). Full interaction-model results include
 \code{total_var_raw}, \code{residual_df}, and \code{total_df_for_test}. Their
-\code{specific_var} uses the centered contrast and full coefficient covariance;
-\code{specific_df_raw} and \code{specific_df_for_test} record its ordinary and
+\code{relative_var} uses the centered contrast and full coefficient covariance;
+\code{relative_df_raw} and \code{relative_df_for_test} record its ordinary and
 moderated degrees of freedom. Both targets honor \code{empirical_bayes}.
 }
 \description{

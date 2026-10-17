@@ -115,7 +115,7 @@ predict_three_part_t <- function(x, fit) {
 #'
 #' @param table A data frame with one row per reporter-perturbation pair.
 #' @param value Numeric effect column. Defaults to `total_effect`; use
-#'   `specific_effect` to fit centered reporter-specific effects.
+#'   `relative_effect` to fit reporter-relative effects.
 #' @param reporter Column identifying reporters.
 #' @param df Degrees of freedom for each Student-t component. Smaller values
 #'   give heavier tails.
