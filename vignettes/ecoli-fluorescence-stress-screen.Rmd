@@ -104,8 +104,8 @@ tab <- results(fit)
 hits <- call_hits(
   tab,
   fdr = 0.05,
-  effect = "specific_effect",
-  padj = "specific_padj_by_reporter"
+  effect = "relative_effect",
+  padj = "relative_padj_by_reporter"
 )
 ```
 

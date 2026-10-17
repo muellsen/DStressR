@@ -121,9 +121,9 @@ the `log2(luminescence / growth)` scale after the same optional EVC calibration.
 covariates and retains the selected inferential configuration. `results()`
 then constructs the contrast-level inferential table, and `call_hits()` adds
 directional calls at a chosen false-discovery-rate threshold. The result table
-reports both the reference-relative total effect and the reporter-specific effect
+reports both the reference-relative total effect and the reporter-relative effect
 after subtracting the perturbation-wide effect. Total effects are the default
-for hit calling and effect plots; specific effects can be selected explicitly.
+for hit calling and effect plots; reporter-relative effects can be selected explicitly.
 
 ```{r fit}
 fit <- fit_destress(
@@ -142,9 +142,9 @@ The key columns are:
 
 - `total_effect`: reference-relative response for the reporter-perturbation pair.
 - `global_effect`: average perturbation-wide response across reporters.
-- `specific_effect`: reporter-specific deviation from the perturbation-wide effect.
+- `relative_effect`: reporter-relative deviation from the perturbation-wide effect.
 - `total_pvalue` and `total_padj`: test and BH-adjusted p-value for the total effect.
-- `specific_pvalue` and `specific_padj`: corresponding values for the specific effect.
+- `relative_pvalue` and `relative_padj`: corresponding values for the reporter-relative effect.
 
 The direct fitting functions remain available for existing scripts, but
 `fit_destress()` is the recommended entry point for new model-based analyses.

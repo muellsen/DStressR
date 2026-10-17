@@ -100,14 +100,14 @@ extracting model results.</p></dd>
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     
 
-<p>A data frame with total and reporter-specific effects. Reporter-wise
-results also include <code>total_var_raw</code> and <code>specific_var</code> (before moderation),
-<code>residual_df</code>, <code>specific_df_raw</code> (Welch-Satterthwaite effective degrees of
-freedom), and <code>specific_df_for_test</code> (including prior degrees of freedom
+<p>A data frame with total and reporter-relative effects. Reporter-wise
+results also include <code>total_var_raw</code> and <code>relative_var</code> (before moderation),
+<code>residual_df</code>, <code>relative_df_raw</code> (Welch-Satterthwaite effective degrees of
+freedom), and <code>relative_df_for_test</code> (including prior degrees of freedom
 when moderation is enabled). Full interaction-model results include
 <code>total_var_raw</code>, <code>residual_df</code>, and <code>total_df_for_test</code>. Their
-<code>specific_var</code> uses the centered contrast and full coefficient covariance;
-<code>specific_df_raw</code> and <code>specific_df_for_test</code> record its ordinary and
+<code>relative_var</code> uses the centered contrast and full coefficient covariance;
+<code>relative_df_raw</code> and <code>relative_df_for_test</code> record its ordinary and
 moderated degrees of freedom. Both targets honor <code>empirical_bayes</code>.</p>
     </div>
 

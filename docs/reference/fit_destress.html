@@ -119,7 +119,7 @@ technical-factor columns to include.</p></dd>
 <dd><p>If <code>TRUE</code>, moderates standard errors toward an
 empirical prior variance with prior degrees of freedom estimated from the
 observed variance distribution, using each contrast's degrees of freedom.
-Reporter-wise specific effects combine raw total-effect variances with
+Reporter-wise reporter-relative effects combine raw total-effect variances with
 Welch-Satterthwaite degrees of freedom and are moderated once. This maps to <code>testing = "moderated_t"</code> for
 the model path; <code>FALSE</code> maps to <code>testing = "student_t"</code>.</p></dd>
 
@@ -140,7 +140,7 @@ The two routes cannot be combined. Supported for <code>interaction = FALSE</code
 <dd><p>Non-negative integer. The default <code>0</code> removes no
 latent background. Values <code>1</code> or <code>2</code> additionally subtract a low-rank
 background term from the reference-relative total-effect matrix before
-testing rank-adjusted total and reporter-specific residual effects. Use
+testing rank-adjusted total and reporter-relative residual effects. Use
 <code>"auto"</code> to choose the rank by permutation parallel analysis.</p></dd>
 
 
